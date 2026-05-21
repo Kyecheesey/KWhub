@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Sidebar from "@/components/Sidebar";
+import SessionWrapper from "@/components/SessionWrapper";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -15,10 +15,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
-        <Sidebar />
-        <main style={{ flex: 1, minWidth: 0, overflowY: "auto" }}>
+        <SessionWrapper>
           {children}
-        </main>
+        </SessionWrapper>
       </body>
     </html>
   );

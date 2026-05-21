@@ -12,8 +12,25 @@ export function sql(...args: Parameters<NeonQueryFunction<false, false>>) {
   return _sql(...args);
 }
 
-// Ensure all tables exist — called at the start of each GET/POST handler
+// Ensure all tables exist + seed initial users — called at the start of each handler
 export async function migrate() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id            SERIAL PRIMARY KEY,
+      name          TEXT NOT NULL,
+      username      TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      created_at    TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  // Seed initial users (ON CONFLICT = safe to re-run)
+  await sql`
+    INSERT INTO users (name, username, password_hash) VALUES
+      ('Kye',   'kye',   '$2b$12$leYi1Y4NOupxNvLvOm8UaefC5ZjUHORO7uN6IWz3SPFZlkASeG4Sa'),
+      ('Luka',  'luka',  '$2b$12$wu2GzqzUM7arNPtlSQUOve9tSdwYOip3bOfOFO/9hdqa4oOcU1yeO'),
+      ('Aksel', 'aksel', '$2b$12$Qw5vRKKqDcl5tu2JF9AtzexF4QOxnGvx6YP9NssyGFHALN0ePphZy')
+    ON CONFLICT (username) DO NOTHING
+  `;
   await sql`
     CREATE TABLE IF NOT EXISTS clients (
       id            SERIAL PRIMARY KEY,
