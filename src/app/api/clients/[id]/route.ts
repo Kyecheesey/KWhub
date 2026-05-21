@@ -1,18 +1,20 @@
-import { getDb } from "@/lib/db";
+import { sql } from "@/lib/db";
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const body = await request.json();
-  const { business_name, contact_name, phone, email, website, notes, assigned_to } = body;
-  const db = getDb();
-  db.prepare(
-    "UPDATE clients SET business_name=?, contact_name=?, phone=?, email=?, website=?, notes=?, assigned_to=? WHERE id=?"
-  ).run(business_name, contact_name ?? null, phone ?? null, email ?? null, website ?? null, notes ?? null, assigned_to ?? null, id);
-  const updated = db.prepare("SELECT * FROM clients WHERE id = ?").get(id);
-  return Response.json(updated);
+  const { business_name, contact_name, phone, email, website, notes, assigned_to } = await request.json();
+  const rows = await sql`
+    UPDATE clients
+    SET business_name=${business_name}, contact_name=${contact_name ?? null},
+        phone=${phone ?? null}, email=${email ?? null}, website=${website ?? null},
+        notes=${notes ?? null}, assigned_to=${assigned_to ?? null}
+    WHERE id=${id}
+    RETURNING *
+  `;
+  return Response.json(rows[0]);
 }
 
 export async function DELETE(
@@ -20,7 +22,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const db = getDb();
-  db.prepare("DELETE FROM clients WHERE id = ?").run(id);
+  await sql`DELETE FROM clients WHERE id=${id}`;
   return Response.json({ success: true });
 }

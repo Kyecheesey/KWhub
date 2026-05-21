@@ -9,9 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@types/better-sqlite3": "^7.6.13",
+    "@neondatabase/serverless": "^1.1.0",
     "@types/cheerio": "^0.22.35",
-    "better-sqlite3": "^12.10.0",
     "cheerio": "^1.2.0",
     "lucide-react": "^1.16.0",
     "next": "16.2.6",

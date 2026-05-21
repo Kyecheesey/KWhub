@@ -1,18 +1,20 @@
-import { getDb } from "@/lib/db";
+import { sql } from "@/lib/db";
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const body = await request.json();
-  const { business_name, contact_name, phone, email, notes, status, assigned_to } = body;
-  const db = getDb();
-  db.prepare(
-    "UPDATE potentials SET business_name=?, contact_name=?, phone=?, email=?, notes=?, status=?, assigned_to=?, updated_at=datetime('now') WHERE id=?"
-  ).run(business_name, contact_name ?? null, phone ?? null, email ?? null, notes ?? null, status ?? "new", assigned_to ?? null, id);
-  const updated = db.prepare("SELECT * FROM potentials WHERE id = ?").get(id);
-  return Response.json(updated);
+  const { business_name, contact_name, phone, email, notes, status, assigned_to } = await request.json();
+  const rows = await sql`
+    UPDATE potentials
+    SET business_name=${business_name}, contact_name=${contact_name ?? null},
+        phone=${phone ?? null}, email=${email ?? null}, notes=${notes ?? null},
+        status=${status ?? "new"}, assigned_to=${assigned_to ?? null}, updated_at=NOW()
+    WHERE id=${id}
+    RETURNING *
+  `;
+  return Response.json(rows[0]);
 }
 
 export async function DELETE(
@@ -20,7 +22,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const db = getDb();
-  db.prepare("DELETE FROM potentials WHERE id = ?").run(id);
+  await sql`DELETE FROM potentials WHERE id=${id}`;
   return Response.json({ success: true });
 }
