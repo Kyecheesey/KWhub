@@ -6,14 +6,15 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   Menu, X, LayoutDashboard, Users, Target, PhoneCall,
-  FileText, UsersRound, Zap, ChevronRight, LogOut,
+  FileText, UsersRound, Zap, ChevronRight, LogOut, Kanban,
 } from "lucide-react";
 
 const nav = [
-  { href: "/",           label: "Dashboard",  icon: LayoutDashboard },
-  { href: "/clients",    label: "Clients",     icon: Users },
-  { href: "/potentials", label: "Potentials",  icon: Target },
-  { href: "/call-list",  label: "Call List",   icon: PhoneCall },
+  { href: "/",            label: "Dashboard",  icon: LayoutDashboard },
+  { href: "/clients",     label: "Clients",     icon: Users },
+  { href: "/potentials",  label: "Potentials",  icon: Target },
+  { href: "/activities",  label: "Activities",  icon: Kanban },
+  { href: "/call-list",   label: "Call List",   icon: PhoneCall },
   { href: "#", label: "Team Hub",  icon: UsersRound, soon: true },
   { href: "#", label: "Policies",  icon: FileText,   soon: true },
   { href: "#", label: "AI Tools",  icon: Zap,        soon: true },

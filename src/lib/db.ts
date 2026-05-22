@@ -80,4 +80,18 @@ export async function migrate() {
       UNIQUE(record_type, record_id)
     )
   `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS activities (
+      id          SERIAL PRIMARY KEY,
+      title       TEXT NOT NULL,
+      description TEXT,
+      status      TEXT DEFAULT 'todo',
+      priority    TEXT DEFAULT 'medium',
+      assigned_to TEXT,
+      due_date    DATE,
+      tags        TEXT,
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
 }
