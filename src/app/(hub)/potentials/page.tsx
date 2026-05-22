@@ -112,9 +112,9 @@ export default function PotentialsPage() {
   const countOf = (key: string) => potentials.filter((p) => p.status === key).length;
 
   return (
-    <div style={{ padding: "2.5rem", maxWidth: 1100, margin: "0 auto" }}>
+    <div className="page">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem", marginBottom: "2rem" }}>
+      <div className="page-header">
         <div>
           <p style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#818cf8", marginBottom: "0.35rem" }}>KW | Innovations</p>
           <h1 style={{ fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>Potentials</h1>
@@ -122,14 +122,14 @@ export default function PotentialsPage() {
             {loading ? "Loading…" : `${potentials.length} in pipeline · ${callSet.size} on call list`}
           </p>
         </div>
-        <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+        <div className="page-header-actions">
           <a href="/api/potentials/export" className="btn-ghost"><Download size={14} /> Export CSV</a>
           <button onClick={openAdd} className="btn-primary"><Plus size={15} /> Add Potential</button>
         </div>
       </div>
 
       {/* Stage pills */}
-      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
+      <div className="stage-pills">
         <button onClick={() => setFilterStatus("all")} style={{ padding: "0.4rem 1rem", borderRadius: 99, fontSize: "0.8rem", fontWeight: 600, background: filterStatus === "all" ? "var(--surface-3)" : "var(--surface)", border: `1px solid ${filterStatus === "all" ? "var(--border-2)" : "var(--border)"}`, color: filterStatus === "all" ? "var(--text-1)" : "var(--text-2)", cursor: "pointer" }}>
           All <span style={{ opacity: 0.5 }}>({potentials.length})</span>
         </button>
@@ -141,9 +141,9 @@ export default function PotentialsPage() {
       </div>
 
       {/* Search */}
-      <div style={{ position: "relative", marginBottom: "1.5rem" }}>
-        <Search size={15} style={{ position: "absolute", left: "0.85rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }} />
-        <input className="field" style={{ paddingLeft: "2.25rem" }} placeholder="Search by business, contact or assignee…" value={search} onChange={(e) => setSearch(e.target.value)} />
+      <div className="search-wrap">
+        <Search size={15} />
+        <input className="field" placeholder="Search by business, contact or assignee…" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
       {/* Cards */}
@@ -156,7 +156,7 @@ export default function PotentialsPage() {
           <p style={{ color: "var(--text-3)", fontSize: "0.85rem" }}>Start tracking your pipeline</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
+        <div className="card-grid">
           {filtered.map((p) => {
             const stage = stageOf(p.status);
             const onCall = callSet.has(p.id);

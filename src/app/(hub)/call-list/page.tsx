@@ -64,9 +64,9 @@ export default function CallListPage() {
   const displayed = filter === "all" ? entries : filter === "pending" ? pending : done;
 
   return (
-    <div style={{ padding: "2.5rem", maxWidth: 900, margin: "0 auto" }}>
+    <div className="page">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem", marginBottom: "2rem" }}>
+      <div className="page-header">
         <div>
           <p style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#34d399", marginBottom: "0.35rem" }}>KW | Innovations</p>
           <h1 style={{ fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>

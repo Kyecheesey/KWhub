@@ -124,9 +124,9 @@ export default function ClientsPage() {
   );
 
   return (
-    <div style={{ padding: "2.5rem", maxWidth: 1200, margin: "0 auto" }}>
+    <div className="page">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem", marginBottom: "2rem" }}>
+      <div className="page-header">
         <div>
           <p style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--accent)", marginBottom: "0.35rem" }}>KW | Innovations</p>
           <h1 style={{ fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>Current Clients</h1>
@@ -134,7 +134,7 @@ export default function ClientsPage() {
             {loading ? "Loading…" : `${clients.length} client${clients.length !== 1 ? "s" : ""} · ${callSet.size} on call list`}
           </p>
         </div>
-        <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+        <div className="page-header-actions">
           <button onClick={scrape} disabled={scraping} className="btn-ghost">
             <RefreshCw size={14} /> {scraping ? "Importing…" : "Import from Website"}
           </button>
@@ -157,13 +157,13 @@ export default function ClientsPage() {
       )}
 
       {/* Search */}
-      <div style={{ position: "relative", marginBottom: "1.25rem" }}>
-        <Search size={15} style={{ position: "absolute", left: "0.85rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }} />
-        <input className="field" style={{ paddingLeft: "2.25rem" }} placeholder="Search by business, contact or assignee…" value={search} onChange={(e) => setSearch(e.target.value)} />
+      <div className="search-wrap">
+        <Search size={15} />
+        <input className="field" placeholder="Search by business, contact or assignee…" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
-      {/* Table */}
-      <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden" }}>
+      {/* Desktop Table */}
+      <div className="client-table-wrap">
         {loading ? (
           <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-3)" }}>Loading…</div>
         ) : filtered.length === 0 ? (
@@ -257,6 +257,57 @@ export default function ClientsPage() {
           </table>
         )}
       </div>
+
+      {/* Mobile Cards */}
+      <div className="client-cards">
+        {loading ? (
+          <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-3)" }}>Loading…</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: "3rem", textAlign: "center", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16 }}>
+            <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>🏢</div>
+            <p style={{ color: "var(--text-2)", fontWeight: 600 }}>No clients yet</p>
+          </div>
+        ) : filtered.map((c) => {
+          const color = colorFor(c.business_name);
+          const onCall = callSet.has(c.id);
+          return (
+            <div key={c.id} style={{ background: "var(--surface)", border: `1px solid ${onCall ? "rgba(34,211,238,0.25)" : "var(--border)"}`, borderRadius: 14, padding: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                <div className="avatar" style={{ background: `${color}18`, color, border: `1px solid ${color}30`, width: 40, height: 40, fontSize: "0.85rem" }}>
+                  {initials(c.business_name)}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, fontSize: "0.95rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {c.business_name}
+                  </div>
+                  {c.contact_name && <div style={{ fontSize: "0.8rem", color: "var(--text-2)" }}>{c.contact_name}</div>}
+                </div>
+                {c.assigned_to && (
+                  <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#818cf8", background: "rgba(129,140,248,0.1)", border: "1px solid rgba(129,140,248,0.2)", padding: "0.15rem 0.5rem", borderRadius: 99, whiteSpace: "nowrap" }}>
+                    {c.assigned_to}
+                  </span>
+                )}
+              </div>
+              {c.phone && (
+                <a href={`tel:${c.phone}`} style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--accent)", textDecoration: "none", fontSize: "0.9rem", fontWeight: 600, marginBottom: "0.5rem" }}>
+                  <Phone size={14} /> {c.phone}
+                </a>
+              )}
+              {c.notes && <p style={{ fontSize: "0.8rem", color: "var(--text-3)", marginBottom: "0.75rem", lineHeight: 1.5 }}>{c.notes}</p>}
+              <div style={{ display: "flex", gap: "0.5rem", paddingTop: "0.75rem", borderTop: "1px solid var(--border)" }}>
+                <button onClick={() => openEdit(c)} className="btn-ghost" style={{ flex: 1, justifyContent: "center", fontSize: "0.82rem", padding: "0.5rem" }}>
+                  <Pencil size={13} /> Edit
+                </button>
+                <button onClick={() => toggleCall(c)} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0.5rem 0.75rem", borderRadius: 8, border: "none", cursor: "pointer", background: onCall ? "rgba(34,211,238,0.12)" : "var(--surface-2)", color: onCall ? "var(--accent)" : "var(--text-3)" }}>
+                  {onCall ? <PhoneCall size={15} /> : <PhoneOff size={15} />}
+                </button>
+                <button onClick={() => remove(c.id)} className="btn-danger" style={{ padding: "0.5rem 0.75rem" }}><Trash2 size={13} /></button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       <p style={{ marginTop: "0.75rem", fontSize: "0.75rem", color: "var(--text-3)" }}>
         {filtered.length} of {clients.length} client{clients.length !== 1 ? "s" : ""}
       </p>

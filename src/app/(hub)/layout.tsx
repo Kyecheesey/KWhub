@@ -1,12 +1,5 @@
-import Sidebar from "@/components/Sidebar";
+import LayoutShell from "@/components/LayoutShell";
 
 export default function HubLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <Sidebar />
-      <main style={{ flex: 1, minWidth: 0, overflowY: "auto" }}>
-        {children}
-      </main>
-    </>
-  );
+  return <LayoutShell>{children}</LayoutShell>;
 }

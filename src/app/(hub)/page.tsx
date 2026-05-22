@@ -112,7 +112,7 @@ export default function Home() {
   ];
 
   return (
-    <div style={{ padding: "2.5rem 2.5rem", maxWidth: 1100, margin: "0 auto" }}>
+    <div className="page">
 
       {/* Hero */}
       <div
@@ -178,14 +178,7 @@ export default function Home() {
       </div>
 
       {/* Stat cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "1rem",
-          marginBottom: "2rem",
-        }}
-      >
+      <div className="stat-grid">
         {statCards.map(({ label, value, icon: Icon, color, bg, border, href }) => (
           <Link
             key={label}
@@ -223,7 +216,7 @@ export default function Home() {
       <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text-2)", marginBottom: "1rem", letterSpacing: "0.04em" }}>
         Modules
       </h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
+      <div className="module-grid">
         {modules.map(({ title, desc, icon: Icon, href, gradient, live }) => (
           <div
             key={title}
