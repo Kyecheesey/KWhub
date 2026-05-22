@@ -43,6 +43,7 @@ export default function PotentialsPage() {
   const [callSet, setCallSet] = useState<Set<number>>(new Set());
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterAgent, setFilterAgent] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<Form>(BLANK);
@@ -129,11 +130,20 @@ export default function PotentialsPage() {
       (p.contact_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (p.assigned_to ?? "").toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === "all" || p.status === filterStatus;
-    return matchSearch && matchStatus;
+    const matchAgent = filterAgent === "all"
+      ? true
+      : filterAgent === "unassigned"
+      ? !p.assigned_to
+      : p.assigned_to === filterAgent;
+    return matchSearch && matchStatus && matchAgent;
   });
 
   const stageOf = (key: string) => STAGES.find((s) => s.key === key) ?? STAGES[0];
   const countOf = (key: string) => potentials.filter((p) => p.status === key).length;
+
+  // All unique agents that appear in potentials (not just team table)
+  const agents = Array.from(new Set(potentials.map((p) => p.assigned_to).filter(Boolean))) as string[];
+  const unassignedCount = potentials.filter((p) => !p.assigned_to).length;
 
   return (
     <div className="page">
@@ -186,6 +196,40 @@ export default function PotentialsPage() {
           </button>
         ))}
       </div>
+
+      {/* Agent pills */}
+      {agents.length > 0 && (
+        <div className="stage-pills" style={{ marginBottom: "1rem" }}>
+          <span style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-3)", alignSelf: "center", whiteSpace: "nowrap", paddingRight: "0.25rem" }}>Agent:</span>
+          <button
+            onClick={() => setFilterAgent("all")}
+            style={{ padding: "0.35rem 0.85rem", borderRadius: 99, fontSize: "0.8rem", fontWeight: 600, cursor: "pointer", background: filterAgent === "all" ? "var(--surface-3)" : "var(--surface)", border: `1px solid ${filterAgent === "all" ? "var(--border-2)" : "var(--border)"}`, color: filterAgent === "all" ? "var(--text-1)" : "var(--text-2)", whiteSpace: "nowrap" }}
+          >
+            All <span style={{ opacity: 0.5 }}>({potentials.length})</span>
+          </button>
+          {agents.map((agent) => {
+            const count = potentials.filter((p) => p.assigned_to === agent).length;
+            const active = filterAgent === agent;
+            return (
+              <button
+                key={agent}
+                onClick={() => setFilterAgent(active ? "all" : agent)}
+                style={{ padding: "0.35rem 0.85rem", borderRadius: 99, fontSize: "0.8rem", fontWeight: 600, cursor: "pointer", background: active ? "rgba(129,140,248,0.15)" : "var(--surface)", border: `1px solid ${active ? "rgba(129,140,248,0.35)" : "var(--border)"}`, color: active ? "#818cf8" : "var(--text-2)", transition: "all 0.15s", whiteSpace: "nowrap" }}
+              >
+                {agent} <span style={{ opacity: 0.6 }}>({count})</span>
+              </button>
+            );
+          })}
+          {unassignedCount > 0 && (
+            <button
+              onClick={() => setFilterAgent(filterAgent === "unassigned" ? "all" : "unassigned")}
+              style={{ padding: "0.35rem 0.85rem", borderRadius: 99, fontSize: "0.8rem", fontWeight: 600, cursor: "pointer", background: filterAgent === "unassigned" ? "rgba(74,82,114,0.3)" : "var(--surface)", border: `1px solid ${filterAgent === "unassigned" ? "var(--border-2)" : "var(--border)"}`, color: filterAgent === "unassigned" ? "var(--text-1)" : "var(--text-3)", transition: "all 0.15s", whiteSpace: "nowrap" }}
+            >
+              Unassigned <span style={{ opacity: 0.6 }}>({unassignedCount})</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Search */}
       <div className="search-wrap">
