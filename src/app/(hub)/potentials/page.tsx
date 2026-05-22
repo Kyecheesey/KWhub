@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Plus, Download, Search, Pencil, Trash2, X,
   Phone, Mail, ChevronRight, UserCircle2, PhoneCall, PhoneOff,
+  Upload,
 } from "lucide-react";
 
 interface Potential {
@@ -46,6 +47,9 @@ export default function PotentialsPage() {
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<Form>(BLANK);
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     const [pr, tr, clr] = await Promise.all([
@@ -91,6 +95,26 @@ export default function PotentialsPage() {
     load();
   }
 
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportMsg(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/potentials/import", { method: "POST", body: fd });
+    const data = await res.json();
+    if (data.error) {
+      setImportMsg({ text: data.error, ok: false });
+    } else {
+      setImportMsg({ text: `Imported ${data.imported} potential${data.imported !== 1 ? "s" : ""}${data.skipped ? ` · ${data.skipped} row${data.skipped !== 1 ? "s" : ""} skipped (no business name)` : ""}`, ok: true });
+      load();
+    }
+    setImporting(false);
+    // reset so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   async function toggleCall(p: Potential) {
     if (callSet.has(p.id)) {
       await fetch("/api/call-list", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ record_type: "potential", record_id: p.id }) });
@@ -123,10 +147,33 @@ export default function PotentialsPage() {
           </p>
         </div>
         <div className="page-header-actions">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            style={{ display: "none" }}
+            onChange={handleImport}
+          />
+          <button onClick={() => fileInputRef.current?.click()} disabled={importing} className="btn-ghost">
+            <Upload size={14} /> {importing ? "Importing…" : "Import Excel / CSV"}
+          </button>
           <a href="/api/potentials/export" className="btn-ghost"><Download size={14} /> Export CSV</a>
           <button onClick={openAdd} className="btn-primary"><Plus size={15} /> Add Potential</button>
         </div>
       </div>
+
+      {importMsg && (
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "0.75rem 1rem", borderRadius: 12, marginBottom: "1.25rem",
+          background: importMsg.ok ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)",
+          border: `1px solid ${importMsg.ok ? "rgba(52,211,153,0.2)" : "rgba(248,113,113,0.2)"}`,
+          color: importMsg.ok ? "#34d399" : "#f87171", fontSize: "0.85rem", fontWeight: 500,
+        }}>
+          {importMsg.text}
+          <button onClick={() => setImportMsg(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", opacity: 0.6 }}><X size={14} /></button>
+        </div>
+      )}
 
       {/* Stage pills */}
       <div className="stage-pills">
