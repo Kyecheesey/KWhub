@@ -81,6 +81,21 @@ export async function migrate() {
     )
   `;
   await sql`
+    CREATE TABLE IF NOT EXISTS tasks (
+      id          SERIAL PRIMARY KEY,
+      title       TEXT NOT NULL,
+      description TEXT,
+      status      TEXT DEFAULT 'pending',
+      priority    TEXT DEFAULT 'medium',
+      assigned_to TEXT NOT NULL,
+      assigned_by TEXT,
+      due_date    DATE,
+      completed_at TIMESTAMPTZ,
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
     CREATE TABLE IF NOT EXISTS activities (
       id          SERIAL PRIMARY KEY,
       title       TEXT NOT NULL,
