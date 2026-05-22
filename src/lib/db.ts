@@ -23,13 +23,13 @@ export async function migrate() {
       created_at    TIMESTAMPTZ DEFAULT NOW()
     )
   `;
-  // Seed initial users (ON CONFLICT = safe to re-run)
+  // Seed initial users — DO UPDATE ensures passwords reset to known values
   await sql`
     INSERT INTO users (name, username, password_hash) VALUES
-      ('Kye',   'kye',   '$2b$12$leYi1Y4NOupxNvLvOm8UaefC5ZjUHORO7uN6IWz3SPFZlkASeG4Sa'),
-      ('Luka',  'luka',  '$2b$12$wu2GzqzUM7arNPtlSQUOve9tSdwYOip3bOfOFO/9hdqa4oOcU1yeO'),
-      ('Aksel', 'aksel', '$2b$12$Qw5vRKKqDcl5tu2JF9AtzexF4QOxnGvx6YP9NssyGFHALN0ePphZy')
-    ON CONFLICT (username) DO NOTHING
+      ('Kye',   'kye',   '$2b$12$pyhjXNv65tTkz5u8cAHw7u2N0KXOzZVV5jWkEtDGgO9lSaWVs70ne'),
+      ('Luka',  'luka',  '$2b$12$9JBWUvk1qxzyEga97FnPLen6BDthAmyPr/QSx8JSPZImok.9jUnpS'),
+      ('Aksel', 'aksel', '$2b$12$CZlj6jJ4PJzqhtsqtejYH.Htm9VuASa3l/4adS/PAd2P6j1Z9Mdo2')
+    ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash
   `;
   await sql`
     CREATE TABLE IF NOT EXISTS clients (
