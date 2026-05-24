@@ -17,7 +17,7 @@ const nav = [
   { href: "/tasks",       label: "Tasks",       icon: ClipboardList },
   { href: "/roster",      label: "Roster",      icon: CalendarDays },
   { href: "/call-list",   label: "Call List",   icon: PhoneCall },
-  { href: "/management",  label: "Management",  icon: UsersRound },
+  { href: "/management",  label: "Management",  icon: UsersRound, kyeOnly: true },
   { href: "#", label: "Team Hub",  icon: UsersRound, soon: true },
   { href: "#", label: "Policies",  icon: FileText,   soon: true },
   { href: "#", label: "AI Tools",  icon: Zap,        soon: true },
@@ -43,6 +43,8 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   const path = usePathname();
   const { data: session } = useSession();
   const userName = session?.user?.name ?? "";
+  const isKye = userName.toLowerCase() === "kye";
+  const visibleNav = nav.filter(item => !item.kyeOnly || isKye);
 
   // Close drawer on route change
   useEffect(() => { setOpen(false); }, [path]);
@@ -80,7 +82,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
       {/* Nav links */}
       <nav style={{ flex: 1, padding: "0.75rem", display: "flex", flexDirection: "column", gap: 2, overflowY: "auto" }}>
         <p style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-3)", padding: "0.4rem 0.5rem 0.2rem" }}>Workspace</p>
-        {nav.map(({ href, label, icon: Icon, soon }) => {
+        {visibleNav.map(({ href, label, icon: Icon, soon }) => {
           const active = path === href && href !== "#";
           return (
             <Link key={label} href={href} style={{
@@ -142,7 +144,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         </div>
         <nav style={{ flex: 1, padding: "0.75rem", display: "flex", flexDirection: "column", gap: 2, overflowY: "auto" }}>
           <p style={{ fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-3)", padding: "0.5rem 0.5rem 0.25rem" }}>Workspace</p>
-          {nav.map(({ href, label, icon: Icon, soon }) => {
+          {visibleNav.map(({ href, label, icon: Icon, soon }) => {
             const active = path === href && href !== "#";
             return (
               <Link key={label} href={href} style={{
