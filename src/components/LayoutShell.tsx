@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   Menu, X, LayoutDashboard, Users, Target, PhoneCall,
-  FileText, UsersRound, Zap, ChevronRight, LogOut, Kanban, ClipboardList,
+  FileText, UsersRound, Zap, ChevronRight, LogOut, Kanban, ClipboardList, CalendarDays,
 } from "lucide-react";
 
 const nav = [
@@ -15,6 +15,7 @@ const nav = [
   { href: "/potentials",  label: "Potentials",  icon: Target },
   { href: "/activities",  label: "Activities",  icon: Kanban },
   { href: "/tasks",       label: "Tasks",       icon: ClipboardList },
+  { href: "/roster",      label: "Roster",      icon: CalendarDays },
   { href: "/call-list",   label: "Call List",   icon: PhoneCall },
   { href: "#", label: "Team Hub",  icon: UsersRound, soon: true },
   { href: "#", label: "Policies",  icon: FileText,   soon: true },

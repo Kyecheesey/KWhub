@@ -287,3 +287,10 @@ body {
 .search-wrap { position: relative; margin-bottom: 1.25rem; }
 .search-wrap svg { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
 .search-wrap input { padding-left: 2.25rem; }
+
+/* ── Roster ── */
+.roster-mobile-cards { display: none; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem; }
+@media (max-width: 639px) {
+  .roster-table-header, .roster-table-row { display: none !important; }
+  .roster-mobile-cards { display: flex; }
+}
