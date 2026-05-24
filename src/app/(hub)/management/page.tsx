@@ -296,16 +296,13 @@ export default function ManagementPage() {
           </div>
           <div style={{ position: "relative" }}>
             <iframe
-              src="https://calendar.google.com/calendar/embed?height=480&wkst=2&bgcolor=%230b0d14&ctz=Australia%2FSydney&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0&showTz=0&mode=WEEK"
+              src="https://calendar.google.com/calendar/embed?height=800&wkst=1&ctz=Australia%2FBrisbane&showPrint=0&src=NTM1MTliY2RmYzBjNThkNjZmM2JkMDVhZDdkYjdjZjdhMjhmODQxODlkYmFiZjIwMDlkMGM0ODJkZDFkMDAyNkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=ZW4tZ2IuYXVzdHJhbGlhbiNob2xpZGF5QGdyb3VwLnYuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&color=%23795548&color=%230b8043"
               style={{
                 width: "100%", height: 480, border: "none",
                 filter: "invert(0.92) hue-rotate(180deg)",
               }}
               title="Google Calendar"
             />
-          </div>
-          <div style={{ padding: "0.6rem 1rem", background: "var(--surface-2)", fontSize: "0.7rem", color: "var(--text-3)", borderTop: "1px solid var(--border)" }}>
-            💡 To show your calendar, share it publicly in Google Calendar settings and paste your embed URL above
           </div>
         </div>
       </div>
