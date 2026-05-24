@@ -210,14 +210,75 @@ export default function ManagementPage() {
         </div>
       </div>
 
-      {/* ── Bottom row: checklist + calendar ── */}
+      {/* ── Calendar (full width) ── */}
+      <h2 style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 0.75rem" }}>
+        Calendar
+      </h2>
+      <div style={{
+        background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16,
+        overflow: "hidden", marginBottom: "1.5rem",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.18)",
+      }}>
+        {/* Card header */}
+        <div style={{
+          padding: "1rem 1.25rem",
+          background: "linear-gradient(135deg, rgba(34,211,238,0.08), rgba(129,140,248,0.08))",
+          borderBottom: "1px solid var(--border)",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 9,
+              background: "linear-gradient(135deg,#22d3ee,#818cf8)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0b0d14" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--text-1)" }}>My Calendar</div>
+              <div style={{ fontSize: "0.7rem", color: "var(--text-3)" }}>Brisbane · Google Calendar</div>
+            </div>
+          </div>
+          <a
+            href="https://calendar.google.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontSize: "0.75rem", fontWeight: 600, color: "var(--text-3)",
+              textDecoration: "none", padding: "0.3rem 0.7rem",
+              background: "var(--surface-2)", border: "1px solid var(--border)",
+              borderRadius: 8, display: "flex", alignItems: "center", gap: "0.3rem",
+            }}
+          >
+            Open ↗
+          </a>
+        </div>
+
+        {/* iframe wrapper with rounded clip */}
+        <div style={{ position: "relative", background: "#fff", lineHeight: 0 }}>
+          <iframe
+            src="https://calendar.google.com/calendar/embed?height=800&wkst=1&ctz=Australia%2FBrisbane&showPrint=0&showTitle=0&showNav=1&showDate=1&showTabs=1&showCalendars=0&mode=WEEK&src=NTM1MTliY2RmYzBjNThkNjZmM2JkMDVhZDdkYjdjZjdhMjhmODQxODlkYmFiZjIwMDlkMGM0ODJkZDFkMDAyNkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=ZW4tZ2IuYXVzdHJhbGlhbiNob2xpZGF5QGdyb3VwLnYuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&color=%23795548&color=%230b8043"
+            style={{
+              width: "100%", height: 580, border: "none", display: "block",
+            }}
+            title="Google Calendar"
+          />
+        </div>
+      </div>
+
+      {/* ── Bottom row: checklist ── */}
+      <h2 style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 0.75rem" }}>
+        My Checklist
+      </h2>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", alignItems: "start" }} className="mgmt-bottom-grid">
 
         {/* Checklist */}
         <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden" }}>
           <div style={{ padding: "1rem 1.15rem 0.75rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
-              <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--text-1)" }}>My Checklist</div>
+              <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--text-1)" }}>Checklist</div>
               <div style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>{doneItems}/{checklist.length} done</div>
             </div>
           </div>
@@ -288,23 +349,6 @@ export default function ManagementPage() {
           </div>
         </div>
 
-        {/* Google Calendar embed */}
-        <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden" }}>
-          <div style={{ padding: "1rem 1.15rem 0.75rem", borderBottom: "1px solid var(--border)" }}>
-            <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--text-1)" }}>Calendar</div>
-            <div style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>Google Calendar</div>
-          </div>
-          <div style={{ position: "relative" }}>
-            <iframe
-              src="https://calendar.google.com/calendar/embed?height=800&wkst=1&ctz=Australia%2FBrisbane&showPrint=0&src=NTM1MTliY2RmYzBjNThkNjZmM2JkMDVhZDdkYjdjZjdhMjhmODQxODlkYmFiZjIwMDlkMGM0ODJkZDFkMDAyNkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=ZW4tZ2IuYXVzdHJhbGlhbiNob2xpZGF5QGdyb3VwLnYuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&color=%23795548&color=%230b8043"
-              style={{
-                width: "100%", height: 480, border: "none",
-                filter: "invert(0.92) hue-rotate(180deg)",
-              }}
-              title="Google Calendar"
-            />
-          </div>
-        </div>
       </div>
 
       <style>{`
