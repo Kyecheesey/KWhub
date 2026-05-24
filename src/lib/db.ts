@@ -109,4 +109,12 @@ export async function migrate() {
       updated_at  TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS checklist (
+      id         SERIAL PRIMARY KEY,
+      text       TEXT NOT NULL,
+      done       BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
 }

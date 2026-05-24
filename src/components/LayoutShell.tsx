@@ -17,6 +17,7 @@ const nav = [
   { href: "/tasks",       label: "Tasks",       icon: ClipboardList },
   { href: "/roster",      label: "Roster",      icon: CalendarDays },
   { href: "/call-list",   label: "Call List",   icon: PhoneCall },
+  { href: "/management",  label: "Management",  icon: UsersRound },
   { href: "#", label: "Team Hub",  icon: UsersRound, soon: true },
   { href: "#", label: "Policies",  icon: FileText,   soon: true },
   { href: "#", label: "AI Tools",  icon: Zap,        soon: true },
@@ -26,6 +27,7 @@ const bottomTabs = [
   { href: "/",           label: "Dashboard",  icon: LayoutDashboard },
   { href: "/clients",    label: "Clients",    icon: Users },
   { href: "/potentials", label: "Potentials", icon: Target },
+  { href: "/roster",     label: "Roster",     icon: CalendarDays },
   { href: "/call-list",  label: "Calls",      icon: PhoneCall },
 ];
 
