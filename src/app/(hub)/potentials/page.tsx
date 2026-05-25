@@ -7,6 +7,17 @@ import {
   Upload, LayoutGrid, List,
 } from "lucide-react";
 
+const CONTACT_METHODS = [
+  { value: "intro_email",   label: "Intro Email",   icon: "✉️" },
+  { value: "cold_call",     label: "Cold Call",     icon: "📞" },
+  { value: "follow_up",     label: "Follow Up",     icon: "🔁" },
+  { value: "linkedin",      label: "LinkedIn",      icon: "💼" },
+  { value: "referral",      label: "Referral",      icon: "🤝" },
+  { value: "walk_in",       label: "Walk In",       icon: "🚶" },
+  { value: "website",       label: "Website",       icon: "🌐" },
+  { value: "other",         label: "Other",         icon: "📝" },
+];
+
 interface Potential {
   id: number;
   business_name: string;
@@ -16,6 +27,7 @@ interface Potential {
   notes: string | null;
   status: string;
   assigned_to: string | null;
+  contact_method: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -30,8 +42,8 @@ const STAGES = [
   { key: "lost",      label: "Lost",          color: "#f87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.2)" },
 ];
 
-type Form = { business_name: string; contact_name: string; phone: string; email: string; notes: string; status: string; assigned_to: string };
-const BLANK: Form = { business_name: "", contact_name: "", phone: "", email: "", notes: "", status: "new", assigned_to: "" };
+type Form = { business_name: string; contact_name: string; phone: string; email: string; notes: string; status: string; assigned_to: string; contact_method: string };
+const BLANK: Form = { business_name: "", contact_name: "", phone: "", email: "", notes: "", status: "new", assigned_to: "", contact_method: "" };
 
 function initials(name: string) {
   return name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
@@ -82,7 +94,7 @@ export default function PotentialsPage() {
   }
   function openEdit(p: Potential) {
     setEditId(p.id);
-    setForm({ business_name: p.business_name, contact_name: p.contact_name ?? "", phone: p.phone ?? "", email: p.email ?? "", notes: p.notes ?? "", status: p.status, assigned_to: p.assigned_to ?? "" });
+    setForm({ business_name: p.business_name, contact_name: p.contact_name ?? "", phone: p.phone ?? "", email: p.email ?? "", notes: p.notes ?? "", status: p.status, assigned_to: p.assigned_to ?? "", contact_method: p.contact_method ?? "" });
     setShowForm(true);
   }
 
@@ -332,6 +344,14 @@ export default function PotentialsPage() {
                               <UserCircle2 size={10} /> {p.assigned_to}
                             </div>
                           )}
+                          {p.contact_method && (() => {
+                            const cm = CONTACT_METHODS.find(m => m.value === p.contact_method);
+                            return cm ? (
+                              <div style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", fontSize: "0.66rem", fontWeight: 600, color: "var(--accent)", background: "rgba(45,212,232,0.08)", border: "1px solid rgba(45,212,232,0.18)", borderRadius: 6, padding: "0.18rem 0.45rem", marginBottom: "0.25rem" }}>
+                                {cm.icon} {cm.label}
+                              </div>
+                            ) : null;
+                          })()}
                           {p.notes && (
                             <p style={{ fontSize: "0.7rem", color: "var(--text-3)", lineHeight: 1.4, margin: "0.4rem 0 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                               {p.notes}
@@ -463,6 +483,33 @@ export default function PotentialsPage() {
                 ) : (
                   <input className="field" value={form.assigned_to} onChange={(e) => setForm({ ...form, assigned_to: e.target.value })} placeholder="Enter name" />
                 )}
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.5rem" }}>How We Contacted</label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.4rem" }}>
+                  {CONTACT_METHODS.map(({ value, label, icon }) => {
+                    const active = form.contact_method === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setForm({ ...form, contact_method: active ? "" : value })}
+                        style={{
+                          display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem",
+                          padding: "0.55rem 0.35rem", borderRadius: 9, cursor: "pointer",
+                          border: active ? "1.5px solid var(--accent)" : "1px solid var(--border-2)",
+                          background: active ? "rgba(45,212,232,0.1)" : "var(--surface-2)",
+                          color: active ? "var(--accent)" : "var(--text-2)",
+                          fontSize: "0.68rem", fontWeight: active ? 700 : 500,
+                          transition: "all 0.12s", lineHeight: 1.3,
+                        }}
+                      >
+                        <span style={{ fontSize: "1.1rem" }}>{icon}</span>
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <div>
                 <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.35rem" }}>Notes</label>

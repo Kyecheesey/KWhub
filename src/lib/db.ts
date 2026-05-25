@@ -52,13 +52,15 @@ export async function migrate() {
       contact_name  TEXT,
       phone         TEXT,
       email         TEXT,
-      notes         TEXT,
-      status        TEXT DEFAULT 'new',
-      assigned_to   TEXT,
-      created_at    TIMESTAMPTZ DEFAULT NOW(),
-      updated_at    TIMESTAMPTZ DEFAULT NOW()
+      notes            TEXT,
+      status           TEXT DEFAULT 'new',
+      assigned_to      TEXT,
+      contact_method   TEXT,
+      created_at       TIMESTAMPTZ DEFAULT NOW(),
+      updated_at       TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+  await sql`ALTER TABLE potentials ADD COLUMN IF NOT EXISTS contact_method TEXT`;
   await sql`
     CREATE TABLE IF NOT EXISTS team_members (
       id         SERIAL PRIMARY KEY,
