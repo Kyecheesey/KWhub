@@ -338,6 +338,12 @@ export default function PotentialsPage() {
                             </p>
                           )}
 
+                          {/* Date stamp */}
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.66rem", color: "var(--text-3)", marginTop: "0.45rem", opacity: 0.7 }}>
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            {new Date(p.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                          </div>
+
                           {/* Actions */}
                           <div style={{ display: "flex", gap: "0.35rem", marginTop: "0.65rem", paddingTop: "0.6rem", borderTop: "1px solid var(--border)" }}>
                             <button onClick={() => openEdit(p)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.3rem", background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 6, padding: "0.3rem 0.5rem", cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, color: "var(--text-2)" }}>
@@ -396,6 +402,10 @@ export default function PotentialsPage() {
                             {p.phone && <a href={`tel:${p.phone}`} style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", color: "var(--accent)", textDecoration: "none" }}><Phone size={10} />{p.phone}</a>}
                             {p.email && <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", color: "var(--text-3)" }}><Mail size={10} />{p.email}</span>}
                             {p.assigned_to && <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", color: "#818cf8" }}><UserCircle2 size={10} />{p.assigned_to}</span>}
+                            <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.72rem", color: "var(--text-3)", opacity: 0.7 }}>
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                              {new Date(p.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                            </span>
                           </div>
                         </div>
                         <div style={{ display: "flex", gap: "0.4rem", flexShrink: 0 }}>
