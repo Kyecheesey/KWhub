@@ -97,6 +97,7 @@ export default function PotentialsPage() {
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<Form>(BLANK);
   const [loading, setLoading] = useState(true);
+  const [showDupes, setShowDupes] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -205,6 +206,29 @@ export default function PotentialsPage() {
   const agents = Array.from(new Set(potentials.map((p) => p.assigned_to).filter(Boolean))) as string[];
   const unassignedCount = potentials.filter((p) => !p.assigned_to).length;
 
+  /* ── Duplicate detection ── */
+  function normName(s: string) {
+    return s.toLowerCase()
+      .replace(/\b(pty|ltd|limited|australia|au|the|and|&|group|services|solutions|co)\b/g, "")
+      .replace(/[^a-z0-9]/g, "")
+      .trim();
+  }
+  const dupeGroups: Potential[][] = [];
+  const seen = new Set<number>();
+  for (let i = 0; i < potentials.length; i++) {
+    if (seen.has(potentials[i].id)) continue;
+    const group: Potential[] = [potentials[i]];
+    for (let j = i + 1; j < potentials.length; j++) {
+      if (seen.has(potentials[j].id)) continue;
+      const a = potentials[i], b = potentials[j];
+      const nameMatch = normName(a.business_name) && normName(a.business_name) === normName(b.business_name);
+      const emailMatch = a.email && b.email && a.email.trim().toLowerCase() === b.email.trim().toLowerCase();
+      const phoneMatch = a.phone && b.phone && a.phone.replace(/\D/g, "") === b.phone.replace(/\D/g, "") && a.phone.replace(/\D/g, "").length >= 8;
+      if (nameMatch || emailMatch || phoneMatch) { group.push(b); seen.add(b.id); }
+    }
+    if (group.length > 1) { dupeGroups.push(group); seen.add(potentials[i].id); }
+  }
+
   const filtered = potentials.filter((p) => {
     const matchSearch = !search ||
       p.business_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -282,6 +306,95 @@ export default function PotentialsPage() {
         )}
       </div>
 
+
+      {/* ══ Duplicate detector ══ */}
+      {!loading && dupeGroups.length > 0 && (
+        <div style={{ marginBottom: "1.25rem", background: "var(--surface)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 14, overflow: "hidden" }}>
+          {/* Banner header */}
+          <button
+            onClick={() => setShowDupes(v => !v)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: "0.65rem",
+              padding: "0.8rem 1rem", background: "rgba(251,191,36,0.06)",
+              borderBottom: showDupes ? "1px solid rgba(251,191,36,0.2)" : "none",
+              border: "none", cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <span style={{ fontSize: "1rem" }}>⚠️</span>
+            <span style={{ fontWeight: 700, fontSize: "0.88rem", color: "#fbbf24", flex: 1 }}>
+              {dupeGroups.length} possible duplicate{dupeGroups.length > 1 ? "s" : ""} detected
+            </span>
+            <span style={{ fontSize: "0.75rem", color: "var(--text-3)", fontWeight: 600 }}>
+              {showDupes ? "Hide ▲" : "Review ▼"}
+            </span>
+          </button>
+
+          {/* Dupe groups */}
+          {showDupes && (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {dupeGroups.map((group, gi) => {
+                // Figure out why they matched
+                const reasons: string[] = [];
+                const a = group[0];
+                group.slice(1).forEach(b => {
+                  if (normName(a.business_name) === normName(b.business_name)) reasons.push("name");
+                  if (a.email && b.email && a.email.toLowerCase() === b.email.toLowerCase()) reasons.push("email");
+                  if (a.phone && b.phone && a.phone.replace(/\D/g,"") === b.phone.replace(/\D/g,"")) reasons.push("phone");
+                });
+                const uniqueReasons = [...new Set(reasons)];
+                return (
+                  <div key={gi} style={{ borderBottom: gi < dupeGroups.length - 1 ? "1px solid var(--border)" : "none" }}>
+                    {/* Reason label */}
+                    <div style={{ padding: "0.5rem 1rem 0.25rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <span style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>
+                        Matched by:
+                      </span>
+                      {uniqueReasons.map(r => (
+                        <span key={r} style={{ fontSize: "0.65rem", fontWeight: 700, background: "rgba(251,191,36,0.12)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 4, padding: "0.1rem 0.4rem", textTransform: "capitalize" }}>
+                          {r}
+                        </span>
+                      ))}
+                    </div>
+                    {/* Cards in group */}
+                    {group.map((p, pi) => {
+                      const stageInfo = STAGES.find(s => s.key === p.status);
+                      return (
+                        <div key={p.id} style={{
+                          display: "flex", alignItems: "center", gap: "0.75rem",
+                          padding: "0.65rem 1rem 0.65rem 1.5rem",
+                          borderTop: pi > 0 ? "1px dashed var(--border)" : "none",
+                          background: pi % 2 === 1 ? "rgba(255,255,255,0.015)" : "transparent",
+                        }}>
+                          <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem", fontWeight: 800, color: "var(--text-2)" }}>
+                            {p.business_name.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.business_name}</div>
+                            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.2rem" }}>
+                              {p.email && <span style={{ fontSize: "0.7rem", color: "var(--text-3)" }}>✉ {p.email}</span>}
+                              {p.phone && <span style={{ fontSize: "0.7rem", color: "var(--text-3)" }}>📞 {p.phone}</span>}
+                              {p.assigned_to && <span style={{ fontSize: "0.7rem", color: "#818cf8" }}>👤 {p.assigned_to}</span>}
+                              {stageInfo && <span style={{ fontSize: "0.68rem", fontWeight: 700, color: stageInfo.color, background: stageInfo.bg, border: `1px solid ${stageInfo.border}`, borderRadius: 4, padding: "0.08rem 0.35rem" }}>{stageInfo.label}</span>}
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", gap: "0.4rem", flexShrink: 0 }}>
+                            <button onClick={() => openEdit(p)} style={{ padding: "0.3rem 0.6rem", background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 7, cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, color: "var(--text-2)", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                              <Pencil size={11} /> Edit
+                            </button>
+                            <button onClick={() => remove(p.id)} style={{ padding: "0.3rem 0.6rem", background: "rgba(248,113,113,0.07)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 7, cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, color: "#f87171", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                              <Trash2 size={11} /> Delete
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <div style={{ textAlign: "center", color: "var(--text-3)", padding: "4rem" }}>Loading…</div>
