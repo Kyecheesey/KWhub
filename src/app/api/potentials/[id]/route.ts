@@ -5,13 +5,15 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { business_name, contact_name, phone, email, notes, status, assigned_to, contact_method } = await request.json();
+  const { business_name, contact_name, phone, email, notes, status, assigned_to, contact_method, follow_up_date } = await request.json();
   const rows = await sql`
     UPDATE potentials
     SET business_name=${business_name}, contact_name=${contact_name ?? null},
         phone=${phone ?? null}, email=${email ?? null}, notes=${notes ?? null},
         status=${status ?? "new"}, assigned_to=${assigned_to ?? null},
-        contact_method=${contact_method ?? null}, updated_at=NOW()
+        contact_method=${contact_method ?? null},
+        follow_up_date=${follow_up_date ?? null},
+        updated_at=NOW()
     WHERE id=${id}
     RETURNING *
   `;

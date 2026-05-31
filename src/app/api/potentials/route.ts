@@ -8,11 +8,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   await migrate();
-  const { business_name, contact_name, phone, email, notes, status, assigned_to, contact_method } = await request.json();
+  const { business_name, contact_name, phone, email, notes, status, assigned_to, contact_method, follow_up_date } = await request.json();
   if (!business_name) return Response.json({ error: "business_name is required" }, { status: 400 });
   const rows = await sql`
-    INSERT INTO potentials (business_name, contact_name, phone, email, notes, status, assigned_to, contact_method)
-    VALUES (${business_name}, ${contact_name ?? null}, ${phone ?? null}, ${email ?? null}, ${notes ?? null}, ${status ?? "new"}, ${assigned_to ?? null}, ${contact_method ?? null})
+    INSERT INTO potentials (business_name, contact_name, phone, email, notes, status, assigned_to, contact_method, follow_up_date)
+    VALUES (${business_name}, ${contact_name ?? null}, ${phone ?? null}, ${email ?? null}, ${notes ?? null}, ${status ?? "new"}, ${assigned_to ?? null}, ${contact_method ?? null}, ${follow_up_date ?? null})
     RETURNING *
   `;
   return Response.json(rows[0], { status: 201 });

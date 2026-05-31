@@ -56,11 +56,13 @@ export async function migrate() {
       status           TEXT DEFAULT 'new',
       assigned_to      TEXT,
       contact_method   TEXT,
+      follow_up_date   DATE,
       created_at       TIMESTAMPTZ DEFAULT NOW(),
       updated_at       TIMESTAMPTZ DEFAULT NOW()
     )
   `;
   await sql`ALTER TABLE potentials ADD COLUMN IF NOT EXISTS contact_method TEXT`;
+  await sql`ALTER TABLE potentials ADD COLUMN IF NOT EXISTS follow_up_date DATE`;
   await sql`
     CREATE TABLE IF NOT EXISTS team_members (
       id         SERIAL PRIMARY KEY,
