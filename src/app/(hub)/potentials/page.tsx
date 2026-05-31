@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Plus, Download, Search, Pencil, Trash2, X,
   Phone, Mail, UserCircle2, PhoneCall, PhoneOff,
-  Upload, LayoutGrid, List, Bell, CheckCheck, CalendarClock,
+  Upload, LayoutGrid, List, CalendarClock,
 } from "lucide-react";
 
 const CONTACT_METHODS = [
@@ -282,117 +282,6 @@ export default function PotentialsPage() {
         )}
       </div>
 
-      {/* ══ Follow-up Banner ══ */}
-      {!loading && (() => {
-        const overdue  = potentials.filter(p => followUpStatus(p) === "overdue");
-        const dueToday = potentials.filter(p => followUpStatus(p) === "due_today");
-        const upcoming = potentials.filter(p => followUpStatus(p) === "upcoming");
-        const all = [...overdue, ...dueToday, ...upcoming];
-        if (all.length === 0) return null;
-        return (
-          <div style={{ marginBottom: "1.25rem" }}>
-            <div style={{
-              background: "var(--surface)", border: "1px solid var(--border-2)",
-              borderRadius: 14, overflow: "hidden",
-            }}>
-              {/* Header */}
-              <div style={{
-                padding: "0.75rem 1rem",
-                background: overdue.length > 0 ? "rgba(248,113,113,0.07)" : "rgba(251,191,36,0.07)",
-                borderBottom: "1px solid var(--border)",
-                display: "flex", alignItems: "center", gap: "0.6rem",
-              }}>
-                <Bell size={15} color={overdue.length > 0 ? "#f87171" : "#fbbf24"} />
-                <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--text-1)" }}>
-                  Follow-ups
-                </span>
-                {overdue.length > 0 && (
-                  <span style={{ fontSize: "0.7rem", fontWeight: 700, background: "rgba(248,113,113,0.15)", color: "#f87171", border: "1px solid rgba(248,113,113,0.25)", borderRadius: 99, padding: "0.1rem 0.5rem" }}>
-                    {overdue.length} overdue
-                  </span>
-                )}
-                {dueToday.length > 0 && (
-                  <span style={{ fontSize: "0.7rem", fontWeight: 700, background: "rgba(251,191,36,0.15)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 99, padding: "0.1rem 0.5rem" }}>
-                    {dueToday.length} due today
-                  </span>
-                )}
-                {upcoming.length > 0 && (
-                  <span style={{ fontSize: "0.7rem", fontWeight: 700, background: "rgba(45,212,232,0.1)", color: "var(--accent)", border: "1px solid rgba(45,212,232,0.2)", borderRadius: 99, padding: "0.1rem 0.5rem" }}>
-                    {upcoming.length} upcoming
-                  </span>
-                )}
-              </div>
-
-              {/* Cards */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                {all.map((p, i) => {
-                  const st = followUpStatus(p);
-                  const lbl = followUpLabel(p);
-                  const stageInfo = STAGES.find(s => s.key === p.status);
-                  const rowColor = st === "overdue" ? "#f87171" : st === "due_today" ? "#fbbf24" : "#2dd4e8";
-                  return (
-                    <div key={p.id} style={{
-                      display: "flex", alignItems: "center", gap: "0.75rem",
-                      padding: "0.65rem 1rem",
-                      borderBottom: i < all.length - 1 ? "1px solid var(--border)" : "none",
-                      borderLeft: `3px solid ${rowColor}`,
-                    }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {p.business_name}
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.2rem", flexWrap: "wrap" }}>
-                          {p.assigned_to && <span style={{ fontSize: "0.7rem", color: "#818cf8", display: "flex", alignItems: "center", gap: "0.2rem" }}><UserCircle2 size={10} />{p.assigned_to}</span>}
-                          {stageInfo && <span style={{ fontSize: "0.68rem", fontWeight: 700, color: stageInfo.color, background: stageInfo.bg, border: `1px solid ${stageInfo.border}`, borderRadius: 4, padding: "0.1rem 0.35rem" }}>{stageInfo.label}</span>}
-                        </div>
-                      </div>
-
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.75rem", fontWeight: 700, color: rowColor }}>
-                          <CalendarClock size={13} />
-                          {lbl}
-                        </div>
-                        {/* Snooze 5 days */}
-                        <button
-                          title="Snooze 5 days"
-                          onClick={async () => {
-                            const next = new Date(); next.setDate(next.getDate() + 5);
-                            const dateStr = next.toISOString().slice(0,10);
-                            await fetch(`/api/potentials/${p.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...p, follow_up_date: dateStr }) });
-                            setPotentials(prev => prev.map(x => x.id === p.id ? { ...x, follow_up_date: dateStr } : x));
-                          }}
-                          style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 7, padding: "0.3rem 0.55rem", cursor: "pointer", fontSize: "0.7rem", fontWeight: 600, color: "var(--text-2)", display: "flex", alignItems: "center", gap: "0.25rem" }}
-                        >
-                          +5d
-                        </button>
-                        {/* Mark done */}
-                        <button
-                          title="Mark followed up"
-                          onClick={async () => {
-                            const next = new Date(); next.setDate(next.getDate() + 5);
-                            const dateStr = next.toISOString().slice(0,10);
-                            await fetch(`/api/potentials/${p.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...p, follow_up_date: dateStr, updated_at: new Date().toISOString() }) });
-                            setPotentials(prev => prev.map(x => x.id === p.id ? { ...x, follow_up_date: dateStr } : x));
-                          }}
-                          style={{ background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: 7, padding: "0.3rem 0.55rem", cursor: "pointer", fontSize: "0.7rem", fontWeight: 700, color: "#34d399", display: "flex", alignItems: "center", gap: "0.25rem" }}
-                        >
-                          <CheckCheck size={12} /> Done
-                        </button>
-                        <button
-                          onClick={() => openEdit(p)}
-                          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: "0.3rem", display: "flex" }}
-                        >
-                          <Pencil size={13} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
       {loading ? (
         <div style={{ textAlign: "center", color: "var(--text-3)", padding: "4rem" }}>Loading…</div>

@@ -7,7 +7,7 @@ import { signOut, useSession } from "next-auth/react";
 import {
   Menu, X, LayoutDashboard, Users, Target, PhoneCall,
   FileText, Zap, ChevronRight, LogOut, Kanban,
-  ClipboardList, CalendarDays, UsersRound, Settings,
+  ClipboardList, CalendarDays, UsersRound, Settings, Bell,
 } from "lucide-react";
 
 /* ─── Nav config ─── */
@@ -17,8 +17,9 @@ const navGroups = [
     items: [
       { href: "/",           label: "Dashboard",  icon: LayoutDashboard },
       { href: "/clients",    label: "Clients",    icon: Users },
-      { href: "/potentials", label: "Potentials", icon: Target },
-      { href: "/call-list",  label: "Call List",  icon: PhoneCall },
+      { href: "/potentials",  label: "Potentials",  icon: Target },
+      { href: "/follow-ups",  label: "Follow-ups",  icon: Bell },
+      { href: "/call-list",   label: "Call List",   icon: PhoneCall },
     ],
   },
   {
