@@ -12,7 +12,7 @@ interface Task {
 
 export interface Notification {
   id: string;
-  type: "follow_up" | "task" | "stale";
+  type: "follow_up" | "task" | "stale" | "portal";
   title: string;
   detail: string;
   href: string;
@@ -48,12 +48,19 @@ export async function GET() {
   const session = await auth();
   const me = (session?.user?.name ?? "").toLowerCase();
 
-  const [potRows, taskRows] = await Promise.all([
+  const [potRows, taskRows, portalRows] = await Promise.all([
     sql`SELECT id, business_name, status, assigned_to, follow_up_date, updated_at FROM potentials`,
     sql`SELECT id, title, status, assigned_to, due_date FROM tasks WHERE status != 'done'`,
+    sql`
+      SELECT pm.id, pm.client_id, pm.body, c.business_name
+      FROM portal_messages pm JOIN clients c ON c.id = pm.client_id
+      WHERE pm.author_role = 'client' AND pm.created_at > NOW() - INTERVAL '48 hours'
+      ORDER BY pm.created_at DESC LIMIT 10
+    `,
   ]);
   const pots = potRows as unknown as Pot[];
   const tasks = taskRows as unknown as Task[];
+  const portalMsgs = portalRows as unknown as { id: number; client_id: number; body: string; business_name: string }[];
 
   const items: Notification[] = [];
 
@@ -96,6 +103,17 @@ export async function GET() {
       detail: "No activity for 14+ days",
       href: "/potentials",
       urgency: "low",
+    });
+  }
+
+  for (const m of portalMsgs) {
+    items.push({
+      id: `portal-${m.id}`,
+      type: "portal",
+      title: m.business_name,
+      detail: `Client message: "${m.body.length > 60 ? `${m.body.slice(0, 60)}…` : m.body}"`,
+      href: `/clients/${m.client_id}/portal`,
+      urgency: "medium",
     });
   }
 

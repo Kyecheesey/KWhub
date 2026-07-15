@@ -125,6 +125,67 @@ function PasswordReset() {
   );
 }
 
+/* ─── Portal settings (booking link) ─── */
+function PortalSettings() {
+  const [bookingUrl, setBookingUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/settings")
+      .then(r => r.json())
+      .then(data => { if (!cancelled && data && !data.error) setBookingUrl(data.booking_url ?? ""); });
+    return () => { cancelled = true; };
+  }, []);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg(null);
+    setBusy(true);
+    const res = await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "booking_url", value: bookingUrl.trim() || null }),
+    });
+    const data = await res.json();
+    setBusy(false);
+    if (!res.ok) { setMsg({ text: data.error ?? "Something went wrong.", ok: false }); return; }
+    setMsg({ text: bookingUrl.trim() ? "Booking link saved — clients now see a Book a call button." : "Booking link removed.", ok: true });
+  }
+
+  return (
+    <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden", marginTop: "1rem" }}>
+      <div style={{ padding: "1rem 1.15rem 0.75rem", borderBottom: "1px solid var(--border)" }}>
+        <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--text-1)" }}>Client Portal Settings</div>
+        <div style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>Booking link shown as &ldquo;Book a call&rdquo; in every client portal</div>
+      </div>
+      <form onSubmit={save} style={{ padding: "1rem 1.15rem", display: "grid", gap: "0.6rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <input
+            className="field"
+            type="url"
+            value={bookingUrl}
+            onChange={(e) => setBookingUrl(e.target.value)}
+            placeholder="https://calendar.app.google/… or Calendly link"
+          />
+          <button type="submit" className="btn-ghost" disabled={busy}>Save</button>
+        </div>
+        {msg && (
+          <div style={{
+            padding: "0.5rem 0.75rem", borderRadius: 9, fontSize: "0.78rem",
+            background: msg.ok ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)",
+            border: `1px solid ${msg.ok ? "rgba(52,211,153,0.2)" : "rgba(248,113,113,0.2)"}`,
+            color: msg.ok ? "#34d399" : "#f87171",
+          }}>
+            {msg.text}
+          </div>
+        )}
+      </form>
+    </div>
+  );
+}
+
 /* ─── Audit log section ─── */
 function AuditLog() {
   const [events, setEvents] = useState<EventRow[]>([]);
@@ -580,8 +641,11 @@ export default function ManagementPage() {
           </div>
         </div>
 
-        {/* Team password reset */}
-        <PasswordReset />
+        {/* Team password reset + portal settings */}
+        <div>
+          <PasswordReset />
+          <PortalSettings />
+        </div>
 
       </div>
 
