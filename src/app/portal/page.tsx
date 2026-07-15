@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import {
   LogOut, Send, Phone, Mail, Globe, UserCircle2,
-  MessageSquare, Sparkles,
+  MessageSquare, Sparkles, Eye, ArrowLeft,
 } from "lucide-react";
 
 interface ClientInfo {
@@ -49,11 +50,21 @@ export default function PortalPage() {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Staff preview: /portal?client=<id> renders that client's portal
+  const [previewId, setPreviewId] = useState<number | null | "pending">("pending");
   const threadRef = useRef<HTMLDivElement>(null);
   const seenIds = useRef<Set<number>>(new Set());
 
+  const isPreview = typeof previewId === "number";
+  const qs = isPreview ? `?client_id=${previewId}` : "";
+
+  useEffect(() => {
+    const param = new URLSearchParams(window.location.search).get("client");
+    Promise.resolve().then(() => setPreviewId(param ? parseInt(param, 10) : null));
+  }, []);
+
   const loadMessages = useCallback(() => {
-    return fetch("/api/portal/messages")
+    return fetch(`/api/portal/messages${qs}`)
       .then((r) => r.json())
       .then((msgs: Message[]) => {
         if (!Array.isArray(msgs)) return;
@@ -61,13 +72,14 @@ export default function PortalPage() {
         msgs.forEach((m) => seenIds.current.add(m.id));
       })
       .catch(() => {});
-  }, []);
+  }, [qs]);
 
   useEffect(() => {
+    if (previewId === "pending") return;
     let cancelled = false;
     Promise.all([
-      fetch("/api/portal/me").then((r) => r.json()),
-      fetch("/api/portal/messages").then((r) => r.json()),
+      fetch(`/api/portal/me${qs}`).then((r) => r.json()),
+      fetch(`/api/portal/messages${qs}`).then((r) => r.json()),
     ]).then(([me, msgs]) => {
       if (cancelled) return;
       if (!me.error) setClient(me);
@@ -79,7 +91,7 @@ export default function PortalPage() {
     });
     const interval = setInterval(loadMessages, POLL_MS);
     return () => { cancelled = true; clearInterval(interval); };
-  }, [loadMessages]);
+  }, [loadMessages, previewId, qs]);
 
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
@@ -92,7 +104,7 @@ export default function PortalPage() {
     const res = await fetch("/api/portal/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body }),
+      body: JSON.stringify(isPreview ? { body, client_id: previewId } : { body }),
     });
     if (res.ok) {
       const msg = await res.json();
@@ -134,14 +146,37 @@ export default function PortalPage() {
             <div style={{ fontSize: "0.6rem", color: "var(--text-3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Client Portal</div>
           </div>
         </div>
-        <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="btn-ghost"
-          style={{ padding: "0.45rem 0.85rem", fontSize: "0.8rem", minHeight: 0 }}
-        >
-          <LogOut size={13} /> Sign out
-        </button>
+        {isPreview ? (
+          <Link
+            href={`/clients/${previewId}/portal`}
+            className="btn-ghost"
+            style={{ padding: "0.45rem 0.85rem", fontSize: "0.8rem", minHeight: 0 }}
+          >
+            <ArrowLeft size={13} /> Exit Preview
+          </Link>
+        ) : (
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="btn-ghost"
+            style={{ padding: "0.45rem 0.85rem", fontSize: "0.8rem", minHeight: 0 }}
+          >
+            <LogOut size={13} /> Sign out
+          </button>
+        )}
       </header>
+
+      {/* ── Preview banner ── */}
+      {isPreview && (
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
+          padding: "0.5rem 1rem", fontSize: "0.78rem", fontWeight: 700,
+          background: "rgba(251,191,36,0.1)", borderBottom: "1px solid rgba(251,191,36,0.25)",
+          color: "#fbbf24", position: "sticky", top: 57, zIndex: 49,
+        }}>
+          <Eye size={13} />
+          Preview mode — you&apos;re seeing this portal exactly as {client ? client.business_name : "the client"} sees it
+        </div>
+      )}
 
       {/* ── Body ── */}
       <main style={{ flex: 1, width: "100%", maxWidth: 860, margin: "0 auto", padding: "2rem 1.25rem 3rem", position: "relative" }}>
@@ -313,7 +348,7 @@ export default function PortalPage() {
               <div style={{ display: "flex", gap: "0.5rem", padding: "0.85rem 1.25rem", borderTop: "1px solid var(--border)", background: "var(--surface-2)" }}>
                 <input
                   className="field"
-                  placeholder="Write a message to the team…"
+                  placeholder={isPreview ? "Reply as the KW team…" : "Write a message to the team…"}
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && send()}
@@ -325,7 +360,9 @@ export default function PortalPage() {
             </div>
 
             <p className="fade-up" style={{ animationDelay: "0.24s", textAlign: "center", fontSize: "0.72rem", color: "var(--text-4)" }}>
-              Signed in as {session?.user?.email ?? "client"} · KW Innovations Client Portal
+              {isPreview
+                ? `Previewing as ${client?.business_name ?? "client"} · signed in as ${session?.user?.name ?? "staff"}`
+                : `Signed in as ${session?.user?.email ?? "client"} · KW Innovations Client Portal`}
             </p>
           </div>
         )}

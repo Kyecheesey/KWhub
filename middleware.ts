@@ -25,8 +25,8 @@ export default auth((req) => {
     }
   }
 
-  if (isLoggedIn && role !== "client" && path === "/portal") {
-    // Staff manage portals per-client from /clients/[id]/portal
+  if (isLoggedIn && role !== "client" && path === "/portal" && !req.nextUrl.searchParams.has("client")) {
+    // Staff only enter the portal in preview mode (?client=<id>); manage from /clients/[id]/portal
     return NextResponse.redirect(new URL("/", req.nextUrl.origin));
   }
 

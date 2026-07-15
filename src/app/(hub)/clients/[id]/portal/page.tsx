@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Send, KeyRound, UserPlus, Trash2,
-  MessageSquare, Building2, Check,
+  MessageSquare, Building2, Check, Eye,
 } from "lucide-react";
 
 interface ClientInfo {
@@ -164,6 +164,11 @@ export default function ClientPortalAdminPage() {
           <p style={{ color: "var(--text-2)", fontSize: "0.875rem", marginTop: "0.3rem" }}>
             Manage this client&apos;s portal access and post updates they&apos;ll see when they sign in.
           </p>
+        </div>
+        <div className="page-header-actions">
+          <Link href={`/portal?client=${clientId}`} className="btn-primary">
+            <Eye size={14} /> Preview Portal
+          </Link>
         </div>
       </div>
 
