@@ -1,23 +1,133 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Trash2, Plus, Check, RefreshCw, Users, Target, PhoneCall, ClipboardList, TrendingUp, AlertCircle } from "lucide-react";
+import { Trash2, Plus, Check, RefreshCw, PhoneCall, ClipboardList, TrendingUp, AlertCircle, ScrollText } from "lucide-react";
 
 /* ─── types ─── */
 interface Task   { id: number; title: string; status: string; priority: string; assigned_to: string; due_date?: string; }
 interface Pot    { id: number; business_name: string; status: string; assigned_to?: string; }
 interface Call   { id: number; called: boolean; }
 interface Item   { id: number; text: string; done: boolean; }
+interface EventRow {
+  id: number; entity_type: string; entity_id: number | null; entity_name: string | null;
+  actor: string | null; action: string; detail: string | null; created_at: string;
+}
+
+const ENTITY_LABEL: Record<string,string> = { client: "Client", potential: "Potential", task: "Task", activity: "Activity" };
+const ENTITY_COLOR: Record<string,string> = { client: "#22d3ee", potential: "#818cf8", task: "#fb923c", activity: "#34d399" };
+const ACTION_LABEL: Record<string,string> = {
+  created: "Created", updated: "Updated", deleted: "Deleted",
+  stage_changed: "Stage changed", status_changed: "Status changed",
+  reassigned: "Reassigned", contacted: "Contacted",
+};
+
+function auditTime(iso: string) {
+  return new Date(iso).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+}
+
+/* ─── Audit log section ─── */
+function AuditLog() {
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [filterType, setFilterType] = useState("all");
+  const [filterActor, setFilterActor] = useState("all");
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/events?limit=150")
+      .then(r => r.json())
+      .then(data => { if (!cancelled) { setEvents(Array.isArray(data) ? data : []); setLoaded(true); } });
+    return () => { cancelled = true; };
+  }, []);
+
+  const actors = Array.from(new Set(events.map(e => e.actor).filter(Boolean))) as string[];
+  const filtered = events.filter(e =>
+    (filterType === "all" || e.entity_type === filterType) &&
+    (filterActor === "all" || e.actor === filterActor)
+  );
+
+  const pillStyle = (active: boolean, color = "var(--text-1)") => ({
+    padding: "0.25rem 0.7rem", borderRadius: 99, fontSize: "0.75rem", fontWeight: 600 as const,
+    cursor: "pointer", whiteSpace: "nowrap" as const,
+    background: active ? "var(--surface-3)" : "var(--surface)",
+    border: `1px solid ${active ? "var(--border-3)" : "var(--border)"}`,
+    color: active ? color : "var(--text-3)",
+  });
+
+  return (
+    <>
+      <h2 style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 0.75rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+        <ScrollText size={14} /> Audit Log
+      </h2>
+      <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden", marginBottom: "1.5rem" }}>
+        {/* Filters */}
+        <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid var(--border)", display: "flex", gap: "0.4rem", flexWrap: "wrap", alignItems: "center" }}>
+          <button onClick={() => setFilterType("all")} style={pillStyle(filterType === "all")}>All types</button>
+          {Object.entries(ENTITY_LABEL).map(([key, label]) => (
+            <button key={key} onClick={() => setFilterType(filterType === key ? "all" : key)} style={pillStyle(filterType === key, ENTITY_COLOR[key])}>
+              {label}s
+            </button>
+          ))}
+          {actors.length > 1 && (
+            <>
+              <span style={{ width: 1, height: 18, background: "var(--border-2)", margin: "0 0.3rem" }} />
+              <button onClick={() => setFilterActor("all")} style={pillStyle(filterActor === "all")}>Everyone</button>
+              {actors.map(a => (
+                <button key={a} onClick={() => setFilterActor(filterActor === a ? "all" : a)} style={pillStyle(filterActor === a)}>
+                  {a}
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+
+        {/* Rows */}
+        <div style={{ maxHeight: 420, overflowY: "auto" }}>
+          {!loaded ? (
+            <div style={{ padding: "1.5rem", textAlign: "center", color: "var(--text-3)", fontSize: "0.85rem" }}>Loading…</div>
+          ) : filtered.length === 0 ? (
+            <div style={{ padding: "1.5rem", textAlign: "center", color: "var(--text-3)", fontSize: "0.85rem" }}>
+              No events yet — changes across the hub will appear here.
+            </div>
+          ) : filtered.map(ev => (
+            <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: "0.7rem", padding: "0.6rem 1rem", borderBottom: "1px solid var(--border)" }}>
+              <span style={{
+                fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em",
+                color: ENTITY_COLOR[ev.entity_type] ?? "var(--text-3)",
+                background: `${ENTITY_COLOR[ev.entity_type] ?? "#8b95c0"}14`,
+                border: `1px solid ${ENTITY_COLOR[ev.entity_type] ?? "#8b95c0"}30`,
+                padding: "0.12rem 0.45rem", borderRadius: 5, flexShrink: 0, width: 72, textAlign: "center",
+              }}>
+                {ENTITY_LABEL[ev.entity_type] ?? ev.entity_type}
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-1)" }}>
+                  {ev.entity_name ?? `#${ev.entity_id ?? "?"}`}
+                </span>
+                <span style={{ fontSize: "0.8rem", color: "var(--text-2)" }}>
+                  {" "}— {ACTION_LABEL[ev.action] ?? ev.action}{ev.detail ? `: ${ev.detail}` : ""}
+                </span>
+              </div>
+              <span style={{ fontSize: "0.72rem", color: "var(--text-3)", flexShrink: 0 }}>
+                {ev.actor ? `${ev.actor} · ` : ""}{auditTime(ev.created_at)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
 
 const TEAM = ["Kye", "Luka", "Aksel"];
-const STAGES = ["new","contacted","qualified","proposal","negotiation","closed"];
+const STAGES = ["new","contacted","qualified","proposal","won","lost"];
 const STAGE_LABEL: Record<string,string> = {
   new:"New", contacted:"Contacted", qualified:"Qualified",
-  proposal:"Proposal", negotiation:"Negotiation", closed:"Closed",
+  proposal:"Proposal", won:"Won", lost:"Lost",
 };
 const STAGE_COLOR: Record<string,string> = {
-  new:"#6b7280", contacted:"#22d3ee", qualified:"#818cf8",
-  proposal:"#fb923c", negotiation:"#f59e0b", closed:"#34d399",
+  new:"#60a5fa", contacted:"#fbbf24", qualified:"#a78bfa",
+  proposal:"#fb923c", won:"#34d399", lost:"#f87171",
 };
 
 function greet() {
@@ -36,22 +146,40 @@ export default function ManagementPage() {
   const [loading,   setLoading]   = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  async function load() {
-    setLoading(true);
-    const [t, p, c, ch] = await Promise.all([
+  function load() {
+    return Promise.all([
       fetch("/api/tasks").then(r => r.json()),
       fetch("/api/potentials").then(r => r.json()),
       fetch("/api/call-list").then(r => r.json()),
       fetch("/api/checklist").then(r => r.json()),
-    ]);
-    setTasks(Array.isArray(t) ? t : []);
-    setPots(Array.isArray(p) ? p : []);
-    setCalls(Array.isArray(c) ? c : []);
-    setChecklist(Array.isArray(ch) ? ch : []);
-    setLoading(false);
+    ]).then(([t, p, c, ch]) => {
+      setTasks(Array.isArray(t) ? t : []);
+      setPots(Array.isArray(p) ? p : []);
+      setCalls(Array.isArray(c) ? c : []);
+      setChecklist(Array.isArray(ch) ? ch : []);
+      setLoading(false);
+    });
   }
 
-  useEffect(() => { load(); }, []);
+  function refresh() {
+    setLoading(true);
+    load();
+  }
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/tasks").then(r => r.json()),
+      fetch("/api/potentials").then(r => r.json()),
+      fetch("/api/call-list").then(r => r.json()),
+      fetch("/api/checklist").then(r => r.json()),
+    ]).then(([t, p, c, ch]) => {
+      setTasks(Array.isArray(t) ? t : []);
+      setPots(Array.isArray(p) ? p : []);
+      setCalls(Array.isArray(c) ? c : []);
+      setChecklist(Array.isArray(ch) ? ch : []);
+      setLoading(false);
+    });
+  }, []);
 
   /* ─── checklist actions ─── */
   async function addItem() {
@@ -88,7 +216,7 @@ export default function ManagementPage() {
   const totalOpen    = tasks.filter(t => t.status !== "done").length;
   const totalDone    = tasks.filter(t => t.status === "done").length;
   const totalPending = calls.filter((c: Call) => !c.called).length;
-  const totalClosed  = pots.filter(p => p.status === "closed").length;
+  const totalClosed  = pots.filter(p => p.status === "won").length;
 
   const stageCount = STAGES.map(s => ({ stage: s, count: pots.filter(p => p.status === s).length }));
   const maxStage   = Math.max(...stageCount.map(s => s.count), 1);
@@ -104,10 +232,10 @@ export default function ManagementPage() {
             {greet()}, Kye 👋
           </h1>
           <p style={{ color: "var(--text-3)", fontSize: "0.85rem", margin: "0.25rem 0 0" }}>
-            Here's your management overview
+            Here&apos;s your management overview
           </p>
         </div>
-        <button onClick={load} disabled={loading} style={{
+        <button onClick={refresh} disabled={loading} style={{
           display: "flex", alignItems: "center", gap: "0.4rem",
           padding: "0.5rem 0.9rem", borderRadius: 10, fontSize: "0.82rem", fontWeight: 600,
           background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--text-2)", cursor: "pointer",
@@ -123,7 +251,7 @@ export default function ManagementPage() {
           { label: "Open Tasks",      value: totalOpen,    icon: ClipboardList, color: "#22d3ee" },
           { label: "Tasks Done",      value: totalDone,    icon: Check,         color: "#34d399" },
           { label: "Calls Pending",   value: totalPending, icon: PhoneCall,     color: "#818cf8" },
-          { label: "Deals Closed",    value: totalClosed,  icon: TrendingUp,    color: "#fb923c" },
+          { label: "Deals Won",       value: totalClosed,  icon: TrendingUp,    color: "#fb923c" },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} style={{
             background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: "1rem 1.15rem",
@@ -205,8 +333,8 @@ export default function ManagementPage() {
         </div>
         <div style={{ marginTop: "0.85rem", paddingTop: "0.85rem", borderTop: "1px solid var(--border)", display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
           <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>Total: <span style={{ fontWeight: 800, color: "var(--text-1)" }}>{pots.length}</span></div>
-          <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>Closed: <span style={{ fontWeight: 800, color: "#34d399" }}>{totalClosed}</span></div>
-          <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>Active: <span style={{ fontWeight: 800, color: "#22d3ee" }}>{pots.filter(p => p.status !== "closed" && p.status !== "new").length}</span></div>
+          <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>Won: <span style={{ fontWeight: 800, color: "#34d399" }}>{totalClosed}</span></div>
+          <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>Active: <span style={{ fontWeight: 800, color: "#22d3ee" }}>{pots.filter(p => ["contacted","qualified","proposal"].includes(p.status)).length}</span></div>
         </div>
       </div>
 
@@ -267,6 +395,9 @@ export default function ManagementPage() {
           />
         </div>
       </div>
+
+      {/* ── Audit log ── */}
+      <AuditLog />
 
       {/* ── Bottom row: checklist ── */}
       <h2 style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 0.75rem" }}>
