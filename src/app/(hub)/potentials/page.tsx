@@ -141,6 +141,13 @@ export default function PotentialsPage() {
     });
   }, []);
 
+  // "n" keyboard shortcut fires this from LayoutShell
+  useEffect(() => {
+    const h = () => { setEditId(null); setForm({ ...BLANK }); setShowForm(true); };
+    window.addEventListener("kw:new-record", h);
+    return () => window.removeEventListener("kw:new-record", h);
+  }, []);
+
   function openAdd(defaultStatus = "new") {
     setEditId(null);
     setForm({ ...BLANK, status: defaultStatus });

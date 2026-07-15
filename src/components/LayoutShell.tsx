@@ -1,13 +1,35 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { Menu, X, LogOut, Search } from "lucide-react";
+import { Menu, X, LogOut, Search, Keyboard } from "lucide-react";
 import { navGroups, bottomTabs, type NavGroup } from "@/lib/nav";
 import CommandPalette from "@/components/CommandPalette";
 import { useNotifications, NotificationsBell, NotificationsPanel } from "@/components/Notifications";
+
+/* ─── Keyboard shortcuts ─── */
+const G_ROUTES: Record<string, string> = {
+  d: "/", c: "/clients", p: "/potentials", f: "/follow-ups",
+  l: "/call-list", i: "/insights", a: "/activities", t: "/tasks",
+  r: "/roster", m: "/management",
+};
+
+const SHORTCUTS: [string, string][] = [
+  ["⌘K or /", "Search & jump anywhere"],
+  ["n", "New potential (or new record on Clients)"],
+  ["g d", "Dashboard"],
+  ["g c", "Clients"],
+  ["g p", "Potentials"],
+  ["g f", "Follow-ups"],
+  ["g l", "Call List"],
+  ["g i", "Insights"],
+  ["g a", "Activities"],
+  ["g t", "Tasks"],
+  ["g r", "Roster"],
+  ["?", "Show this help"],
+];
 
 /* ─── Helpers ─── */
 function avatarGradient(name: string) {
@@ -177,7 +199,11 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   const [open, setOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [prevPath, setPrevPath] = useState<string | null>(null);
+  const gPending = useRef(false);
+  const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const router = useRouter();
   const path = usePathname();
   const { data: session } = useSession();
   const userName = session?.user?.name ?? "";
@@ -196,15 +222,51 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   }, [open]);
 
   useEffect(() => {
+    function isTyping(e: KeyboardEvent) {
+      const t = e.target as HTMLElement;
+      return t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable;
+    }
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setPaletteOpen((v) => !v);
+        return;
+      }
+      if (isTyping(e) || e.metaKey || e.ctrlKey || e.altKey) return;
+      const key = e.key.toLowerCase();
+
+      if (key === "escape") { setHelpOpen(false); return; }
+
+      // g-chord navigation: g then a page key
+      if (gPending.current) {
+        gPending.current = false;
+        if (gTimer.current) clearTimeout(gTimer.current);
+        const dest = G_ROUTES[key];
+        if (dest && (dest !== "/management" || isKye)) {
+          e.preventDefault();
+          router.push(dest);
+        }
+        return;
+      }
+      if (key === "g") {
+        gPending.current = true;
+        gTimer.current = setTimeout(() => { gPending.current = false; }, 1500);
+        return;
+      }
+      if (key === "/") { e.preventDefault(); setPaletteOpen(true); return; }
+      if (key === "?") { setHelpOpen((v) => !v); return; }
+      if (key === "n") {
+        e.preventDefault();
+        if (path === "/potentials" || path === "/clients") {
+          window.dispatchEvent(new CustomEvent("kw:new-record"));
+        } else {
+          router.push("/potentials?new=1");
+        }
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [path, isKye, router]);
 
   /* Filter groups for this user */
   const groups = navGroups.map(g => ({
@@ -294,6 +356,50 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} isKye={isKye} />
       <NotificationsPanel items={notifications} open={notifOpen} onClose={() => setNotifOpen(false)} />
+
+      {/* ── Keyboard shortcuts help ── */}
+      {helpOpen && (
+        <div
+          onClick={() => setHelpOpen(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 400,
+            background: "rgba(6,7,14,0.72)", backdropFilter: "blur(6px)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%", maxWidth: 420,
+              background: "var(--surface)", border: "1px solid var(--border-2)",
+              borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-lg)",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+              <h2 style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 800, fontSize: "1rem", margin: 0 }}>
+                <Keyboard size={17} /> Keyboard Shortcuts
+              </h2>
+              <button onClick={() => setHelpOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: "0.25rem", display: "flex" }}>
+                <X size={16} />
+              </button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+              {SHORTCUTS.map(([keys, desc]) => (
+                <div key={keys} style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <kbd style={{
+                    minWidth: 64, textAlign: "center",
+                    fontSize: "0.72rem", fontWeight: 700, color: "var(--text-2)",
+                    background: "var(--surface-2)", border: "1px solid var(--border-2)",
+                    borderRadius: 6, padding: "0.25rem 0.5rem",
+                  }}>{keys}</kbd>
+                  <span style={{ fontSize: "0.82rem", color: "var(--text-2)" }}>{desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
