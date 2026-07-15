@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { Menu, X, LogOut, Search, Keyboard } from "lucide-react";
+import { Menu, X, LogOut, Search, Keyboard, KeyRound } from "lucide-react";
+import ChangePassword from "@/components/ChangePassword";
 import { navGroups, bottomTabs, type NavGroup } from "@/lib/nav";
 import CommandPalette from "@/components/CommandPalette";
 import { useNotifications, NotificationsBell, NotificationsPanel } from "@/components/Notifications";
@@ -84,11 +85,11 @@ function NavLink({ href, label, icon: Icon, soon, active, onClick }: {
 
 /* ── Sidebar inner content (shared between desktop + drawer) ── */
 function SidebarContent({
-  groups, path, userName, onSearchClick, notifCount, onBellClick, onClose,
+  groups, path, userName, onSearchClick, notifCount, onBellClick, onChangePassword, onClose,
 }: {
   groups: NavGroup[]; path: string; userName: string;
   onSearchClick: () => void; notifCount: number; onBellClick: () => void;
-  onClose?: () => void;
+  onChangePassword: () => void; onClose?: () => void;
 }) {
   return (
     <>
@@ -180,6 +181,15 @@ function SidebarContent({
             <div style={{ fontSize: "0.68rem", color: "var(--text-3)" }}>KW Innovations</div>
           </div>
           <button
+            onClick={onChangePassword}
+            title="Change password"
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: "0.35rem", borderRadius: 7, display: "flex", transition: "color 0.15s" }}
+            onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")}
+            onMouseLeave={e => (e.currentTarget.style.color = "var(--text-3)")}
+          >
+            <KeyRound size={14} />
+          </button>
+          <button
             onClick={() => signOut({ callbackUrl: "/login" })}
             title="Sign out"
             style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: "0.35rem", borderRadius: 7, display: "flex", transition: "color 0.15s" }}
@@ -200,6 +210,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
   const [prevPath, setPrevPath] = useState<string | null>(null);
   const gPending = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -284,7 +295,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         display: "flex", flexDirection: "column",
         height: "100vh", position: "sticky", top: 0,
       }}>
-        <SidebarContent groups={groups} path={path} userName={userName} onSearchClick={() => setPaletteOpen(true)} notifCount={notifications.length} onBellClick={() => setNotifOpen((v) => !v)} />
+        <SidebarContent groups={groups} path={path} userName={userName} onSearchClick={() => setPaletteOpen(true)} notifCount={notifications.length} onBellClick={() => setNotifOpen((v) => !v)} onChangePassword={() => setPwOpen(true)} />
       </aside>
 
       {/* ── Mobile top header ── */}
@@ -316,7 +327,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         willChange: "transform",
         boxShadow: open ? "8px 0 40px rgba(0,0,0,0.5)" : "none",
       }}>
-        <SidebarContent groups={groups} path={path} userName={userName} onSearchClick={() => setPaletteOpen(true)} notifCount={notifications.length} onBellClick={() => setNotifOpen((v) => !v)} onClose={() => setOpen(false)} />
+        <SidebarContent groups={groups} path={path} userName={userName} onSearchClick={() => setPaletteOpen(true)} notifCount={notifications.length} onBellClick={() => setNotifOpen((v) => !v)} onChangePassword={() => setPwOpen(true)} onClose={() => setOpen(false)} />
       </aside>
 
       {open && (
@@ -356,6 +367,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} isKye={isKye} />
       <NotificationsPanel items={notifications} open={notifOpen} onClose={() => setNotifOpen(false)} />
+      <ChangePassword open={pwOpen} onClose={() => setPwOpen(false)} />
 
       {/* ── Keyboard shortcuts help ── */}
       {helpOpen && (

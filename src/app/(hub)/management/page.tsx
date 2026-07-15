@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Trash2, Plus, Check, RefreshCw, PhoneCall, ClipboardList, TrendingUp, AlertCircle, ScrollText } from "lucide-react";
+import { Trash2, Plus, Check, RefreshCw, PhoneCall, ClipboardList, TrendingUp, AlertCircle, ScrollText, KeyRound } from "lucide-react";
 
 /* ─── types ─── */
 interface Task   { id: number; title: string; status: string; priority: string; assigned_to: string; due_date?: string; }
@@ -23,6 +23,70 @@ const ACTION_LABEL: Record<string,string> = {
 
 function auditTime(iso: string) {
   return new Date(iso).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+}
+
+/* ─── Team password reset (admin) ─── */
+function PasswordReset() {
+  const [user, setUser] = useState("luka");
+  const [pw, setPw] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg(null);
+    if (pw.length < 8) { setMsg({ text: "Password must be at least 8 characters.", ok: false }); return; }
+    setBusy(true);
+    const res = await fetch("/api/account/password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: user, new_password: pw }),
+    });
+    const data = await res.json();
+    setBusy(false);
+    if (!res.ok) { setMsg({ text: data.error ?? "Something went wrong.", ok: false }); return; }
+    setPw("");
+    setMsg({ text: `Password reset for ${user.charAt(0).toUpperCase() + user.slice(1)}.`, ok: true });
+  }
+
+  return (
+    <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden" }}>
+      <div style={{ padding: "1rem 1.15rem 0.75rem", borderBottom: "1px solid var(--border)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 800, fontSize: "0.95rem", color: "var(--text-1)" }}>
+          <KeyRound size={15} /> Team Passwords
+        </div>
+        <div style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>Reset a team member&apos;s password (no current password needed)</div>
+      </div>
+      <form onSubmit={submit} style={{ padding: "1rem 1.15rem", display: "grid", gap: "0.75rem" }}>
+        <select className="field" value={user} onChange={(e) => setUser(e.target.value)}>
+          <option value="kye">Kye</option>
+          <option value="luka">Luka</option>
+          <option value="aksel">Aksel</option>
+        </select>
+        <input
+          className="field"
+          type="text"
+          value={pw}
+          onChange={(e) => setPw(e.target.value)}
+          placeholder="New password (min 8 characters)"
+          autoComplete="off"
+        />
+        {msg && (
+          <div style={{
+            padding: "0.55rem 0.8rem", borderRadius: 9, fontSize: "0.8rem", fontWeight: 500,
+            background: msg.ok ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)",
+            border: `1px solid ${msg.ok ? "rgba(52,211,153,0.2)" : "rgba(248,113,113,0.2)"}`,
+            color: msg.ok ? "#34d399" : "#f87171",
+          }}>
+            {msg.text}
+          </div>
+        )}
+        <button type="submit" className="btn-primary" disabled={busy || !pw} style={{ justifyContent: "center" }}>
+          {busy ? "Resetting…" : "Reset Password"}
+        </button>
+      </form>
+    </div>
+  );
 }
 
 /* ─── Audit log section ─── */
@@ -399,9 +463,9 @@ export default function ManagementPage() {
       {/* ── Audit log ── */}
       <AuditLog />
 
-      {/* ── Bottom row: checklist ── */}
+      {/* ── Bottom row: checklist + passwords ── */}
       <h2 style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 0.75rem" }}>
-        My Checklist
+        My Checklist & Admin
       </h2>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", alignItems: "start" }} className="mgmt-bottom-grid">
 
@@ -479,6 +543,9 @@ export default function ManagementPage() {
             ))}
           </div>
         </div>
+
+        {/* Team password reset */}
+        <PasswordReset />
 
       </div>
 

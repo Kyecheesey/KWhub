@@ -23,13 +23,13 @@ export async function migrate() {
       created_at    TIMESTAMPTZ DEFAULT NOW()
     )
   `;
-  // Seed initial users — DO UPDATE ensures passwords reset to known values
+  // Seed initial users — DO NOTHING so passwords changed in-app persist
   await sql`
     INSERT INTO users (name, username, password_hash) VALUES
       ('Kye',   'kye',   '$2b$12$pyhjXNv65tTkz5u8cAHw7u2N0KXOzZVV5jWkEtDGgO9lSaWVs70ne'),
       ('Luka',  'luka',  '$2b$12$9JBWUvk1qxzyEga97FnPLen6BDthAmyPr/QSx8JSPZImok.9jUnpS'),
       ('Aksel', 'aksel', '$2b$12$CZlj6jJ4PJzqhtsqtejYH.Htm9VuASa3l/4adS/PAd2P6j1Z9Mdo2')
-    ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash
+    ON CONFLICT (username) DO NOTHING
   `;
   await sql`
     CREATE TABLE IF NOT EXISTS clients (
