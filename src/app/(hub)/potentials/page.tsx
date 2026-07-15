@@ -99,6 +99,8 @@ export default function PotentialsPage() {
   const [form, setForm] = useState<Form>(BLANK);
   const [loading, setLoading] = useState(true);
   const [showDupes, setShowDupes] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -107,21 +109,22 @@ export default function PotentialsPage() {
   const dragId = useRef<number | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    const [pr, tr, clr] = await Promise.all([
+  const load = useCallback(() => {
+    return Promise.all([
       fetch("/api/potentials").then((r) => r.json()),
       fetch("/api/team").then((r) => r.json()),
       fetch("/api/call-list").then((r) => r.json()),
-    ]);
-    setPotentials(pr);
-    setTeam(tr);
-    const onList = new Set<number>(
-      (clr as { record_type: string; record_id: number }[])
-        .filter((e) => e.record_type === "potential")
-        .map((e) => e.record_id)
-    );
-    setCallSet(onList);
-    setLoading(false);
+    ]).then(([pr, tr, clr]) => {
+      setPotentials(pr);
+      setTeam(tr);
+      const onList = new Set<number>(
+        (clr as { record_type: string; record_id: number }[])
+          .filter((e) => e.record_type === "potential")
+          .map((e) => e.record_id)
+      );
+      setCallSet(onList);
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -199,6 +202,42 @@ export default function PotentialsPage() {
     load();
   }
 
+  /* ── Bulk actions ── */
+  function toggleSelect(id: number) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  async function bulkUpdate(patch: Partial<Pick<Potential, "status" | "assigned_to">>) {
+    setBulkBusy(true);
+    await Promise.all(
+      potentials
+        .filter((p) => selected.has(p.id))
+        .map((p) => fetch(`/api/potentials/${p.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...p, ...patch }),
+        }))
+    );
+    setSelected(new Set());
+    setBulkBusy(false);
+    load();
+  }
+
+  async function bulkDelete() {
+    if (!confirm(`Delete ${selected.size} potential${selected.size !== 1 ? "s" : ""}? This can't be undone.`)) return;
+    setBulkBusy(true);
+    await Promise.all(
+      Array.from(selected).map((id) => fetch(`/api/potentials/${id}`, { method: "DELETE" }))
+    );
+    setSelected(new Set());
+    setBulkBusy(false);
+    load();
+  }
+
   // Drag handlers
   function onDragStart(id: number) { dragId.current = id; }
   function onDragEnd() { dragId.current = null; setDragOverCol(null); }
@@ -253,8 +292,6 @@ export default function PotentialsPage() {
     return matchSearch && matchAgent;
   });
 
-  const stageOf = (key: string) => STAGES.find((s) => s.key === key) ?? STAGES[0];
-
   return (
     <div style={{ padding: "2rem 2rem 2rem", maxWidth: view === "kanban" ? "none" : 1100, margin: "0 auto" }}>
 
@@ -281,6 +318,7 @@ export default function PotentialsPage() {
           <button onClick={() => fileInputRef.current?.click()} disabled={importing} className="btn-ghost">
             <Upload size={14} /> {importing ? "Importing…" : "Import"}
           </button>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download, not a page navigation */}
           <a href="/api/potentials/export" className="btn-ghost"><Download size={14} /> Export</a>
           <button onClick={() => openAdd()} className="btn-primary"><Plus size={15} /> Add Potential</button>
         </div>
@@ -585,8 +623,16 @@ export default function PotentialsPage() {
                   </div>
                   {cards.map((p) => {
                     const onCall = callSet.has(p.id);
+                    const isSelected = selected.has(p.id);
                     return (
-                      <div key={p.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", background: "var(--surface)", border: `1px solid ${onCall ? "rgba(34,211,238,0.2)" : "var(--border)"}`, borderRadius: 12, padding: "0.8rem 1rem", marginBottom: "0.4rem" }}>
+                      <div key={p.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", background: "var(--surface)", border: `1px solid ${isSelected ? "rgba(124,133,243,0.45)" : onCall ? "rgba(34,211,238,0.2)" : "var(--border)"}`, borderRadius: 12, padding: "0.8rem 1rem", marginBottom: "0.4rem" }}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(p.id)}
+                          aria-label={`Select ${p.business_name}`}
+                          style={{ width: 16, height: 16, accentColor: "#7c85f3", cursor: "pointer", flexShrink: 0 }}
+                        />
                         <div style={{ width: 36, height: 36, borderRadius: 10, background: stage.bg, color: stage.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.72rem", fontWeight: 800, flexShrink: 0 }}>
                           {initials(p.business_name)}
                         </div>
@@ -624,6 +670,48 @@ export default function PotentialsPage() {
       )}
 
       <p style={{ marginTop: "1rem", fontSize: "0.75rem", color: "var(--text-3)" }}>{filtered.length} of {potentials.length} potential{potentials.length !== 1 ? "s" : ""}</p>
+
+      {/* ── Bulk action bar ── */}
+      {selected.size > 0 && (
+        <div style={{
+          position: "fixed", bottom: "calc(var(--bottom-bar-h) + 12px)", left: "50%", transform: "translateX(-50%)",
+          zIndex: 250, display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap",
+          background: "var(--surface-2)", border: "1px solid var(--border-3)",
+          borderRadius: 14, padding: "0.6rem 0.9rem", boxShadow: "var(--shadow-lg)",
+          maxWidth: "calc(100vw - 24px)",
+        }}>
+          <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-1)", whiteSpace: "nowrap" }}>
+            {selected.size} selected
+          </span>
+          <select
+            className="field"
+            style={{ width: "auto", padding: "0.35rem 0.6rem", fontSize: "0.78rem" }}
+            defaultValue=""
+            disabled={bulkBusy}
+            onChange={(e) => { if (e.target.value) bulkUpdate({ status: e.target.value }); }}
+          >
+            <option value="" disabled>Move to stage…</option>
+            {STAGES.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
+          </select>
+          <select
+            className="field"
+            style={{ width: "auto", padding: "0.35rem 0.6rem", fontSize: "0.78rem" }}
+            defaultValue=""
+            disabled={bulkBusy}
+            onChange={(e) => { if (e.target.value !== "") bulkUpdate({ assigned_to: e.target.value === "__none" ? null : e.target.value }); }}
+          >
+            <option value="" disabled>Assign to…</option>
+            {team.map((m) => <option key={m.id} value={m.name}>{m.name}</option>)}
+            <option value="__none">Unassigned</option>
+          </select>
+          <button onClick={bulkDelete} disabled={bulkBusy} className="btn-danger" style={{ padding: "0.35rem 0.7rem", fontSize: "0.75rem" }}>
+            <Trash2 size={12} /> Delete
+          </button>
+          <button onClick={() => setSelected(new Set())} disabled={bulkBusy} className="btn-ghost" style={{ padding: "0.35rem 0.7rem", fontSize: "0.75rem", minHeight: 0 }}>
+            Clear
+          </button>
+        </div>
+      )}
 
       {/* ── Modal ── */}
       {showForm && (

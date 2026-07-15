@@ -45,25 +45,28 @@ export default function ClientsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<Form>(BLANK);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [scraping, setScraping] = useState(false);
   const [scrapeMsg, setScrapeMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    const [cr, tr, clr] = await Promise.all([
+  const load = useCallback(() => {
+    return Promise.all([
       fetch("/api/clients").then((r) => r.json()),
       fetch("/api/team").then((r) => r.json()),
       fetch("/api/call-list").then((r) => r.json()),
-    ]);
-    setClients(cr);
-    setTeam(tr);
-    const onList = new Set<number>(
-      (clr as { record_type: string; record_id: number }[])
-        .filter((e) => e.record_type === "client")
-        .map((e) => e.record_id)
-    );
-    setCallSet(onList);
-    setLoading(false);
+    ]).then(([cr, tr, clr]) => {
+      setClients(cr);
+      setTeam(tr);
+      const onList = new Set<number>(
+        (clr as { record_type: string; record_id: number }[])
+          .filter((e) => e.record_type === "client")
+          .map((e) => e.record_id)
+      );
+      setCallSet(onList);
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -114,6 +117,42 @@ export default function ClientsPage() {
     load();
   }
 
+  /* ── Bulk actions ── */
+  function toggleSelect(id: number) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  async function bulkAssign(assignee: string | null) {
+    setBulkBusy(true);
+    await Promise.all(
+      clients
+        .filter((c) => selected.has(c.id))
+        .map((c) => fetch(`/api/clients/${c.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...c, assigned_to: assignee }),
+        }))
+    );
+    setSelected(new Set());
+    setBulkBusy(false);
+    load();
+  }
+
+  async function bulkDelete() {
+    if (!confirm(`Delete ${selected.size} client${selected.size !== 1 ? "s" : ""}? This can't be undone.`)) return;
+    setBulkBusy(true);
+    await Promise.all(
+      Array.from(selected).map((id) => fetch(`/api/clients/${id}`, { method: "DELETE" }))
+    );
+    setSelected(new Set());
+    setBulkBusy(false);
+    load();
+  }
+
   async function scrape() {
     setScraping(true); setScrapeMsg(null);
     const res = await fetch("/api/clients/scrape", { method: "POST" });
@@ -151,6 +190,7 @@ export default function ClientsPage() {
           <button onClick={scrape} disabled={scraping} className="btn-ghost">
             <RefreshCw size={14} /> {scraping ? "Importing…" : "Import from Website"}
           </button>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download, not a page navigation */}
           <a href="/api/clients/export" className="btn-ghost"><Download size={14} /> Export CSV</a>
           <button onClick={openAdd} className="btn-primary"><Plus size={15} /> Add Client</button>
         </div>
@@ -189,6 +229,15 @@ export default function ClientsPage() {
           <table className="data-table">
             <thead>
               <tr>
+                <th style={{ width: 36 }}>
+                  <input
+                    type="checkbox"
+                    checked={filtered.length > 0 && filtered.every((c) => selected.has(c.id))}
+                    onChange={(e) => setSelected(e.target.checked ? new Set(filtered.map((c) => c.id)) : new Set())}
+                    aria-label="Select all"
+                    style={{ width: 15, height: 15, accentColor: "#2dd4e8", cursor: "pointer" }}
+                  />
+                </th>
                 <th>Business</th>
                 <th>Contact</th>
                 <th>Phone</th>
@@ -203,7 +252,16 @@ export default function ClientsPage() {
                 const color = colorFor(c.business_name);
                 const onCall = callSet.has(c.id);
                 return (
-                  <tr key={c.id} style={onCall ? { background: "rgba(34,211,238,0.03)" } : undefined}>
+                  <tr key={c.id} style={selected.has(c.id) ? { background: "rgba(45,212,232,0.05)" } : onCall ? { background: "rgba(34,211,238,0.03)" } : undefined}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selected.has(c.id)}
+                        onChange={() => toggleSelect(c.id)}
+                        aria-label={`Select ${c.business_name}`}
+                        style={{ width: 15, height: 15, accentColor: "#2dd4e8", cursor: "pointer" }}
+                      />
+                    </td>
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                         <div className="avatar" style={{ background: `${color}18`, color, border: `1px solid ${color}30` }}>
@@ -324,6 +382,38 @@ export default function ClientsPage() {
       <p style={{ marginTop: "0.75rem", fontSize: "0.75rem", color: "var(--text-3)" }}>
         {filtered.length} of {clients.length} client{clients.length !== 1 ? "s" : ""}
       </p>
+
+      {/* ── Bulk action bar ── */}
+      {selected.size > 0 && (
+        <div style={{
+          position: "fixed", bottom: "calc(var(--bottom-bar-h) + 12px)", left: "50%", transform: "translateX(-50%)",
+          zIndex: 250, display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap",
+          background: "var(--surface-2)", border: "1px solid var(--border-3)",
+          borderRadius: 14, padding: "0.6rem 0.9rem", boxShadow: "var(--shadow-lg)",
+          maxWidth: "calc(100vw - 24px)",
+        }}>
+          <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-1)", whiteSpace: "nowrap" }}>
+            {selected.size} selected
+          </span>
+          <select
+            className="field"
+            style={{ width: "auto", padding: "0.35rem 0.6rem", fontSize: "0.78rem" }}
+            defaultValue=""
+            disabled={bulkBusy}
+            onChange={(e) => { if (e.target.value !== "") bulkAssign(e.target.value === "__none" ? null : e.target.value); }}
+          >
+            <option value="" disabled>Assign to…</option>
+            {team.map((m) => <option key={m.id} value={m.name}>{m.name}</option>)}
+            <option value="__none">Unassigned</option>
+          </select>
+          <button onClick={bulkDelete} disabled={bulkBusy} className="btn-danger" style={{ padding: "0.35rem 0.7rem", fontSize: "0.75rem" }}>
+            <Trash2 size={12} /> Delete
+          </button>
+          <button onClick={() => setSelected(new Set())} disabled={bulkBusy} className="btn-ghost" style={{ padding: "0.35rem 0.7rem", fontSize: "0.75rem", minHeight: 0 }}>
+            Clear
+          </button>
+        </div>
+      )}
 
       {/* Modal */}
       {showForm && (
