@@ -1,5 +1,6 @@
 import { sql, migrate } from "@/lib/db";
 import { auth } from "../../../../../auth";
+import { resolvePortalScope } from "@/lib/portalAuth";
 
 export async function GET(request: Request) {
   await migrate();
@@ -17,10 +18,28 @@ export async function GET(request: Request) {
     clientId = parseInt(param, 10);
   }
 
-  const rows = await sql`
-    SELECT id, business_name, contact_name, phone, email, website, assigned_to
-    FROM clients WHERE id = ${clientId}
-  `;
+  const [rows, settings] = await Promise.all([
+    sql`
+      SELECT id, business_name, contact_name, phone, email, website, assigned_to, logo_url
+      FROM clients WHERE id = ${clientId}
+    `,
+    sql`SELECT value FROM settings WHERE key = 'booking_url'`,
+  ]);
   if (rows.length === 0) return Response.json({ error: "Client record not found" }, { status: 404 });
+  const bookingUrl = (settings[0] as { value: string | null } | undefined)?.value ?? null;
+  return Response.json({ ...rows[0], booking_url: bookingUrl });
+}
+
+// Staff set portal branding (logo)
+export async function PATCH(request: Request) {
+  await migrate();
+  const body = await request.json();
+  const r = await resolvePortalScope(request, { staffOnly: true, bodyClientId: body.client_id ?? null });
+  if ("error" in r) return r.error;
+  const rows = await sql`
+    UPDATE clients SET logo_url = ${body.logo_url || null} WHERE id = ${r.scope.clientId}
+    RETURNING id, logo_url
+  `;
+  if (rows.length === 0) return Response.json({ error: "Client not found" }, { status: 404 });
   return Response.json(rows[0]);
 }

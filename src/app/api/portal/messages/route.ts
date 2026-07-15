@@ -1,5 +1,6 @@
 import { sql, migrate } from "@/lib/db";
 import { auth } from "../../../../../auth";
+import { notifyClient, notifyStaff } from "@/lib/portalNotify";
 
 async function resolveClientId(request: Request) {
   const session = await auth();
@@ -47,5 +48,14 @@ export async function POST(request: Request) {
     VALUES (${clientId}, ${session.user.name ?? null}, ${role}, ${body.trim()})
     RETURNING *
   `;
+
+  const preview = body.trim().length > 160 ? `${body.trim().slice(0, 160)}…` : body.trim();
+  if (role === "client") {
+    await notifyStaff(clientId, `Portal message from ${session.user.name ?? "a client"}`,
+      `${session.user.name ?? "A client"} wrote in their portal:\n\n"${preview}"`);
+  } else {
+    await notifyClient(clientId, "New update from KW Innovations",
+      `${session.user.name ?? "The KW team"} posted in your portal:\n\n"${preview}"\n\nSign in to reply.`);
+  }
   return Response.json(rows[0], { status: 201 });
 }

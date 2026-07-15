@@ -9,7 +9,7 @@ async function requireStaff() {
   return { session };
 }
 
-// GET ?client_id= → the portal login (if any) for a client
+// GET ?client_id= → all portal logins for a client (multiple contacts supported)
 export async function GET(request: Request) {
   await migrate();
   const r = await requireStaff();
@@ -19,16 +19,18 @@ export async function GET(request: Request) {
   const rows = await sql`
     SELECT id, name, username, created_at FROM users
     WHERE role = 'client' AND client_id = ${parseInt(clientId, 10)}
+    ORDER BY created_at ASC
   `;
-  return Response.json(rows[0] ?? null);
+  return Response.json(rows);
 }
 
-// POST {client_id, username, password} → create a portal login for a client
+// POST {client_id, username, password, display_name?} → create a portal login
+// (a client can have multiple contact logins)
 export async function POST(request: Request) {
   await migrate();
   const r = await requireStaff();
   if ("error" in r) return r.error;
-  const { client_id, username, password } = await request.json();
+  const { client_id, username, password, display_name } = await request.json();
   if (!client_id || !username?.trim() || !password) {
     return Response.json({ error: "client_id, username and password are required" }, { status: 400 });
   }
@@ -44,13 +46,10 @@ export async function POST(request: Request) {
   const taken = await sql`SELECT 1 FROM users WHERE username = ${uname}`;
   if (taken.length > 0) return Response.json({ error: "That username is already taken." }, { status: 409 });
 
-  const existing = await sql`SELECT 1 FROM users WHERE role = 'client' AND client_id = ${client_id}`;
-  if (existing.length > 0) return Response.json({ error: "This client already has a portal login." }, { status: 409 });
-
   const hash = await bcrypt.hash(password, 12);
   const rows = await sql`
     INSERT INTO users (name, username, password_hash, role, client_id)
-    VALUES (${client.business_name}, ${uname}, ${hash}, 'client', ${client_id})
+    VALUES (${display_name?.trim() || client.business_name}, ${uname}, ${hash}, 'client', ${client_id})
     RETURNING id, name, username, created_at
   `;
   return Response.json(rows[0], { status: 201 });

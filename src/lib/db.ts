@@ -155,6 +155,71 @@ export async function migrate() {
     )
   `;
   await sql`CREATE INDEX IF NOT EXISTS portal_messages_client_idx ON portal_messages (client_id)`;
+  await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS logo_url TEXT`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS projects (
+      id         SERIAL PRIMARY KEY,
+      client_id  INTEGER NOT NULL,
+      name       TEXT NOT NULL,
+      stage      INTEGER DEFAULT 0,
+      notes      TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS approvals (
+      id            SERIAL PRIMARY KEY,
+      client_id     INTEGER NOT NULL,
+      title         TEXT NOT NULL,
+      description   TEXT,
+      status        TEXT DEFAULT 'pending',
+      response_note TEXT,
+      created_by    TEXT,
+      responded_at  TIMESTAMPTZ,
+      created_at    TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS invoices (
+      id           SERIAL PRIMARY KEY,
+      client_id    INTEGER NOT NULL,
+      number       TEXT NOT NULL,
+      amount_cents INTEGER NOT NULL,
+      due_date     DATE,
+      status       TEXT DEFAULT 'due',
+      pdf_url      TEXT,
+      pay_url      TEXT,
+      created_at   TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS portal_files (
+      id          SERIAL PRIMARY KEY,
+      client_id   INTEGER NOT NULL,
+      filename    TEXT NOT NULL,
+      url         TEXT NOT NULL,
+      size_bytes  INTEGER,
+      uploaded_by TEXT,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS client_checklist (
+      id         SERIAL PRIMARY KEY,
+      client_id  INTEGER NOT NULL,
+      text       TEXT NOT NULL,
+      done       BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS settings (
+      key        TEXT PRIMARY KEY,
+      value      TEXT,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
   await sql`
     CREATE TABLE IF NOT EXISTS events (
       id          SERIAL PRIMARY KEY,
