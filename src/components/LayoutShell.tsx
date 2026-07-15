@@ -7,6 +7,7 @@ import { signOut, useSession } from "next-auth/react";
 import { Menu, X, LogOut, Search } from "lucide-react";
 import { navGroups, bottomTabs, type NavGroup } from "@/lib/nav";
 import CommandPalette from "@/components/CommandPalette";
+import { useNotifications, NotificationsBell, NotificationsPanel } from "@/components/Notifications";
 
 /* ─── Helpers ─── */
 function avatarGradient(name: string) {
@@ -61,10 +62,11 @@ function NavLink({ href, label, icon: Icon, soon, active, onClick }: {
 
 /* ── Sidebar inner content (shared between desktop + drawer) ── */
 function SidebarContent({
-  groups, path, userName, onSearchClick, onClose,
+  groups, path, userName, onSearchClick, notifCount, onBellClick, onClose,
 }: {
   groups: NavGroup[]; path: string; userName: string;
-  onSearchClick: () => void; onClose?: () => void;
+  onSearchClick: () => void; notifCount: number; onBellClick: () => void;
+  onClose?: () => void;
 }) {
   return (
     <>
@@ -87,11 +89,14 @@ function SidebarContent({
             <div style={{ fontSize: "0.6rem", color: "var(--text-3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Internal Hub</div>
           </div>
         </div>
-        {onClose && (
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: "0.3rem", borderRadius: 6, display: "flex" }}>
-            <X size={17} />
-          </button>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.1rem" }}>
+          <NotificationsBell count={notifCount} onClick={onBellClick} />
+          {onClose && (
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: "0.3rem", borderRadius: 6, display: "flex" }}>
+              <X size={17} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Search trigger */}
@@ -171,15 +176,18 @@ function SidebarContent({
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [prevPath, setPrevPath] = useState<string | null>(null);
   const path = usePathname();
   const { data: session } = useSession();
   const userName = session?.user?.name ?? "";
   const isKye = userName.toLowerCase() === "kye";
+  const notifications = useNotifications();
 
   if (path !== prevPath) {
     setPrevPath(path);
     setOpen(false);
+    setNotifOpen(false);
   }
 
   useEffect(() => {
@@ -214,7 +222,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         display: "flex", flexDirection: "column",
         height: "100vh", position: "sticky", top: 0,
       }}>
-        <SidebarContent groups={groups} path={path} userName={userName} onSearchClick={() => setPaletteOpen(true)} />
+        <SidebarContent groups={groups} path={path} userName={userName} onSearchClick={() => setPaletteOpen(true)} notifCount={notifications.length} onBellClick={() => setNotifOpen((v) => !v)} />
       </aside>
 
       {/* ── Mobile top header ── */}
@@ -226,9 +234,12 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           <div style={{ width: 26, height: 26, borderRadius: 7, background: "linear-gradient(135deg,#2dd4e8,#818cf8)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "0.68rem", color: "#07090f" }}>KW</div>
           <span style={{ fontWeight: 800, fontSize: "0.88rem", color: "var(--text-1)", letterSpacing: "-0.02em" }}>Innovations</span>
         </div>
-        <button onClick={() => setPaletteOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-2)", padding: "0.5rem", borderRadius: 8, display: "flex" }}>
-          <Search size={19} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <NotificationsBell count={notifications.length} onClick={() => setNotifOpen((v) => !v)} />
+          <button onClick={() => setPaletteOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-2)", padding: "0.5rem", borderRadius: 8, display: "flex" }}>
+            <Search size={19} />
+          </button>
+        </div>
       </header>
 
       {/* ── Mobile drawer ── */}
@@ -243,7 +254,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         willChange: "transform",
         boxShadow: open ? "8px 0 40px rgba(0,0,0,0.5)" : "none",
       }}>
-        <SidebarContent groups={groups} path={path} userName={userName} onSearchClick={() => setPaletteOpen(true)} onClose={() => setOpen(false)} />
+        <SidebarContent groups={groups} path={path} userName={userName} onSearchClick={() => setPaletteOpen(true)} notifCount={notifications.length} onBellClick={() => setNotifOpen((v) => !v)} onClose={() => setOpen(false)} />
       </aside>
 
       {open && (
@@ -282,6 +293,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
       </nav>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} isKye={isKye} />
+      <NotificationsPanel items={notifications} open={notifOpen} onClose={() => setNotifOpen(false)} />
     </>
   );
 }
