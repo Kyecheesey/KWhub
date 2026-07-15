@@ -18,6 +18,7 @@ type Mode = "signin" | "forgot" | "reset" | "reset-done";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<Mode>("signin");
+  const [audience, setAudience] = useState<"staff" | "client">("staff");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -161,7 +162,36 @@ export default function LoginPage() {
             <h1 style={{ fontSize: "1.4rem", fontWeight: 900, margin: "0 0 0.25rem", letterSpacing: "-0.02em" }}>
               Welcome back
             </h1>
-            <p style={{ color: "var(--text-3)", fontSize: "0.85rem", margin: 0 }}>Sign in to the KW Innovations hub</p>
+            <p style={{ color: "var(--text-3)", fontSize: "0.85rem", margin: 0 }}>
+              {audience === "staff" ? "Sign in to the KW Innovations hub" : "Sign in to your client portal"}
+            </p>
+          </div>
+
+          {/* Staff / Client toggle */}
+          <div className="login-fade-up" style={{
+            animationDelay: "0.04s",
+            display: "flex", background: "var(--surface)", border: "1px solid var(--border-2)",
+            borderRadius: 12, padding: 4, marginBottom: "1rem",
+          }}>
+            {([["staff", "Staff"], ["client", "Client Portal"]] as const).map(([key, label]) => {
+              const active = audience === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setAudience(key)}
+                  style={{
+                    flex: 1, padding: "0.5rem 0.75rem", borderRadius: 9, border: "none",
+                    cursor: "pointer", fontSize: "0.82rem", fontWeight: active ? 700 : 500,
+                    background: active ? "var(--surface-3)" : "transparent",
+                    color: active ? "var(--text-1)" : "var(--text-3)",
+                    transition: "background 0.15s, color 0.15s",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
 
           {/* Card */}
@@ -201,7 +231,7 @@ export default function LoginPage() {
                       id="username"
                       className="field"
                       style={{ paddingLeft: "2.25rem" }}
-                      placeholder="Your username"
+                      placeholder={audience === "staff" ? "Your username" : "Your portal username"}
                       value={username}
                       onChange={(e) => setUsername(e.target.value.toLowerCase().trim())}
                       autoComplete="username"
