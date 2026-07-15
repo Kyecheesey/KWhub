@@ -41,7 +41,6 @@ type Form = {
 const BLANK: Form = { title: "", description: "", status: "todo", priority: "medium", assigned_to: "", due_date: "", tags: "" };
 
 function priorityOf(key: string) { return PRIORITIES.find((p) => p.key === key) ?? PRIORITIES[1]; }
-function columnOf(key: string)   { return COLUMNS.find((c) => c.key === key) ?? COLUMNS[0]; }
 
 function isOverdue(due_date: string | null) {
   if (!due_date) return false;
@@ -66,10 +65,10 @@ export default function ActivitiesPage() {
   const dragId = useRef<number | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    const data = await fetch("/api/activities").then((r) => r.json());
-    setActivities(data);
-    setLoading(false);
+  const load = useCallback(() => {
+    return fetch("/api/activities")
+      .then((r) => r.json())
+      .then((data) => { setActivities(data); setLoading(false); });
   }, []);
 
   useEffect(() => { load(); }, [load]);

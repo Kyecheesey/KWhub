@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Plus, X, Pencil, Trash2, Flag, Calendar,
   UserCircle2, CheckCircle2, Circle, Clock,
-  LayoutGrid, List, ChevronDown,
+  LayoutGrid, List,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -89,10 +89,10 @@ export default function TasksPage() {
   const dragId = useRef<number | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    const data = await fetch("/api/tasks").then((r) => r.json());
-    setTasks(data);
-    setLoading(false);
+  const load = useCallback(() => {
+    return fetch("/api/tasks")
+      .then((r) => r.json())
+      .then((data) => { setTasks(data); setLoading(false); });
   }, []);
 
   useEffect(() => { load(); }, [load]);

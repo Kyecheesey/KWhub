@@ -33,10 +33,10 @@ export default function CallListPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "done">("pending");
 
-  const load = useCallback(async () => {
-    const res = await fetch("/api/call-list");
-    setEntries(await res.json());
-    setLoading(false);
+  const load = useCallback(() => {
+    return fetch("/api/call-list")
+      .then((res) => res.json())
+      .then((data) => { setEntries(data); setLoading(false); });
   }, []);
 
   useEffect(() => { load(); }, [load]);

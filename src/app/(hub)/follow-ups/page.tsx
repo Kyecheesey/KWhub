@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, CalendarClock, CheckCheck, Pencil, RefreshCw, UserCircle2, Phone, Mail, X, Search } from "lucide-react";
+import { CalendarClock, CheckCheck, RefreshCw, UserCircle2, Phone, Mail, Search } from "lucide-react";
 
 /* ─── Types ─── */
 interface Potential {
@@ -84,11 +84,13 @@ export default function FollowUpsPage() {
   const [search, setSearch]           = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
-  async function load() {
-    setLoading(true);
-    const data = await fetch("/api/potentials").then(r => r.json());
-    setPotentials(Array.isArray(data) ? data : []);
-    setLoading(false);
+  function load() {
+    return fetch("/api/potentials")
+      .then(r => r.json())
+      .then(data => {
+        setPotentials(Array.isArray(data) ? data : []);
+        setLoading(false);
+      });
   }
   useEffect(() => { load(); }, []);
 
