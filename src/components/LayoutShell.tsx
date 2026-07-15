@@ -4,50 +4,9 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import {
-  Menu, X, LayoutDashboard, Users, Target, PhoneCall,
-  FileText, Zap, ChevronRight, LogOut, Kanban,
-  ClipboardList, CalendarDays, UsersRound, Settings, Bell,
-} from "lucide-react";
-
-/* ─── Nav config ─── */
-const navGroups = [
-  {
-    label: "Sales",
-    items: [
-      { href: "/",           label: "Dashboard",  icon: LayoutDashboard },
-      { href: "/clients",    label: "Clients",    icon: Users },
-      { href: "/potentials",  label: "Potentials",  icon: Target },
-      { href: "/follow-ups",  label: "Follow-ups",  icon: Bell },
-      { href: "/call-list",   label: "Call List",   icon: PhoneCall },
-    ],
-  },
-  {
-    label: "Team",
-    items: [
-      { href: "/activities", label: "Activities", icon: Kanban },
-      { href: "/tasks",      label: "Tasks",      icon: ClipboardList },
-      { href: "/roster",     label: "Roster",     icon: CalendarDays },
-      { href: "/management", label: "Management", icon: Settings, kyeOnly: true },
-    ],
-  },
-  {
-    label: "Coming Soon",
-    items: [
-      { href: "#", label: "Team Hub",  icon: UsersRound, soon: true },
-      { href: "#", label: "Policies",  icon: FileText,   soon: true },
-      { href: "#", label: "AI Tools",  icon: Zap,        soon: true },
-    ],
-  },
-];
-
-const bottomTabs = [
-  { href: "/",           label: "Home",       icon: LayoutDashboard },
-  { href: "/clients",    label: "Clients",    icon: Users },
-  { href: "/potentials", label: "Potentials", icon: Target },
-  { href: "/roster",     label: "Roster",     icon: CalendarDays },
-  { href: "/call-list",  label: "Calls",      icon: PhoneCall },
-];
+import { Menu, X, LogOut, Search } from "lucide-react";
+import { navGroups, bottomTabs, type NavGroup } from "@/lib/nav";
+import CommandPalette from "@/components/CommandPalette";
 
 /* ─── Helpers ─── */
 function avatarGradient(name: string) {
@@ -100,28 +59,14 @@ function NavLink({ href, label, icon: Icon, soon, active, onClick }: {
   );
 }
 
-/* ─── Main component ─── */
-export default function LayoutShell({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const path = usePathname();
-  const { data: session } = useSession();
-  const userName = session?.user?.name ?? "";
-  const isKye = userName.toLowerCase() === "kye";
-
-  useEffect(() => { setOpen(false); }, [path]);
-  useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [open]);
-
-  /* Filter groups for this user */
-  const groups = navGroups.map(g => ({
-    ...g,
-    items: g.items.filter(item => !(item as { kyeOnly?: boolean }).kyeOnly || isKye),
-  })).filter(g => g.items.length > 0);
-
-  /* ── Sidebar inner content (shared between desktop + drawer) ── */
-  const SidebarContent = ({ onClose }: { onClose?: () => void }) => (
+/* ── Sidebar inner content (shared between desktop + drawer) ── */
+function SidebarContent({
+  groups, path, userName, onSearchClick, onClose,
+}: {
+  groups: NavGroup[]; path: string; userName: string;
+  onSearchClick: () => void; onClose?: () => void;
+}) {
+  return (
     <>
       {/* Logo */}
       <div style={{
@@ -147,6 +92,26 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
             <X size={17} />
           </button>
         )}
+      </div>
+
+      {/* Search trigger */}
+      <div style={{ padding: "0.85rem 0.85rem 0" }}>
+        <button
+          onClick={onSearchClick}
+          style={{
+            width: "100%", display: "flex", alignItems: "center", gap: "0.55rem",
+            background: "var(--surface-2)", border: "1px solid var(--border-2)",
+            borderRadius: 9, padding: "0.5rem 0.7rem", cursor: "pointer",
+            color: "var(--text-3)", fontSize: "0.8rem",
+          }}
+        >
+          <Search size={14} />
+          <span style={{ flex: 1, textAlign: "left" }}>Search…</span>
+          <kbd style={{
+            fontSize: "0.65rem", fontWeight: 600, background: "var(--surface-3)",
+            border: "1px solid var(--border-2)", borderRadius: 5, padding: "0.1rem 0.35rem",
+          }}>⌘K</kbd>
+        </button>
       </div>
 
       {/* Nav groups */}
@@ -200,6 +165,44 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
       </div>
     </>
   );
+}
+
+/* ─── Main component ─── */
+export default function LayoutShell({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [prevPath, setPrevPath] = useState<string | null>(null);
+  const path = usePathname();
+  const { data: session } = useSession();
+  const userName = session?.user?.name ?? "";
+  const isKye = userName.toLowerCase() === "kye";
+
+  if (path !== prevPath) {
+    setPrevPath(path);
+    setOpen(false);
+  }
+
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  /* Filter groups for this user */
+  const groups = navGroups.map(g => ({
+    ...g,
+    items: g.items.filter(item => !item.kyeOnly || isKye),
+  })).filter(g => g.items.length > 0);
 
   return (
     <>
@@ -211,7 +214,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         display: "flex", flexDirection: "column",
         height: "100vh", position: "sticky", top: 0,
       }}>
-        <SidebarContent />
+        <SidebarContent groups={groups} path={path} userName={userName} onSearchClick={() => setPaletteOpen(true)} />
       </aside>
 
       {/* ── Mobile top header ── */}
@@ -223,7 +226,9 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           <div style={{ width: 26, height: 26, borderRadius: 7, background: "linear-gradient(135deg,#2dd4e8,#818cf8)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "0.68rem", color: "#07090f" }}>KW</div>
           <span style={{ fontWeight: 800, fontSize: "0.88rem", color: "var(--text-1)", letterSpacing: "-0.02em" }}>Innovations</span>
         </div>
-        <div style={{ width: 38 }} />
+        <button onClick={() => setPaletteOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-2)", padding: "0.5rem", borderRadius: 8, display: "flex" }}>
+          <Search size={19} />
+        </button>
       </header>
 
       {/* ── Mobile drawer ── */}
@@ -238,7 +243,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         willChange: "transform",
         boxShadow: open ? "8px 0 40px rgba(0,0,0,0.5)" : "none",
       }}>
-        <SidebarContent onClose={() => setOpen(false)} />
+        <SidebarContent groups={groups} path={path} userName={userName} onSearchClick={() => setPaletteOpen(true)} onClose={() => setOpen(false)} />
       </aside>
 
       {open && (
@@ -275,6 +280,8 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           );
         })}
       </nav>
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} isKye={isKye} />
     </>
   );
 }
