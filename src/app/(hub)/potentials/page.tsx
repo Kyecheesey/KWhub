@@ -6,6 +6,7 @@ import {
   Phone, Mail, UserCircle2, PhoneCall, PhoneOff,
   Upload, LayoutGrid, List, CalendarClock,
 } from "lucide-react";
+import RecordTimeline from "@/components/RecordTimeline";
 
 const CONTACT_METHODS = [
   { value: "intro_email",   label: "Intro Email",   icon: "✉️" },
@@ -711,6 +712,15 @@ export default function PotentialsPage() {
               </button>
               <button onClick={() => setShowForm(false)} className="btn-ghost">Cancel</button>
             </div>
+            {editId && (
+              <RecordTimeline
+                entityType="potential"
+                entityId={editId}
+                entityName={form.business_name}
+                phone={form.phone || null}
+                email={form.email || null}
+              />
+            )}
           </div>
         </div>
       )}

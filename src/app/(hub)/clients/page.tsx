@@ -5,6 +5,7 @@ import {
   Plus, Download, Globe, Search, Pencil, Trash2, X, RefreshCw,
   Phone, UserCircle2, PhoneCall, PhoneOff,
 } from "lucide-react";
+import RecordTimeline from "@/components/RecordTimeline";
 
 interface Client {
   id: number;
@@ -364,6 +365,15 @@ export default function ClientsPage() {
               </button>
               <button onClick={() => setShowForm(false)} className="btn-ghost">Cancel</button>
             </div>
+            {editId && (
+              <RecordTimeline
+                entityType="client"
+                entityId={editId}
+                entityName={form.business_name}
+                phone={form.phone || null}
+                email={form.email || null}
+              />
+            )}
           </div>
         </div>
       )}
