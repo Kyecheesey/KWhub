@@ -68,6 +68,18 @@ export default function ClientsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Honor ?q= (from global search) and ?new=1 (from keyboard shortcut) on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q");
+    const isNew = params.get("new") === "1";
+    if (!q && !isNew) return;
+    Promise.resolve().then(() => {
+      if (q) setSearch(q);
+      if (isNew) { setEditId(null); setForm(BLANK); setShowForm(true); }
+    });
+  }, []);
+
   function openAdd() { setEditId(null); setForm(BLANK); setShowForm(true); }
   function openEdit(c: Client) {
     setEditId(c.id);

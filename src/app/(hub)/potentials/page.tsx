@@ -126,6 +126,18 @@ export default function PotentialsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Honor ?q= (from global search) and ?new=1 (from keyboard shortcut) on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q");
+    const isNew = params.get("new") === "1";
+    if (!q && !isNew) return;
+    Promise.resolve().then(() => {
+      if (q) { setSearch(q); setView("list"); }
+      if (isNew) { setEditId(null); setForm({ ...BLANK }); setShowForm(true); }
+    });
+  }, []);
+
   function openAdd(defaultStatus = "new") {
     setEditId(null);
     setForm({ ...BLANK, status: defaultStatus });
