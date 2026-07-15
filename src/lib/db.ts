@@ -121,4 +121,17 @@ export async function migrate() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS events (
+      id          SERIAL PRIMARY KEY,
+      entity_type TEXT NOT NULL,
+      entity_id   INTEGER,
+      entity_name TEXT,
+      actor       TEXT,
+      action      TEXT NOT NULL,
+      detail      TEXT,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS events_entity_idx ON events (entity_type, entity_id)`;
 }

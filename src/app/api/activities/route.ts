@@ -1,4 +1,5 @@
 import { sql, migrate } from "@/lib/db";
+import { logEvent } from "@/lib/events";
 
 export async function GET() {
   await migrate();
@@ -16,5 +17,7 @@ export async function POST(req: Request) {
             ${assigned_to || null}, ${due_date || null}, ${tags || null})
     RETURNING *
   `;
+  const created = rows[0] as { id: number };
+  await logEvent({ entity_type: "activity", entity_id: created.id, entity_name: title.trim(), action: "created" });
   return Response.json(rows[0], { status: 201 });
 }
