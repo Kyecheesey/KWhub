@@ -6,6 +6,7 @@ import {
   Phone, UserCircle2, PhoneCall, PhoneOff,
 } from "lucide-react";
 import RecordTimeline from "@/components/RecordTimeline";
+import { findDuplicateGroups, matchReasons } from "@/lib/dupes";
 
 interface Client {
   id: number;
@@ -50,6 +51,7 @@ export default function ClientsPage() {
   const [scraping, setScraping] = useState(false);
   const [scrapeMsg, setScrapeMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showDupes, setShowDupes] = useState(false);
 
   const load = useCallback(() => {
     return Promise.all([
@@ -182,6 +184,8 @@ export default function ClientsPage() {
       (c.assigned_to ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
+  const dupeGroups = findDuplicateGroups(clients);
+
   return (
     <div className="page">
       {/* Header */}
@@ -221,6 +225,79 @@ export default function ClientsPage() {
         <Search size={15} />
         <input className="field" placeholder="Search by business, contact or assignee…" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
+
+      {/* ══ Duplicate detector ══ */}
+      {!loading && dupeGroups.length > 0 && (
+        <div style={{ marginBottom: "1.25rem", background: "var(--surface)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 14, overflow: "hidden" }}>
+          <button
+            onClick={() => setShowDupes(v => !v)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: "0.65rem",
+              padding: "0.8rem 1rem", background: "rgba(251,191,36,0.06)",
+              borderBottom: showDupes ? "1px solid rgba(251,191,36,0.2)" : "none",
+              border: "none", cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <span style={{ fontSize: "1rem" }}>⚠️</span>
+            <span style={{ fontWeight: 700, fontSize: "0.88rem", color: "#fbbf24", flex: 1 }}>
+              {dupeGroups.length} possible duplicate{dupeGroups.length > 1 ? "s" : ""} detected
+            </span>
+            <span style={{ fontSize: "0.75rem", color: "var(--text-3)", fontWeight: 600 }}>
+              {showDupes ? "Hide ▲" : "Review ▼"}
+            </span>
+          </button>
+
+          {showDupes && (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {dupeGroups.map((group, gi) => {
+                const uniqueReasons = matchReasons(group);
+                return (
+                  <div key={gi} style={{ borderBottom: gi < dupeGroups.length - 1 ? "1px solid var(--border)" : "none" }}>
+                    <div style={{ padding: "0.5rem 1rem 0.25rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <span style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>
+                        Matched by:
+                      </span>
+                      {uniqueReasons.map(r => (
+                        <span key={r} style={{ fontSize: "0.65rem", fontWeight: 700, background: "rgba(251,191,36,0.12)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 4, padding: "0.1rem 0.4rem", textTransform: "capitalize" }}>
+                          {r}
+                        </span>
+                      ))}
+                    </div>
+                    {group.map((c, ci) => (
+                      <div key={c.id} style={{
+                        display: "flex", alignItems: "center", gap: "0.75rem",
+                        padding: "0.65rem 1rem 0.65rem 1.5rem",
+                        borderTop: ci > 0 ? "1px dashed var(--border)" : "none",
+                        background: ci % 2 === 1 ? "rgba(255,255,255,0.015)" : "transparent",
+                      }}>
+                        <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem", fontWeight: 800, color: "var(--text-2)" }}>
+                          {c.business_name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.business_name}</div>
+                          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.2rem" }}>
+                            {c.email && <span style={{ fontSize: "0.7rem", color: "var(--text-3)" }}>✉ {c.email}</span>}
+                            {c.phone && <span style={{ fontSize: "0.7rem", color: "var(--text-3)" }}>📞 {c.phone}</span>}
+                            {c.assigned_to && <span style={{ fontSize: "0.7rem", color: "#818cf8" }}>👤 {c.assigned_to}</span>}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: "0.4rem", flexShrink: 0 }}>
+                          <button onClick={() => openEdit(c)} style={{ padding: "0.3rem 0.6rem", background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 7, cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, color: "var(--text-2)", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                            <Pencil size={11} /> Edit
+                          </button>
+                          <button onClick={() => remove(c.id)} style={{ padding: "0.3rem 0.6rem", background: "rgba(248,113,113,0.07)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 7, cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, color: "#f87171", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                            <Trash2 size={11} /> Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Desktop Table */}
       <div className="client-table-wrap">

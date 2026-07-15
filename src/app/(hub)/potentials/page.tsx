@@ -7,6 +7,7 @@ import {
   Upload, LayoutGrid, List, CalendarClock,
 } from "lucide-react";
 import RecordTimeline from "@/components/RecordTimeline";
+import { findDuplicateGroups, matchReasons } from "@/lib/dupes";
 
 const CONTACT_METHODS = [
   { value: "intro_email",   label: "Intro Email",   icon: "✉️" },
@@ -266,27 +267,7 @@ export default function PotentialsPage() {
   const unassignedCount = potentials.filter((p) => !p.assigned_to).length;
 
   /* ── Duplicate detection ── */
-  function normName(s: string) {
-    return s.toLowerCase()
-      .replace(/\b(pty|ltd|limited|australia|au|the|and|&|group|services|solutions|co)\b/g, "")
-      .replace(/[^a-z0-9]/g, "")
-      .trim();
-  }
-  const dupeGroups: Potential[][] = [];
-  const seen = new Set<number>();
-  for (let i = 0; i < potentials.length; i++) {
-    if (seen.has(potentials[i].id)) continue;
-    const group: Potential[] = [potentials[i]];
-    for (let j = i + 1; j < potentials.length; j++) {
-      if (seen.has(potentials[j].id)) continue;
-      const a = potentials[i], b = potentials[j];
-      const nameMatch = normName(a.business_name) && normName(a.business_name) === normName(b.business_name);
-      const emailMatch = a.email && b.email && a.email.trim().toLowerCase() === b.email.trim().toLowerCase();
-      const phoneMatch = a.phone && b.phone && a.phone.replace(/\D/g, "") === b.phone.replace(/\D/g, "") && a.phone.replace(/\D/g, "").length >= 8;
-      if (nameMatch || emailMatch || phoneMatch) { group.push(b); seen.add(b.id); }
-    }
-    if (group.length > 1) { dupeGroups.push(group); seen.add(potentials[i].id); }
-  }
+  const dupeGroups = findDuplicateGroups(potentials);
 
   const filtered = potentials.filter((p) => {
     const matchSearch = !search ||
@@ -391,15 +372,7 @@ export default function PotentialsPage() {
           {showDupes && (
             <div style={{ display: "flex", flexDirection: "column" }}>
               {dupeGroups.map((group, gi) => {
-                // Figure out why they matched
-                const reasons: string[] = [];
-                const a = group[0];
-                group.slice(1).forEach(b => {
-                  if (normName(a.business_name) === normName(b.business_name)) reasons.push("name");
-                  if (a.email && b.email && a.email.toLowerCase() === b.email.toLowerCase()) reasons.push("email");
-                  if (a.phone && b.phone && a.phone.replace(/\D/g,"") === b.phone.replace(/\D/g,"")) reasons.push("phone");
-                });
-                const uniqueReasons = [...new Set(reasons)];
+                const uniqueReasons = matchReasons(group);
                 return (
                   <div key={gi} style={{ borderBottom: gi < dupeGroups.length - 1 ? "1px solid var(--border)" : "none" }}>
                     {/* Reason label */}
