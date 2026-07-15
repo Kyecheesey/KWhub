@@ -121,6 +121,19 @@ export async function migrate() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'staff'`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS client_id INTEGER`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS portal_messages (
+      id          SERIAL PRIMARY KEY,
+      client_id   INTEGER NOT NULL,
+      author      TEXT,
+      author_role TEXT,
+      body        TEXT NOT NULL,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS portal_messages_client_idx ON portal_messages (client_id)`;
   await sql`
     CREATE TABLE IF NOT EXISTS events (
       id          SERIAL PRIMARY KEY,

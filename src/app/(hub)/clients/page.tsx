@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import {
   Plus, Download, Globe, Search, Pencil, Trash2, X, RefreshCw,
-  Phone, UserCircle2, PhoneCall, PhoneOff,
+  Phone, UserCircle2, PhoneCall, PhoneOff, MonitorSmartphone,
 } from "lucide-react";
 import RecordTimeline from "@/components/RecordTimeline";
 import { findDuplicateGroups, matchReasons } from "@/lib/dupes";
@@ -399,6 +400,9 @@ export default function ClientsPage() {
                     </td>
                     <td>
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+                        <Link href={`/clients/${c.id}/portal`} className="btn-ghost" style={{ padding: "0.35rem 0.65rem", fontSize: "0.78rem" }}>
+                          <MonitorSmartphone size={12} /> Portal
+                        </Link>
                         <button onClick={() => openEdit(c)} className="btn-ghost" style={{ padding: "0.35rem 0.65rem", fontSize: "0.78rem" }}>
                           <Pencil size={12} /> Edit
                         </button>
@@ -450,6 +454,9 @@ export default function ClientsPage() {
               )}
               {c.notes && <p style={{ fontSize: "0.8rem", color: "var(--text-3)", marginBottom: "0.75rem", lineHeight: 1.5 }}>{c.notes}</p>}
               <div style={{ display: "flex", gap: "0.5rem", paddingTop: "0.75rem", borderTop: "1px solid var(--border)" }}>
+                <Link href={`/clients/${c.id}/portal`} className="btn-ghost" style={{ flex: 1, justifyContent: "center", fontSize: "0.82rem", padding: "0.5rem" }}>
+                  <MonitorSmartphone size={13} /> Portal
+                </Link>
                 <button onClick={() => openEdit(c)} className="btn-ghost" style={{ flex: 1, justifyContent: "center", fontSize: "0.82rem", padding: "0.5rem" }}>
                   <Pencil size={13} /> Edit
                 </button>
