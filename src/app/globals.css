@@ -446,6 +446,58 @@ body {
 .priority-medium { color: #fbbf24; }
 .priority-low    { color: #34d399; }
 
+/* ════════ Login ════════ */
+.login-shell {
+  min-height: 100vh;
+  display: flex;
+}
+.login-brand { display: none; }
+.login-form-col {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  position: relative;
+  background: var(--bg);
+}
+@media (min-width: 960px) {
+  .login-brand {
+    display: flex;
+    flex: 1.15;
+    position: relative;
+    overflow: hidden;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3.25rem;
+    background: linear-gradient(165deg, #0c0e1a 0%, #12162b 55%, #191e35 100%);
+    border-right: 1px solid var(--border);
+  }
+}
+
+.login-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  pointer-events: none;
+}
+@keyframes login-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-4%, 3%) scale(1.06); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .login-blob { animation: login-drift 14s ease-in-out infinite; }
+}
+
+@keyframes login-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.login-fade-up { animation: login-fade-up 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .login-fade-up, .login-blob { animation: none; }
+}
+
 /* ════════ Utility ════════ */
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .flex-center { display: flex; align-items: center; justify-content: center; }
