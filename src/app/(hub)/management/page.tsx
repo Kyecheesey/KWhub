@@ -29,6 +29,7 @@ function auditTime(iso: string) {
 function PasswordReset() {
   const [user, setUser] = useState("luka");
   const [pw, setPw] = useState("");
+  const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
@@ -47,6 +48,22 @@ function PasswordReset() {
     if (!res.ok) { setMsg({ text: data.error ?? "Something went wrong.", ok: false }); return; }
     setPw("");
     setMsg({ text: `Password reset for ${user.charAt(0).toUpperCase() + user.slice(1)}.`, ok: true });
+  }
+
+  async function saveEmail(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg(null);
+    setBusy(true);
+    const res = await fetch("/api/account/email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: user, email }),
+    });
+    const data = await res.json();
+    setBusy(false);
+    if (!res.ok) { setMsg({ text: data.error ?? "Something went wrong.", ok: false }); return; }
+    setEmail("");
+    setMsg({ text: `Recovery email saved for ${user.charAt(0).toUpperCase() + user.slice(1)}.`, ok: true });
   }
 
   return (
@@ -84,6 +101,25 @@ function PasswordReset() {
         <button type="submit" className="btn-primary" disabled={busy || !pw} style={{ justifyContent: "center" }}>
           {busy ? "Resetting…" : "Reset Password"}
         </button>
+        <div style={{ borderTop: "1px solid var(--border)", paddingTop: "0.75rem", display: "grid", gap: "0.5rem" }}>
+          <div style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>
+            Recovery email for the selected user — used by &ldquo;Forgot password?&rdquo; on the login page
+          </div>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <input
+              className="field"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@example.com"
+              autoComplete="off"
+              style={{ flex: 1 }}
+            />
+            <button type="button" onClick={saveEmail} className="btn-ghost" disabled={busy || !email}>
+              Save Email
+            </button>
+          </div>
+        </div>
       </form>
     </div>
   );

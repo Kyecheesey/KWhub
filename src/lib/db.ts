@@ -123,6 +123,19 @@ export async function migrate() {
   `;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'staff'`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS client_id INTEGER`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT`;
+  await sql`UPDATE users SET email = 'director@kwinnovations.com.au' WHERE username = 'kye' AND email IS NULL`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS password_resets (
+      id         SERIAL PRIMARY KEY,
+      username   TEXT NOT NULL,
+      code_hash  TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      attempts   INTEGER DEFAULT 0,
+      used       BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
   await sql`
     CREATE TABLE IF NOT EXISTS portal_messages (
       id          SERIAL PRIMARY KEY,

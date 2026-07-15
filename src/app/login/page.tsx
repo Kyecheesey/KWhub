@@ -5,7 +5,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
   Lock, User, LogIn, AlertCircle, Eye, EyeOff,
-  Users, Target, CalendarDays,
+  Users, Target, CalendarDays, CheckCircle2,
 } from "lucide-react";
 
 const highlights = [
@@ -14,13 +14,25 @@ const highlights = [
   { icon: CalendarDays, label: "Roster, tasks and team activity" },
 ];
 
+type Mode = "signin" | "forgot" | "reset" | "reset-done";
+
 export default function LoginPage() {
+  const [mode, setMode] = useState<Mode>("signin");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  function switchMode(next: Mode) {
+    setMode(next);
+    setError("");
+    setInfo("");
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,6 +50,40 @@ export default function LoginPage() {
       router.push("/");
       router.refresh();
     }
+  }
+
+  async function handleForgot(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    const res = await fetch("/api/auth/forgot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username }),
+    });
+    const data = await res.json();
+    setLoading(false);
+    if (!res.ok) { setError(data.error ?? "Something went wrong."); return; }
+    setInfo(data.message);
+    setMode("reset");
+  }
+
+  async function handleReset(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    const res = await fetch("/api/auth/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, code, new_password: newPassword }),
+    });
+    const data = await res.json();
+    setLoading(false);
+    if (!res.ok) { setError(data.error ?? "Something went wrong."); return; }
+    setPassword("");
+    setCode("");
+    setNewPassword("");
+    setMode("reset-done");
   }
 
   const today = new Date().toLocaleDateString("en-AU", {
@@ -130,82 +176,189 @@ export default function LoginPage() {
               boxShadow: "0 24px 64px rgba(0,0,0,0.4)",
             }}
           >
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <div>
-                <label htmlFor="username" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.4rem" }}>
-                  Username
-                </label>
-                <div style={{ position: "relative" }}>
-                  <User size={15} style={{ position: "absolute", left: "0.85rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }} />
+            {(error || info) && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: "0.5rem",
+                padding: "0.65rem 0.85rem", borderRadius: 10, marginBottom: "1rem",
+                background: error ? "rgba(248,113,113,0.08)" : "rgba(45,212,232,0.08)",
+                border: `1px solid ${error ? "rgba(248,113,113,0.2)" : "rgba(45,212,232,0.2)"}`,
+                color: error ? "#f87171" : "var(--accent)", fontSize: "0.83rem",
+              }}>
+                <AlertCircle size={14} style={{ flexShrink: 0 }} />
+                {error || info}
+              </div>
+            )}
+
+            {mode === "signin" && (
+              <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <div>
+                  <label htmlFor="username" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.4rem" }}>
+                    Username
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <User size={15} style={{ position: "absolute", left: "0.85rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }} />
+                    <input
+                      id="username"
+                      className="field"
+                      style={{ paddingLeft: "2.25rem" }}
+                      placeholder="Your username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value.toLowerCase().trim())}
+                      autoComplete="username"
+                      autoFocus
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="password" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.4rem" }}>
+                    Password
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <Lock size={15} style={{ position: "absolute", left: "0.85rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }} />
+                    <input
+                      id="password"
+                      className="field"
+                      type={showPassword ? "text" : "password"}
+                      style={{ paddingLeft: "2.25rem", paddingRight: "2.5rem" }}
+                      placeholder="••••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="current-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      style={{
+                        position: "absolute", right: "0.7rem", top: "50%", transform: "translateY(-50%)",
+                        background: "none", border: "none", cursor: "pointer", color: "var(--text-3)",
+                        padding: "0.2rem", display: "flex",
+                      }}
+                    >
+                      {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={loading}
+                  style={{ width: "100%", justifyContent: "center", padding: "0.7rem", marginTop: "0.25rem" }}
+                >
+                  <LogIn size={15} />
+                  {loading ? "Signing in…" : "Sign In"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => switchMode("forgot")}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", fontSize: "0.78rem", padding: "0.25rem", textAlign: "center" }}
+                >
+                  Forgot password?
+                </button>
+              </form>
+            )}
+
+            {mode === "forgot" && (
+              <form onSubmit={handleForgot} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <p style={{ fontSize: "0.83rem", color: "var(--text-2)", lineHeight: 1.5, margin: 0 }}>
+                  Enter your username and we&apos;ll email a 6-digit verification code to the address on file.
+                </p>
+                <div>
+                  <label htmlFor="forgot-username" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.4rem" }}>
+                    Username
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <User size={15} style={{ position: "absolute", left: "0.85rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }} />
+                    <input
+                      id="forgot-username"
+                      className="field"
+                      style={{ paddingLeft: "2.25rem" }}
+                      placeholder="Your username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value.toLowerCase().trim())}
+                      autoComplete="username"
+                      autoFocus
+                      required
+                    />
+                  </div>
+                </div>
+                <button type="submit" className="btn-primary" disabled={loading} style={{ width: "100%", justifyContent: "center", padding: "0.7rem" }}>
+                  {loading ? "Sending…" : "Email Me a Code"}
+                </button>
+                <button type="button" onClick={() => switchMode("signin")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", fontSize: "0.78rem", padding: "0.25rem" }}>
+                  Back to sign in
+                </button>
+              </form>
+            )}
+
+            {mode === "reset" && (
+              <form onSubmit={handleReset} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <div>
+                  <label htmlFor="reset-code" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.4rem" }}>
+                    6-digit code
+                  </label>
                   <input
-                    id="username"
+                    id="reset-code"
                     className="field"
-                    style={{ paddingLeft: "2.25rem" }}
-                    placeholder="kye / luka / aksel"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value.toLowerCase().trim())}
-                    autoComplete="username"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="123456"
+                    style={{ textAlign: "center", letterSpacing: "0.4em", fontWeight: 700, fontSize: "1.05rem" }}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                     autoFocus
                     required
                   />
                 </div>
-              </div>
-
-              <div>
-                <label htmlFor="password" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.4rem" }}>
-                  Password
-                </label>
-                <div style={{ position: "relative" }}>
-                  <Lock size={15} style={{ position: "absolute", left: "0.85rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }} />
-                  <input
-                    id="password"
-                    className="field"
-                    type={showPassword ? "text" : "password"}
-                    style={{ paddingLeft: "2.25rem", paddingRight: "2.5rem" }}
-                    placeholder="••••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    style={{
-                      position: "absolute", right: "0.7rem", top: "50%", transform: "translateY(-50%)",
-                      background: "none", border: "none", cursor: "pointer", color: "var(--text-3)",
-                      padding: "0.2rem", display: "flex",
-                    }}
-                  >
-                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                  </button>
+                <div>
+                  <label htmlFor="reset-password" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.4rem" }}>
+                    New password
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <Lock size={15} style={{ position: "absolute", left: "0.85rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }} />
+                    <input
+                      id="reset-password"
+                      className="field"
+                      type="password"
+                      style={{ paddingLeft: "2.25rem" }}
+                      placeholder="At least 8 characters"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      autoComplete="new-password"
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
+                <button type="submit" className="btn-primary" disabled={loading} style={{ width: "100%", justifyContent: "center", padding: "0.7rem" }}>
+                  {loading ? "Resetting…" : "Reset Password"}
+                </button>
+                <button type="button" onClick={() => switchMode("forgot")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", fontSize: "0.78rem", padding: "0.25rem" }}>
+                  Didn&apos;t get a code? Send again
+                </button>
+              </form>
+            )}
 
-              {error && (
+            {mode === "reset-done" && (
+              <div style={{ textAlign: "center", padding: "0.5rem 0" }}>
                 <div style={{
-                  display: "flex", alignItems: "center", gap: "0.5rem",
-                  padding: "0.65rem 0.85rem", borderRadius: 10,
-                  background: "rgba(248,113,113,0.08)",
-                  border: "1px solid rgba(248,113,113,0.2)",
-                  color: "#f87171", fontSize: "0.83rem",
+                  width: 44, height: 44, borderRadius: "50%", margin: "0 auto 0.75rem",
+                  background: "rgba(54,211,153,0.12)", border: "1px solid rgba(54,211,153,0.3)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  <AlertCircle size={14} style={{ flexShrink: 0 }} />
-                  {error}
+                  <CheckCircle2 size={20} color="#36d399" />
                 </div>
-              )}
-
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={loading}
-                style={{ width: "100%", justifyContent: "center", padding: "0.7rem", marginTop: "0.25rem" }}
-              >
-                <LogIn size={15} />
-                {loading ? "Signing in…" : "Sign In"}
-              </button>
-            </form>
+                <p style={{ fontWeight: 700, color: "var(--text-1)", marginBottom: "0.25rem" }}>Password reset</p>
+                <p style={{ fontSize: "0.8rem", color: "var(--text-3)", marginBottom: "1.25rem" }}>Sign in with your new password.</p>
+                <button onClick={() => switchMode("signin")} className="btn-primary" style={{ width: "100%", justifyContent: "center" }}>
+                  Back to Sign In
+                </button>
+              </div>
+            )}
           </div>
 
           <p className="login-fade-up" style={{ animationDelay: "0.16s", textAlign: "center", marginTop: "1.5rem", fontSize: "0.75rem", color: "var(--text-3)" }}>
