@@ -26,10 +26,18 @@ export async function migrate() {
   // Seed initial users — DO NOTHING so passwords changed in-app persist
   await sql`
     INSERT INTO users (name, username, password_hash) VALUES
-      ('Kye',   'kye',   '$2b$12$pyhjXNv65tTkz5u8cAHw7u2N0KXOzZVV5jWkEtDGgO9lSaWVs70ne'),
+      ('Kye',   'kye',   '$2b$12$TnpKR02s9ccbpccZl.pTTe.7arxp2d7il62Hu/977YM1RfK4OMKHm'),
       ('Luka',  'luka',  '$2b$12$9JBWUvk1qxzyEga97FnPLen6BDthAmyPr/QSx8JSPZImok.9jUnpS'),
       ('Aksel', 'aksel', '$2b$12$CZlj6jJ4PJzqhtsqtejYH.Htm9VuASa3l/4adS/PAd2P6j1Z9Mdo2')
     ON CONFLICT (username) DO NOTHING
+  `;
+  // One-shot migration: rotate Kye's password off the old seeded hash.
+  // Matches only the previous hash, so it can never overwrite a later change.
+  await sql`
+    UPDATE users
+    SET password_hash = '$2b$12$TnpKR02s9ccbpccZl.pTTe.7arxp2d7il62Hu/977YM1RfK4OMKHm'
+    WHERE username = 'kye'
+      AND password_hash = '$2b$12$pyhjXNv65tTkz5u8cAHw7u2N0KXOzZVV5jWkEtDGgO9lSaWVs70ne'
   `;
   await sql`
     CREATE TABLE IF NOT EXISTS clients (
