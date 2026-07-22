@@ -21,15 +21,15 @@ interface Activity {
 
 const COLUMNS = [
   { key: "todo",        label: "To Do",       color: "#60a5fa", bg: "rgba(96,165,250,0.1)",  border: "rgba(96,165,250,0.2)"  },
-  { key: "in_progress", label: "In Progress",  color: "#fbbf24", bg: "rgba(251,191,36,0.1)",  border: "rgba(251,191,36,0.2)"  },
-  { key: "in_review",   label: "In Review",    color: "#a78bfa", bg: "rgba(167,139,250,0.1)", border: "rgba(167,139,250,0.2)" },
-  { key: "done",        label: "Done",         color: "#34d399", bg: "rgba(52,211,153,0.1)",  border: "rgba(52,211,153,0.2)"  },
+  { key: "in_progress", label: "In Progress",  color: "#d97706", bg: "rgba(251,191,36,0.1)",  border: "rgba(251,191,36,0.2)"  },
+  { key: "in_review",   label: "In Review",    color: "#7c3aed", bg: "rgba(167,139,250,0.1)", border: "rgba(167,139,250,0.2)" },
+  { key: "done",        label: "Done",         color: "#059669", bg: "rgba(52,211,153,0.1)",  border: "rgba(52,211,153,0.2)"  },
 ];
 
 const PRIORITIES = [
   { key: "low",    label: "Low",    color: "#60a5fa" },
-  { key: "medium", label: "Medium", color: "#fbbf24" },
-  { key: "high",   label: "High",   color: "#f87171" },
+  { key: "medium", label: "Medium", color: "#d97706" },
+  { key: "high",   label: "High",   color: "#e11d48" },
 ];
 
 const TEAM = ["Kye", "Luka", "Aksel"];
@@ -150,7 +150,7 @@ export default function ActivitiesPage() {
       {/* ── Header ── */}
       <div className="page-header">
         <div>
-          <p style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#a78bfa", marginBottom: "0.35rem" }}>KW | Innovations</p>
+          <p style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#7c3aed", marginBottom: "0.35rem" }}>KW | Innovations</p>
           <h1 style={{ fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>Activities</h1>
           <p style={{ color: "var(--text-2)", fontSize: "0.875rem", marginTop: "0.3rem" }}>
             {loading ? "Loading…" : `${activities.length} activities · ${totalDone} done${totalOverdue ? ` · ${totalOverdue} overdue` : ""}`}
@@ -179,11 +179,11 @@ export default function ActivitiesPage() {
             );
           })}
           {totalOverdue > 0 && (
-            <div style={{ background: "rgba(248,113,113,0.07)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 12, padding: "0.75rem 1.1rem", display: "flex", alignItems: "center", gap: "0.6rem", flex: "1 1 120px" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#f87171", flexShrink: 0 }} />
+            <div style={{ background: "rgba(248,113,113,0.07)", border: "1px solid rgba(225,29,72,0.2)", borderRadius: 12, padding: "0.75rem 1.1rem", display: "flex", alignItems: "center", gap: "0.6rem", flex: "1 1 120px" }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#e11d48", flexShrink: 0 }} />
               <div>
-                <div style={{ fontSize: "1.4rem", fontWeight: 900, color: "#f87171", lineHeight: 1 }}>{totalOverdue}</div>
-                <div style={{ fontSize: "0.7rem", color: "#f87171", fontWeight: 600, opacity: 0.7 }}>Overdue</div>
+                <div style={{ fontSize: "1.4rem", fontWeight: 900, color: "#e11d48", lineHeight: 1 }}>{totalOverdue}</div>
+                <div style={{ fontSize: "0.7rem", color: "#e11d48", fontWeight: 600, opacity: 0.7 }}>Overdue</div>
               </div>
             </div>
           )}
@@ -197,7 +197,7 @@ export default function ActivitiesPage() {
           <div className="stage-pills" style={{ marginBottom: 0 }}>
             <span style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-3)", alignSelf: "center", whiteSpace: "nowrap" }}>Assignee:</span>
             {["all", ...agents, ...(activities.some((a) => !a.assigned_to) ? ["unassigned"] : [])].map((agent) => (
-              <button key={agent} onClick={() => setFilterAgent(agent)} style={{ padding: "0.3rem 0.75rem", borderRadius: 99, fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", background: filterAgent === agent ? "rgba(167,139,250,0.15)" : "var(--surface)", border: `1px solid ${filterAgent === agent ? "rgba(167,139,250,0.35)" : "var(--border)"}`, color: filterAgent === agent ? "#a78bfa" : "var(--text-2)", whiteSpace: "nowrap", textTransform: "capitalize" }}>
+              <button key={agent} onClick={() => setFilterAgent(agent)} style={{ padding: "0.3rem 0.75rem", borderRadius: 99, fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", background: filterAgent === agent ? "rgba(167,139,250,0.15)" : "var(--surface)", border: `1px solid ${filterAgent === agent ? "rgba(167,139,250,0.35)" : "var(--border)"}`, color: filterAgent === agent ? "#7c3aed" : "var(--text-2)", whiteSpace: "nowrap", textTransform: "capitalize" }}>
                 {agent === "all" ? `All (${activities.length})` : agent}
               </button>
             ))}
@@ -277,7 +277,7 @@ export default function ActivitiesPage() {
                           opacity: done ? 0.65 : 1,
                           transition: "box-shadow 0.15s, transform 0.15s",
                         }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(0,0,0,0.3)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(50,30,100,0.12)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "none"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
                       >
                         {/* Priority stripe */}
@@ -287,7 +287,7 @@ export default function ActivitiesPage() {
                           {/* Title row */}
                           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.4rem", marginBottom: "0.4rem" }}>
                             <div style={{ display: "flex", alignItems: "flex-start", gap: "0.4rem", flex: 1, minWidth: 0 }}>
-                              {done && <CheckCircle2 size={13} style={{ color: "#34d399", flexShrink: 0, marginTop: 2 }} />}
+                              {done && <CheckCircle2 size={13} style={{ color: "#059669", flexShrink: 0, marginTop: 2 }} />}
                               <span style={{ fontWeight: 700, fontSize: "0.85rem", lineHeight: 1.35, textDecoration: done ? "line-through" : "none", color: done ? "var(--text-3)" : "var(--text-1)" }}>
                                 {a.title}
                               </span>
@@ -308,12 +308,12 @@ export default function ActivitiesPage() {
                           {/* Meta */}
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginBottom: tagList.length ? "0.5rem" : 0 }}>
                             {a.assigned_to && (
-                              <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", color: "#818cf8" }}>
+                              <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", color: "#4f46e5" }}>
                                 <UserCircle2 size={10} /> {a.assigned_to}
                               </span>
                             )}
                             {a.due_date && (
-                              <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", color: overdue ? "#f87171" : "var(--text-3)", fontWeight: overdue ? 700 : 400 }}>
+                              <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", color: overdue ? "#e11d48" : "var(--text-3)", fontWeight: overdue ? 700 : 400 }}>
                                 <Calendar size={10} /> {formatDate(a.due_date)}{overdue ? " ⚠" : ""}
                               </span>
                             )}
@@ -323,7 +323,7 @@ export default function ActivitiesPage() {
                           {tagList.length > 0 && (
                             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem", marginBottom: "0.5rem" }}>
                               {tagList.map((tag) => (
-                                <span key={tag} style={{ display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.65rem", fontWeight: 600, color: "#a78bfa", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", padding: "0.1rem 0.45rem", borderRadius: 99 }}>
+                                <span key={tag} style={{ display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.65rem", fontWeight: 600, color: "#7c3aed", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", padding: "0.1rem 0.45rem", borderRadius: 99 }}>
                                   <Tag size={8} /> {tag}
                                 </span>
                               ))}
@@ -341,7 +341,7 @@ export default function ActivitiesPage() {
                             <button onClick={() => openEdit(a)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", color: "var(--text-3)" }}>
                               <Pencil size={11} />
                             </button>
-                            <button onClick={() => remove(a.id)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, background: "rgba(248,113,113,0.06)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 6, cursor: "pointer", color: "#f87171" }}>
+                            <button onClick={() => remove(a.id)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, background: "rgba(248,113,113,0.06)", border: "1px solid rgba(225,29,72,0.2)", borderRadius: 6, cursor: "pointer", color: "#e11d48" }}>
                               <Trash2 size={11} />
                             </button>
                           </div>
@@ -368,7 +368,7 @@ export default function ActivitiesPage() {
               {/* Title */}
               <div>
                 <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.35rem" }}>
-                  Title <span style={{ color: "#a78bfa" }}>*</span>
+                  Title <span style={{ color: "#7c3aed" }}>*</span>
                 </label>
                 <input className="field" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="What needs to be done?" autoFocus />
               </div>
@@ -426,7 +426,7 @@ export default function ActivitiesPage() {
             </div>
 
             <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
-              <button onClick={save} className="btn-primary" style={{ flex: 1, justifyContent: "center", background: "linear-gradient(135deg, #a78bfa, #7c3aed)" }}>
+              <button onClick={save} className="btn-primary" style={{ flex: 1, justifyContent: "center", background: "linear-gradient(135deg, #7c3aed, #7c3aed)" }}>
                 {editId ? "Save Changes" : "Create Activity"}
               </button>
               <button onClick={() => setShowForm(false)} className="btn-ghost">Cancel</button>

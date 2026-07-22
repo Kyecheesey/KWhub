@@ -57,7 +57,7 @@ export default function ChangePassword({ open, onClose }: { open: boolean; onClo
           <div style={{ textAlign: "center", padding: "1rem 0" }}>
             <div style={{
               width: 44, height: 44, borderRadius: "50%", margin: "0 auto 0.75rem",
-              background: "rgba(54,211,153,0.12)", border: "1px solid rgba(54,211,153,0.3)",
+              background: "rgba(5,150,105,0.10)", border: "1px solid rgba(5,150,105,0.3)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               <Check size={20} color="var(--accent-3)" />
@@ -84,8 +84,8 @@ export default function ChangePassword({ open, onClose }: { open: boolean; onClo
               <div style={{
                 display: "flex", alignItems: "center", gap: "0.5rem",
                 padding: "0.65rem 0.85rem", borderRadius: 10,
-                background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)",
-                color: "#f87171", fontSize: "0.83rem",
+                background: "rgba(225,29,72,0.07)", border: "1px solid rgba(225,29,72,0.2)",
+                color: "#e11d48", fontSize: "0.83rem",
               }}>
                 <AlertCircle size={14} style={{ flexShrink: 0 }} />
                 {error}

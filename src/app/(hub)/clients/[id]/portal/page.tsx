@@ -184,9 +184,9 @@ export default function ClientPortalAdminPage() {
       {flash && (
         <div style={{
           padding: "0.65rem 0.9rem", borderRadius: 10, fontSize: "0.83rem", fontWeight: 500, marginBottom: "1rem",
-          background: flash.ok ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)",
-          border: `1px solid ${flash.ok ? "rgba(52,211,153,0.2)" : "rgba(248,113,113,0.2)"}`,
-          color: flash.ok ? "#34d399" : "#f87171",
+          background: flash.ok ? "rgba(52,211,153,0.08)" : "rgba(225,29,72,0.07)",
+          border: `1px solid ${flash.ok ? "rgba(52,211,153,0.2)" : "rgba(225,29,72,0.2)"}`,
+          color: flash.ok ? "#059669" : "#e11d48",
         }}>
           {flash.text}
         </div>
@@ -255,9 +255,9 @@ export default function ClientPortalAdminPage() {
                       <div style={{ fontWeight: 700, fontSize: "0.85rem" }}>{a.title}</div>
                       {a.response_note && <div style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>&ldquo;{a.response_note}&rdquo;</div>}
                     </div>
-                    {a.status === "pending" && pill("Pending", "#fbbf24")}
-                    {a.status === "approved" && pill("Approved", "#36d399")}
-                    {a.status === "changes_requested" && pill("Changes", "#f87171")}
+                    {a.status === "pending" && pill("Pending", "#d97706")}
+                    {a.status === "approved" && pill("Approved", "#10b981")}
+                    {a.status === "changes_requested" && pill("Changes", "#e11d48")}
                     <button
                       onClick={async () => {
                         if (!confirm(`Delete approval "${a.title}"?`)) return;
@@ -293,7 +293,7 @@ export default function ClientPortalAdminPage() {
                   <div key={inv.id} style={{ padding: "0.75rem 1.15rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
                     <span style={{ fontWeight: 700, fontSize: "0.85rem", flex: 1, minWidth: 90 }}>{inv.number}</span>
                     <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: "0.85rem", fontWeight: 700 }}>{money(inv.amount_cents)}</span>
-                    {inv.status === "paid" ? pill("Paid", "#36d399") : (
+                    {inv.status === "paid" ? pill("Paid", "#10b981") : (
                       <button
                         onClick={async () => {
                           const data = await post("/api/portal/invoices", { id: inv.id, status: "paid" }, "PATCH");
@@ -350,12 +350,12 @@ export default function ClientPortalAdminPage() {
                       }}
                       style={{
                         width: 19, height: 19, borderRadius: 6, flexShrink: 0, cursor: "pointer",
-                        border: `2px solid ${item.done ? "#36d399" : "var(--border-3)"}`,
-                        background: item.done ? "#36d399" : "transparent",
+                        border: `2px solid ${item.done ? "#10b981" : "var(--border-3)"}`,
+                        background: item.done ? "#10b981" : "transparent",
                         display: "flex", alignItems: "center", justifyContent: "center",
                       }}
                     >
-                      {item.done && <Check size={11} color="#07090f" strokeWidth={3} />}
+                      {item.done && <Check size={11} color="#ffffff" strokeWidth={3} />}
                     </button>
                     <span style={{ flex: 1, fontSize: "0.85rem", textDecoration: item.done ? "line-through" : "none", opacity: item.done ? 0.6 : 1 }}>{item.text}</span>
                     <button

@@ -34,7 +34,7 @@ const SHORTCUTS: [string, string][] = [
 
 /* ─── Helpers ─── */
 function avatarGradient(name: string) {
-  const opts = ["#2dd4e8,#0ea5e9", "#818cf8,#6366f1", "#34d399,#059669", "#fb923c,#ea580c"];
+  const opts = ["#8b5cf6,#7c3aed", "#ec4899,#db2777", "#14b8a6,#0d9488", "#f59e0b,#ea580c"];
   let h = 0;
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
   return `linear-gradient(135deg, ${opts[Math.abs(h) % opts.length]})`;
@@ -53,7 +53,7 @@ function NavLink({ href, label, icon: Icon, soon, active, onClick }: {
         display: "flex", alignItems: "center", gap: "0.6rem",
         padding: "0.5rem 0.7rem", borderRadius: 9, textDecoration: "none",
         fontSize: "0.875rem", fontWeight: active ? 700 : 500,
-        color: active ? "#eef1ff" : soon ? "var(--text-4)" : "var(--text-2)",
+        color: active ? "var(--text-1)" : soon ? "var(--text-4)" : "var(--text-2)",
         background: active ? "var(--surface-3)" : "transparent",
         borderLeft: active ? "2.5px solid var(--accent)" : "2.5px solid transparent",
         transition: "background 0.12s, color 0.12s, border-color 0.12s",
@@ -102,10 +102,10 @@ function SidebarContent({
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
           <div style={{
             width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-            background: "linear-gradient(135deg,#2dd4e8,#818cf8)",
+            background: "linear-gradient(135deg,#8b5cf6,#ec4899)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontWeight: 900, fontSize: "0.8rem", color: "#07090f",
-            boxShadow: "0 2px 8px rgba(45,212,232,0.3)",
+            fontWeight: 900, fontSize: "0.8rem", color: "#fff",
+            boxShadow: "0 2px 8px rgba(124,58,237,0.35)",
           }}>KW</div>
           <div>
             <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "var(--text-1)", letterSpacing: "-0.02em", lineHeight: 1.1 }}>Innovations</div>
@@ -172,7 +172,7 @@ function SidebarContent({
             width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
             background: avatarGradient(userName),
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "0.72rem", fontWeight: 800, color: "#07090f",
+            fontSize: "0.72rem", fontWeight: 800, color: "#fff",
           }}>
             {userName.slice(0, 2).toUpperCase() || "KW"}
           </div>
@@ -193,7 +193,7 @@ function SidebarContent({
             onClick={() => signOut({ callbackUrl: "/login" })}
             title="Sign out"
             style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: "0.35rem", borderRadius: 7, display: "flex", transition: "color 0.15s" }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#f87171")}
+            onMouseEnter={e => (e.currentTarget.style.color = "var(--danger)")}
             onMouseLeave={e => (e.currentTarget.style.color = "var(--text-3)")}
           >
             <LogOut size={14} />
@@ -304,7 +304,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           <Menu size={22} />
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
-          <div style={{ width: 26, height: 26, borderRadius: 7, background: "linear-gradient(135deg,#2dd4e8,#818cf8)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "0.68rem", color: "#07090f" }}>KW</div>
+          <div style={{ width: 26, height: 26, borderRadius: 7, background: "linear-gradient(135deg,#8b5cf6,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "0.68rem", color: "#fff" }}>KW</div>
           <span style={{ fontWeight: 800, fontSize: "0.88rem", color: "var(--text-1)", letterSpacing: "-0.02em" }}>Innovations</span>
         </div>
         <div style={{ display: "flex", alignItems: "center" }}>
@@ -325,7 +325,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         transform: open ? "translateX(0)" : "translateX(-100%)",
         transition: "transform 0.22s cubic-bezier(0.4,0,0.2,1)",
         willChange: "transform",
-        boxShadow: open ? "8px 0 40px rgba(0,0,0,0.5)" : "none",
+        boxShadow: open ? "8px 0 40px rgba(50,30,100,0.22)" : "none",
       }}>
         <SidebarContent groups={groups} path={path} userName={userName} onSearchClick={() => setPaletteOpen(true)} notifCount={notifications.length} onBellClick={() => setNotifOpen((v) => !v)} onChangePassword={() => setPwOpen(true)} onClose={() => setOpen(false)} />
       </aside>
@@ -333,7 +333,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
       {open && (
         <div onClick={() => setOpen(false)} style={{
           position: "fixed", inset: 0, zIndex: 199,
-          background: "rgba(0,0,0,0.65)", backdropFilter: "blur(3px)",
+          background: "rgba(34,26,61,0.45)", backdropFilter: "blur(3px)",
         }} />
       )}
 
@@ -354,7 +354,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
             }}>
               <div style={{
                 padding: "0.28rem 0.85rem", borderRadius: 99,
-                background: active ? "rgba(45,212,232,0.1)" : "transparent",
+                background: active ? "rgba(124,58,237,0.10)" : "transparent",
                 transition: "background 0.15s",
               }}>
                 <Icon size={19} strokeWidth={active ? 2.5 : 1.8} />
@@ -375,7 +375,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           onClick={() => setHelpOpen(false)}
           style={{
             position: "fixed", inset: 0, zIndex: 400,
-            background: "rgba(6,7,14,0.72)", backdropFilter: "blur(6px)",
+            background: "rgba(34,26,61,0.45)", backdropFilter: "blur(6px)",
             display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem",
           }}
         >

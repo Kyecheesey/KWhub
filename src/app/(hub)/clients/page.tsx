@@ -32,7 +32,7 @@ const BLANK: Form = { business_name: "", contact_name: "", phone: "", email: "",
 function initials(name: string) {
   return name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 }
-const COLORS = ["#22d3ee", "#818cf8", "#34d399", "#fb923c", "#f472b6", "#a78bfa"];
+const COLORS = ["#0891b2", "#4f46e5", "#059669", "#ea580c", "#db2777", "#7c3aed"];
 function colorFor(name: string) {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
@@ -214,7 +214,7 @@ export default function ClientsPage() {
           padding: "0.75rem 1rem", borderRadius: 12, marginBottom: "1.25rem",
           background: scrapeMsg.ok ? "rgba(52,211,153,0.08)" : "rgba(251,146,60,0.08)",
           border: `1px solid ${scrapeMsg.ok ? "rgba(52,211,153,0.2)" : "rgba(251,146,60,0.2)"}`,
-          color: scrapeMsg.ok ? "#34d399" : "#fb923c", fontSize: "0.85rem", fontWeight: 500,
+          color: scrapeMsg.ok ? "#059669" : "#ea580c", fontSize: "0.85rem", fontWeight: 500,
         }}>
           {scrapeMsg.text}
           <button onClick={() => setScrapeMsg(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", opacity: 0.6 }}><X size={14} /></button>
@@ -240,7 +240,7 @@ export default function ClientsPage() {
             }}
           >
             <span style={{ fontSize: "1rem" }}>⚠️</span>
-            <span style={{ fontWeight: 700, fontSize: "0.88rem", color: "#fbbf24", flex: 1 }}>
+            <span style={{ fontWeight: 700, fontSize: "0.88rem", color: "#d97706", flex: 1 }}>
               {dupeGroups.length} possible duplicate{dupeGroups.length > 1 ? "s" : ""} detected
             </span>
             <span style={{ fontSize: "0.75rem", color: "var(--text-3)", fontWeight: 600 }}>
@@ -259,7 +259,7 @@ export default function ClientsPage() {
                         Matched by:
                       </span>
                       {uniqueReasons.map(r => (
-                        <span key={r} style={{ fontSize: "0.65rem", fontWeight: 700, background: "rgba(251,191,36,0.12)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 4, padding: "0.1rem 0.4rem", textTransform: "capitalize" }}>
+                        <span key={r} style={{ fontSize: "0.65rem", fontWeight: 700, background: "rgba(251,191,36,0.12)", color: "#d97706", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 4, padding: "0.1rem 0.4rem", textTransform: "capitalize" }}>
                           {r}
                         </span>
                       ))}
@@ -269,7 +269,7 @@ export default function ClientsPage() {
                         display: "flex", alignItems: "center", gap: "0.75rem",
                         padding: "0.65rem 1rem 0.65rem 1.5rem",
                         borderTop: ci > 0 ? "1px dashed var(--border)" : "none",
-                        background: ci % 2 === 1 ? "rgba(255,255,255,0.015)" : "transparent",
+                        background: ci % 2 === 1 ? "rgba(76,49,138,0.025)" : "transparent",
                       }}>
                         <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem", fontWeight: 800, color: "var(--text-2)" }}>
                           {c.business_name.slice(0, 2).toUpperCase()}
@@ -279,14 +279,14 @@ export default function ClientsPage() {
                           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.2rem" }}>
                             {c.email && <span style={{ fontSize: "0.7rem", color: "var(--text-3)" }}>✉ {c.email}</span>}
                             {c.phone && <span style={{ fontSize: "0.7rem", color: "var(--text-3)" }}>📞 {c.phone}</span>}
-                            {c.assigned_to && <span style={{ fontSize: "0.7rem", color: "#818cf8" }}>👤 {c.assigned_to}</span>}
+                            {c.assigned_to && <span style={{ fontSize: "0.7rem", color: "#4f46e5" }}>👤 {c.assigned_to}</span>}
                           </div>
                         </div>
                         <div style={{ display: "flex", gap: "0.4rem", flexShrink: 0 }}>
                           <button onClick={() => openEdit(c)} style={{ padding: "0.3rem 0.6rem", background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 7, cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, color: "var(--text-2)", display: "flex", alignItems: "center", gap: "0.25rem" }}>
                             <Pencil size={11} /> Edit
                           </button>
-                          <button onClick={() => remove(c.id)} style={{ padding: "0.3rem 0.6rem", background: "rgba(248,113,113,0.07)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 7, cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, color: "#f87171", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                          <button onClick={() => remove(c.id)} style={{ padding: "0.3rem 0.6rem", background: "rgba(248,113,113,0.07)", border: "1px solid rgba(225,29,72,0.2)", borderRadius: 7, cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, color: "#e11d48", display: "flex", alignItems: "center", gap: "0.25rem" }}>
                             <Trash2 size={11} /> Delete
                           </button>
                         </div>
@@ -320,7 +320,7 @@ export default function ClientsPage() {
                     checked={filtered.length > 0 && filtered.every((c) => selected.has(c.id))}
                     onChange={(e) => setSelected(e.target.checked ? new Set(filtered.map((c) => c.id)) : new Set())}
                     aria-label="Select all"
-                    style={{ width: 15, height: 15, accentColor: "#2dd4e8", cursor: "pointer" }}
+                    style={{ width: 15, height: 15, accentColor: "#0891b2", cursor: "pointer" }}
                   />
                 </th>
                 <th>Business</th>
@@ -344,7 +344,7 @@ export default function ClientsPage() {
                         checked={selected.has(c.id)}
                         onChange={() => toggleSelect(c.id)}
                         aria-label={`Select ${c.business_name}`}
-                        style={{ width: 15, height: 15, accentColor: "#2dd4e8", cursor: "pointer" }}
+                        style={{ width: 15, height: 15, accentColor: "#0891b2", cursor: "pointer" }}
                       />
                     </td>
                     <td>
@@ -375,7 +375,7 @@ export default function ClientsPage() {
                     <td>
                       {c.assigned_to ? (
                         <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                          <UserCircle2 size={14} style={{ color: "#818cf8" }} />
+                          <UserCircle2 size={14} style={{ color: "#4f46e5" }} />
                           <span style={{ fontSize: "0.82rem", color: "var(--text-2)" }}>{c.assigned_to}</span>
                         </div>
                       ) : <span style={{ color: "var(--text-3)", fontSize: "0.82rem" }}>Unassigned</span>}
@@ -442,7 +442,7 @@ export default function ClientsPage() {
                   {c.contact_name && <div style={{ fontSize: "0.8rem", color: "var(--text-2)" }}>{c.contact_name}</div>}
                 </div>
                 {c.assigned_to && (
-                  <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#818cf8", background: "rgba(129,140,248,0.1)", border: "1px solid rgba(129,140,248,0.2)", padding: "0.15rem 0.5rem", borderRadius: 99, whiteSpace: "nowrap" }}>
+                  <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#4f46e5", background: "rgba(129,140,248,0.1)", border: "1px solid rgba(129,140,248,0.2)", padding: "0.15rem 0.5rem", borderRadius: 99, whiteSpace: "nowrap" }}>
                     {c.assigned_to}
                   </span>
                 )}

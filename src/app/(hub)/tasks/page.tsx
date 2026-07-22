@@ -25,24 +25,24 @@ const TEAM = ["Kye", "Luka", "Aksel"];
 
 const PRIORITIES = [
   { key: "low",    label: "Low",    color: "#60a5fa", bg: "rgba(96,165,250,0.1)"  },
-  { key: "medium", label: "Medium", color: "#fbbf24", bg: "rgba(251,191,36,0.1)"  },
-  { key: "high",   label: "High",   color: "#f87171", bg: "rgba(248,113,113,0.1)" },
+  { key: "medium", label: "Medium", color: "#d97706", bg: "rgba(251,191,36,0.1)"  },
+  { key: "high",   label: "High",   color: "#e11d48", bg: "rgba(248,113,113,0.1)" },
 ];
 
 const STATUSES = [
   { key: "pending",     label: "Pending",     color: "#8892b0" },
-  { key: "in_progress", label: "In Progress", color: "#fbbf24" },
-  { key: "done",        label: "Done",        color: "#34d399" },
+  { key: "in_progress", label: "In Progress", color: "#d97706" },
+  { key: "done",        label: "Done",        color: "#059669" },
 ];
 
 // Avatar colours per person
 const AVATAR_COLORS: Record<string, { bg: string; color: string }> = {
-  Kye:   { bg: "rgba(34,211,238,0.15)",  color: "#22d3ee"  },
-  Luka:  { bg: "rgba(129,140,248,0.15)", color: "#818cf8"  },
-  Aksel: { bg: "rgba(52,211,153,0.15)",  color: "#34d399"  },
+  Kye:   { bg: "rgba(34,211,238,0.15)",  color: "#0891b2"  },
+  Luka:  { bg: "rgba(129,140,248,0.15)", color: "#4f46e5"  },
+  Aksel: { bg: "rgba(52,211,153,0.15)",  color: "#059669"  },
 };
 function avatarStyle(name: string) {
-  return AVATAR_COLORS[name] ?? { bg: "rgba(251,146,60,0.15)", color: "#fb923c" };
+  return AVATAR_COLORS[name] ?? { bg: "rgba(251,146,60,0.15)", color: "#ea580c" };
 }
 
 type Form = {
@@ -181,7 +181,7 @@ export default function TasksPage() {
       {/* ── Header ── */}
       <div className="page-header">
         <div>
-          <p style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#22d3ee", marginBottom: "0.35rem" }}>KW | Innovations</p>
+          <p style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#0891b2", marginBottom: "0.35rem" }}>KW | Innovations</p>
           <h1 style={{ fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>Tasks</h1>
           <p style={{ color: "var(--text-2)", fontSize: "0.875rem", marginTop: "0.3rem" }}>
             {loading ? "Loading…" : `${totalPending} open · ${totalDone} completed${totalOverdue ? ` · ${totalOverdue} overdue` : ""}`}
@@ -229,8 +229,8 @@ export default function TasksPage() {
                 </div>
                 <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                   <span style={{ fontSize: "0.68rem", fontWeight: 700, background: "rgba(96,165,250,0.1)", color: "#60a5fa", padding: "0.15rem 0.5rem", borderRadius: 99, border: "1px solid rgba(96,165,250,0.2)" }}>{open} open</span>
-                  <span style={{ fontSize: "0.68rem", fontWeight: 700, background: "rgba(52,211,153,0.1)", color: "#34d399", padding: "0.15rem 0.5rem", borderRadius: 99, border: "1px solid rgba(52,211,153,0.2)" }}>{done} done</span>
-                  {overdue > 0 && <span style={{ fontSize: "0.68rem", fontWeight: 700, background: "rgba(248,113,113,0.1)", color: "#f87171", padding: "0.15rem 0.5rem", borderRadius: 99, border: "1px solid rgba(248,113,113,0.2)" }}>⚠ {overdue}</span>}
+                  <span style={{ fontSize: "0.68rem", fontWeight: 700, background: "rgba(52,211,153,0.1)", color: "#059669", padding: "0.15rem 0.5rem", borderRadius: 99, border: "1px solid rgba(52,211,153,0.2)" }}>{done} done</span>
+                  {overdue > 0 && <span style={{ fontSize: "0.68rem", fontWeight: 700, background: "rgba(248,113,113,0.1)", color: "#e11d48", padding: "0.15rem 0.5rem", borderRadius: 99, border: "1px solid rgba(225,29,72,0.2)" }}>⚠ {overdue}</span>}
                 </div>
               </button>
             );
@@ -310,7 +310,7 @@ export default function TasksPage() {
                         onDragStart={() => onDragStart(t.id)}
                         onDragEnd={onDragEnd}
                         style={{ background: "var(--surface)", border: `1px solid ${overdue ? "rgba(248,113,113,0.3)" : "var(--border)"}`, borderRadius: 12, overflow: "hidden", cursor: "grab", userSelect: "none", opacity: done ? 0.6 : 1, transition: "box-shadow 0.15s, transform 0.15s" }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(0,0,0,0.3)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(50,30,100,0.12)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "none"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
                       >
                         {/* Priority stripe */}
@@ -318,7 +318,7 @@ export default function TasksPage() {
                         <div style={{ padding: "0.8rem" }}>
                           {/* Title */}
                           <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                            <button onClick={() => toggleDone(t)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0, marginTop: 1, color: done ? "#34d399" : "var(--text-3)", display: "flex" }}>
+                            <button onClick={() => toggleDone(t)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0, marginTop: 1, color: done ? "#059669" : "var(--text-3)", display: "flex" }}>
                               {done ? <CheckCircle2 size={15} /> : <Circle size={15} />}
                             </button>
                             <span style={{ fontWeight: 700, fontSize: "0.85rem", lineHeight: 1.35, textDecoration: done ? "line-through" : "none", color: done ? "var(--text-3)" : "var(--text-1)" }}>
@@ -346,7 +346,7 @@ export default function TasksPage() {
 
                           {/* Due date */}
                           {t.due_date && (
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.7rem", color: overdue ? "#f87171" : "var(--text-3)", fontWeight: overdue ? 700 : 400, marginTop: "0.4rem" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.7rem", color: overdue ? "#e11d48" : "var(--text-3)", fontWeight: overdue ? 700 : 400, marginTop: "0.4rem" }}>
                               <Clock size={10} /> {dueLabel}
                             </div>
                           )}
@@ -356,7 +356,7 @@ export default function TasksPage() {
                             <button onClick={() => openEdit(t)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.3rem", background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 6, padding: "0.3rem 0.5rem", cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, color: "var(--text-2)" }}>
                               <Pencil size={10} /> Edit
                             </button>
-                            <button onClick={() => remove(t.id)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, background: "rgba(248,113,113,0.06)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 6, cursor: "pointer", color: "#f87171" }}>
+                            <button onClick={() => remove(t.id)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, background: "rgba(248,113,113,0.06)", border: "1px solid rgba(225,29,72,0.2)", borderRadius: 6, cursor: "pointer", color: "#e11d48" }}>
                               <Trash2 size={10} />
                             </button>
                           </div>
@@ -409,7 +409,7 @@ export default function TasksPage() {
                         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--surface)"; }}
                       >
                         {/* Checkbox */}
-                        <button onClick={() => toggleDone(t)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0, color: done ? "#34d399" : "var(--text-3)", display: "flex" }}>
+                        <button onClick={() => toggleDone(t)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0, color: done ? "#059669" : "var(--text-3)", display: "flex" }}>
                           {done ? <CheckCircle2 size={18} /> : <Circle size={18} />}
                         </button>
 
@@ -434,14 +434,14 @@ export default function TasksPage() {
                           <span style={{ fontSize: "0.68rem", fontWeight: 700, color: pri.color, background: pri.bg, padding: "0.15rem 0.5rem", borderRadius: 99 }}>{pri.label}</span>
                           <span style={{ fontSize: "0.68rem", fontWeight: 700, color: st.color, background: `${st.color}18`, padding: "0.15rem 0.5rem", borderRadius: 99 }}>{st.label}</span>
                           {t.due_date && (
-                            <span style={{ fontSize: "0.68rem", fontWeight: overdue ? 700 : 400, color: overdue ? "#f87171" : "var(--text-3)", display: "flex", alignItems: "center", gap: "0.2rem" }}>
+                            <span style={{ fontSize: "0.68rem", fontWeight: overdue ? 700 : 400, color: overdue ? "#e11d48" : "var(--text-3)", display: "flex", alignItems: "center", gap: "0.2rem" }}>
                               <Calendar size={9} /> {formatDate(t.due_date)}{overdue ? " ⚠" : ""}
                             </span>
                           )}
                           <button onClick={() => openEdit(t)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", color: "var(--text-3)" }}>
                             <Pencil size={11} />
                           </button>
-                          <button onClick={() => remove(t.id)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, background: "rgba(248,113,113,0.06)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 6, cursor: "pointer", color: "#f87171" }}>
+                          <button onClick={() => remove(t.id)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, background: "rgba(248,113,113,0.06)", border: "1px solid rgba(225,29,72,0.2)", borderRadius: 6, cursor: "pointer", color: "#e11d48" }}>
                             <Trash2 size={11} />
                           </button>
                         </div>

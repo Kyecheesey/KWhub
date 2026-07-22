@@ -8,7 +8,7 @@ import { useSession } from "next-auth/react";
 type Shift = { id: number; day: string; time: string; person: string; hours: number | null; focus: string | null };
 
 const ROSTER_PEOPLE = [
-  { name: "Kaylie", colour: "#a78bfa", gradient: "linear-gradient(135deg, #a78bfa 0%, #f472b6 100%)" },
+  { name: "Kaylie", colour: "#7c3aed", gradient: "linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)" },
 ];
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 const today = new Date().toLocaleDateString("en-AU", { weekday: "long" });
@@ -16,20 +16,20 @@ const today = new Date().toLocaleDateString("en-AU", { weekday: "long" });
 const BLANK_FORM = { day: "Monday", time: "", person: ROSTER_PEOPLE[0].name, hours: "2", focus: "" };
 
 const focusColour = (focus: string) => {
-  if (focus.includes("Lead") || focus.includes("research")) return "rgba(167,139,250,0.12)";
-  if (focus.includes("Cold") || focus.includes("email")) return "rgba(244,114,182,0.12)";
-  if (focus.includes("Call") || focus.includes("follow")) return "rgba(45,212,191,0.12)";
-  if (focus.includes("CRM") || focus.includes("warm")) return "rgba(251,146,60,0.12)";
-  if (focus.includes("sales")) return "rgba(251,113,133,0.12)";
-  return "rgba(255,255,255,0.04)";
+  if (focus.includes("Lead") || focus.includes("research")) return "rgba(124,58,237,0.10)";
+  if (focus.includes("Cold") || focus.includes("email")) return "rgba(219,39,119,0.10)";
+  if (focus.includes("Call") || focus.includes("follow")) return "rgba(13,148,136,0.10)";
+  if (focus.includes("CRM") || focus.includes("warm")) return "rgba(234,88,12,0.10)";
+  if (focus.includes("sales")) return "rgba(225,29,72,0.10)";
+  return "rgba(76,49,138,0.06)";
 };
 
 const focusDot = (focus: string) => {
-  if (focus.includes("Lead") || focus.includes("research")) return "#a78bfa";
-  if (focus.includes("Cold") || focus.includes("email")) return "#f472b6";
-  if (focus.includes("Call") || focus.includes("follow")) return "#2dd4bf";
-  if (focus.includes("CRM") || focus.includes("warm")) return "#fb923c";
-  if (focus.includes("sales")) return "#fb7185";
+  if (focus.includes("Lead") || focus.includes("research")) return "#7c3aed";
+  if (focus.includes("Cold") || focus.includes("email")) return "#db2777";
+  if (focus.includes("Call") || focus.includes("follow")) return "#0d9488";
+  if (focus.includes("CRM") || focus.includes("warm")) return "#ea580c";
+  if (focus.includes("sales")) return "#e11d48";
   return "var(--text-3)";
 };
 
@@ -101,8 +101,8 @@ export default function RosterPage() {
           to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes rosterPulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(167,139,250,0.4); }
-          50%      { box-shadow: 0 0 0 6px rgba(167,139,250,0); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(124,58,237,0.35); }
+          50%      { box-shadow: 0 0 0 6px rgba(124,58,237,0); }
         }
         .roster-anim { animation: rosterFadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
         .roster-card {
@@ -114,17 +114,17 @@ export default function RosterPage() {
         .roster-card:hover {
           border-color: var(--border-2);
           transform: translateY(-2px);
-          box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+          box-shadow: 0 8px 28px rgba(50,30,100,0.14);
         }
         .roster-day-row { transition: background 0.2s ease; }
-        .roster-day-row:hover { background: rgba(255,255,255,0.03); }
+        .roster-day-row:hover { background: rgba(76,49,138,0.04); }
         .roster-today-dot { animation: rosterPulse 2.2s ease-in-out infinite; }
         .roster-del {
           background: none; border: none; cursor: pointer; padding: 2px 4px;
           color: var(--text-3); border-radius: 6px; line-height: 1;
           transition: color 0.15s ease, background 0.15s ease;
         }
-        .roster-del:hover { color: var(--danger); background: rgba(251,113,133,0.12); }
+        .roster-del:hover { color: var(--danger); background: rgba(225,29,72,0.10); }
         @media (prefers-reduced-motion: reduce) {
           .roster-anim, .roster-today-dot { animation: none; }
           .roster-card, .roster-day-row { transition: none; }
@@ -136,7 +136,7 @@ export default function RosterPage() {
         <div>
           <h1 style={{
             fontSize: "1.5rem", fontWeight: 800, margin: 0,
-            background: "linear-gradient(90deg, var(--text-1) 30%, #a78bfa 80%, #f472b6 100%)",
+            background: "linear-gradient(90deg, var(--text-1) 30%, #7c3aed 80%, #db2777 100%)",
             WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent",
           }}>
             Weekly Roster
@@ -216,7 +216,7 @@ export default function RosterPage() {
                       marginLeft: "0.5rem", fontSize: "0.65rem", fontWeight: 700,
                       textTransform: "uppercase", letterSpacing: "0.06em",
                       padding: "0.15rem 0.5rem", borderRadius: 20,
-                      background: "rgba(167,139,250,0.16)", color: "#a78bfa",
+                      background: "rgba(124,58,237,0.10)", color: "#7c3aed",
                     }}>You</span>
                   )}
                 </div>
@@ -258,16 +258,16 @@ export default function RosterPage() {
               display: "flex", alignItems: "center", gap: "1rem",
               padding: "0.85rem 1.25rem",
               borderBottom: i < DAYS.length - 1 ? "1px solid var(--border)" : "none",
-              background: isToday ? "rgba(167,139,250,0.06)" : "transparent",
+              background: isToday ? "rgba(124,58,237,0.05)" : "transparent",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", width: 120, flexShrink: 0 }}>
                 {isToday && (
                   <span className="roster-today-dot" style={{
                     width: 7, height: 7, borderRadius: "50%",
-                    background: "#a78bfa", flexShrink: 0, display: "inline-block",
+                    background: "#7c3aed", flexShrink: 0, display: "inline-block",
                   }} />
                 )}
-                <span style={{ fontWeight: isToday ? 800 : 600, color: isToday ? "#a78bfa" : "var(--text-1)", fontSize: "0.9rem" }}>
+                <span style={{ fontWeight: isToday ? 800 : 600, color: isToday ? "#7c3aed" : "var(--text-1)", fontSize: "0.9rem" }}>
                   {day}
                 </span>
               </div>
@@ -291,8 +291,8 @@ export default function RosterPage() {
                       <span style={{
                         fontSize: "0.75rem", fontWeight: 700,
                         padding: "0.1rem 0.45rem", borderRadius: 20,
-                        background: row.hours !== null ? "rgba(167,139,250,0.16)" : "rgba(255,255,255,0.05)",
-                        color: row.hours !== null ? "#a78bfa" : "var(--text-3)",
+                        background: row.hours !== null ? "rgba(124,58,237,0.10)" : "rgba(76,49,138,0.06)",
+                        color: row.hours !== null ? "#7c3aed" : "var(--text-3)",
                       }}>
                         {row.hours !== null ? `${row.hours}h` : "—"}
                       </span>
@@ -321,10 +321,10 @@ export default function RosterPage() {
           <>
             <div style={{
               width: 38, height: 38, borderRadius: 12, flexShrink: 0,
-              background: "rgba(167,139,250,0.12)", border: "1px solid rgba(167,139,250,0.3)",
+              background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.25)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" />
                 <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
               </svg>

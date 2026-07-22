@@ -20,8 +20,8 @@ const TYPE_ICON: Record<NotificationItem["type"], React.FC<{ size?: number }>> =
   portal: MessageSquare,
 };
 const URGENCY_COLOR: Record<NotificationItem["urgency"], string> = {
-  high: "#f87171",
-  medium: "#fbbf24",
+  high: "#e11d48",
+  medium: "#d97706",
   low: "#8b95c0",
 };
 
@@ -81,7 +81,7 @@ export function NotificationsBell({ count, onClick }: { count: number; onClick: 
         <span style={{
           position: "absolute", top: 0, right: 0,
           minWidth: 15, height: 15, borderRadius: 99,
-          background: "#f87171", color: "#07090f",
+          background: "#e11d48", color: "#ffffff",
           fontSize: "0.58rem", fontWeight: 800,
           display: "flex", alignItems: "center", justifyContent: "center",
           padding: "0 3px", lineHeight: 1,
@@ -128,7 +128,7 @@ export function NotificationsPanel({
                 style={{
                   display: "flex", alignItems: "center", gap: "0.3rem",
                   fontSize: "0.7rem", fontWeight: 700, color: "var(--accent)",
-                  background: "rgba(45,212,232,0.08)", border: "1px solid rgba(45,212,232,0.2)",
+                  background: "rgba(124,58,237,0.07)", border: "1px solid rgba(124,58,237,0.2)",
                   borderRadius: 7, padding: "0.25rem 0.55rem", cursor: "pointer",
                 }}
               >

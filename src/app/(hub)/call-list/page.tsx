@@ -24,8 +24,8 @@ interface CallEntry {
 }
 
 const STAGE_COLOR: Record<string, string> = {
-  new: "#60a5fa", contacted: "#fbbf24", qualified: "#a78bfa",
-  proposal: "#fb923c", won: "#34d399", lost: "#f87171",
+  new: "#60a5fa", contacted: "#d97706", qualified: "#7c3aed",
+  proposal: "#ea580c", won: "#059669", lost: "#e11d48",
 };
 
 export default function CallListPage() {
@@ -68,7 +68,7 @@ export default function CallListPage() {
       {/* Header */}
       <div className="page-header">
         <div>
-          <p style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#34d399", marginBottom: "0.35rem" }}>KW | Innovations</p>
+          <p style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#059669", marginBottom: "0.35rem" }}>KW | Innovations</p>
           <h1 style={{ fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>
             Call List
           </h1>
@@ -87,7 +87,7 @@ export default function CallListPage() {
             <span style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>{done.length} / {entries.length} called</span>
           </div>
           <div style={{ height: 6, background: "var(--surface-2)", borderRadius: 99, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${(done.length / entries.length) * 100}%`, background: "linear-gradient(90deg, #34d399, #22d3ee)", borderRadius: 99, transition: "width 0.3s" }} />
+            <div style={{ height: "100%", width: `${(done.length / entries.length) * 100}%`, background: "linear-gradient(90deg, #059669, #0891b2)", borderRadius: 99, transition: "width 0.3s" }} />
           </div>
         </div>
       )}
@@ -146,7 +146,7 @@ export default function CallListPage() {
                 <button
                   onClick={() => markCalled(entry, !isCalled)}
                   title={isCalled ? "Mark as not called" : "Mark as called"}
-                  style={{ flexShrink: 0, background: "none", border: "none", cursor: "pointer", color: isCalled ? "#34d399" : "var(--text-3)", padding: 0, display: "flex" }}
+                  style={{ flexShrink: 0, background: "none", border: "none", cursor: "pointer", color: isCalled ? "#059669" : "var(--text-3)", padding: 0, display: "flex" }}
                 >
                   {isCalled ? <CheckCircle2 size={24} /> : <Circle size={24} />}
                 </button>
@@ -162,7 +162,7 @@ export default function CallListPage() {
                       fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
                       padding: "0.1rem 0.45rem", borderRadius: 4,
                       background: entry.record_type === "client" ? "rgba(34,211,238,0.1)" : "rgba(129,140,248,0.1)",
-                      color: entry.record_type === "client" ? "#22d3ee" : "#818cf8",
+                      color: entry.record_type === "client" ? "#0891b2" : "#4f46e5",
                       border: `1px solid ${entry.record_type === "client" ? "rgba(34,211,238,0.2)" : "rgba(129,140,248,0.2)"}`,
                     }}>
                       {entry.record_type}
@@ -188,17 +188,17 @@ export default function CallListPage() {
                       </span>
                     )}
                     {entry.phone && (
-                      <a href={`tel:${entry.phone}`} style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "#22d3ee", textDecoration: "none", fontWeight: 600 }}>
+                      <a href={`tel:${entry.phone}`} style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "#0891b2", textDecoration: "none", fontWeight: 600 }}>
                         <Phone size={12} /> {entry.phone}
                       </a>
                     )}
                     {entry.assigned_to && (
-                      <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "#818cf8" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "#4f46e5" }}>
                         <UserCircle2 size={12} /> {entry.assigned_to}
                       </span>
                     )}
                     {isCalled && entry.called_at && (
-                      <span style={{ color: "#34d399" }}>
+                      <span style={{ color: "#059669" }}>
                         ✓ Called {new Date(entry.called_at + "Z").toLocaleString("en-AU", { dateStyle: "short", timeStyle: "short" })}
                       </span>
                     )}

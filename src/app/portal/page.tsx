@@ -46,16 +46,16 @@ function money(cents: number) {
   return new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(cents / 100);
 }
 function avatarGradient(name: string) {
-  const opts = ["#2dd4e8,#0ea5e9", "#818cf8,#6366f1", "#34d399,#059669", "#fb923c,#ea580c"];
+  const opts = ["#0891b2,#0ea5e9", "#4f46e5,#6366f1", "#059669,#059669", "#ea580c,#ea580c"];
   let h = 0;
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
   return `linear-gradient(135deg, ${opts[Math.abs(h) % opts.length]})`;
 }
 function invoiceState(inv: Invoice): { label: string; color: string } {
-  if (inv.status === "paid") return { label: "Paid", color: "#36d399" };
+  if (inv.status === "paid") return { label: "Paid", color: "#10b981" };
   if (inv.status === "draft") return { label: "Draft", color: "#8b95c0" };
-  if (inv.due_date && new Date(inv.due_date) < new Date()) return { label: "Overdue", color: "#f87171" };
-  return { label: "Due", color: "#fbbf24" };
+  if (inv.due_date && new Date(inv.due_date) < new Date()) return { label: "Overdue", color: "#e11d48" };
+  return { label: "Due", color: "#d97706" };
 }
 
 function Skeleton({ height, width, style }: { height: number; width?: number | string; style?: React.CSSProperties }) {
@@ -223,9 +223,9 @@ export default function PortalPage() {
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
           <div style={{
             width: 32, height: 32, borderRadius: 9,
-            background: "linear-gradient(135deg,#2dd4e8,#818cf8)",
+            background: "linear-gradient(135deg,#0891b2,#4f46e5)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontWeight: 900, fontSize: "0.75rem", color: "#07090f",
+            fontWeight: 900, fontSize: "0.75rem", color: "#ffffff",
             boxShadow: "0 2px 12px rgba(45,212,232,0.35)",
           }}>KW</div>
           <div>
@@ -250,7 +250,7 @@ export default function PortalPage() {
           display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
           padding: "0.5rem 1rem", fontSize: "0.78rem", fontWeight: 700,
           background: "rgba(251,191,36,0.1)", borderBottom: "1px solid rgba(251,191,36,0.25)",
-          color: "#fbbf24", position: "sticky", top: 57, zIndex: 49,
+          color: "#d97706", position: "sticky", top: 57, zIndex: 49,
         }}>
           <Eye size={13} />
           Preview mode — you&apos;re seeing this portal exactly as {client ? client.business_name : "the client"} sees it
@@ -265,7 +265,7 @@ export default function PortalPage() {
             display: "inline-flex", alignItems: "center", gap: "0.4rem",
             fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
             color: "var(--accent)", background: "rgba(45,212,232,0.1)",
-            border: "1px solid rgba(45,212,232,0.2)", padding: "0.22rem 0.7rem", borderRadius: 99,
+            border: "1px solid rgba(124,58,237,0.2)", padding: "0.22rem 0.7rem", borderRadius: 99,
             marginBottom: "0.85rem",
           }}>
             <span className="pulse-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
@@ -315,7 +315,7 @@ export default function PortalPage() {
             {pendingApprovals.length > 0 && (
               <div className="card fade-up" style={{ overflow: "hidden", border: "1px solid rgba(251,191,36,0.35)" }}>
                 <CardHeader icon={ThumbsUp} title="Waiting on your approval" extra={
-                  <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#fbbf24", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 99, padding: "0.15rem 0.55rem" }}>
+                  <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#d97706", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 99, padding: "0.15rem 0.55rem" }}>
                     {pendingApprovals.length}
                   </span>
                 } />
@@ -337,14 +337,14 @@ export default function PortalPage() {
                             autoFocus
                             style={{ flex: 1, minWidth: 200 }}
                           />
-                          <button onClick={() => respond(a, "changes_requested", changeNote)} className="btn-primary" style={{ background: "linear-gradient(135deg,#fbbf24,#f59e0b)" }}>
+                          <button onClick={() => respond(a, "changes_requested", changeNote)} className="btn-primary" style={{ background: "linear-gradient(135deg,#d97706,#f59e0b)" }}>
                             Send
                           </button>
                           <button onClick={() => { setRespondingTo(null); setChangeNote(""); }} className="btn-ghost">Cancel</button>
                         </div>
                       ) : (
                         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                          <button onClick={() => respond(a, "approved")} className="btn-primary" style={{ background: "linear-gradient(135deg,#36d399,#059669)" }}>
+                          <button onClick={() => respond(a, "approved")} className="btn-primary" style={{ background: "linear-gradient(135deg,#10b981,#059669)" }}>
                             <ThumbsUp size={14} /> Approve
                           </button>
                           <button onClick={() => setRespondingTo(a.id)} className="btn-ghost">
@@ -372,8 +372,8 @@ export default function PortalPage() {
                         width: 46, height: 46, borderRadius: 13, flexShrink: 0,
                         background: avatarGradient(client.business_name),
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        fontWeight: 900, fontSize: "0.95rem", color: "#07090f",
-                        boxShadow: "0 4px 18px rgba(45,212,232,0.2)",
+                        fontWeight: 900, fontSize: "0.95rem", color: "#ffffff",
+                        boxShadow: "0 4px 18px rgba(124,58,237,0.2)",
                       }}>
                         {client.business_name.slice(0, 2).toUpperCase()}
                       </div>
@@ -399,7 +399,7 @@ export default function PortalPage() {
                         width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
                         background: avatarGradient(client.assigned_to),
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: "0.68rem", fontWeight: 800, color: "#07090f",
+                        fontSize: "0.68rem", fontWeight: 800, color: "#ffffff",
                       }}>
                         {client.assigned_to.slice(0, 2).toUpperCase()}
                       </div>
@@ -429,7 +429,7 @@ export default function PortalPage() {
                         {/* Progress line */}
                         <div style={{ position: "relative", margin: "0 10px 0.5rem" }}>
                           <div style={{ position: "absolute", top: 5, left: 0, right: 0, height: 3, background: "var(--surface-3)", borderRadius: 99 }} />
-                          <div style={{ position: "absolute", top: 5, left: 0, width: `${pct}%`, height: 3, background: "linear-gradient(90deg,#2dd4e8,#818cf8)", borderRadius: 99, transition: "width 0.6s cubic-bezier(0.16,1,0.3,1)" }} />
+                          <div style={{ position: "absolute", top: 5, left: 0, width: `${pct}%`, height: 3, background: "linear-gradient(90deg,#0891b2,#4f46e5)", borderRadius: 99, transition: "width 0.6s cubic-bezier(0.16,1,0.3,1)" }} />
                           <div style={{ display: "flex", justifyContent: "space-between", position: "relative" }}>
                             {STAGES.map((s, i) => {
                               const done = i < p.stage;
@@ -438,7 +438,7 @@ export default function PortalPage() {
                                 <div key={s} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 0 }}>
                                   <div style={{
                                     width: current ? 13 : 11, height: current ? 13 : 11, borderRadius: "50%",
-                                    background: done || current ? "linear-gradient(135deg,#2dd4e8,#818cf8)" : "var(--surface-3)",
+                                    background: done || current ? "linear-gradient(135deg,#0891b2,#4f46e5)" : "var(--surface-3)",
                                     boxShadow: current ? "0 0 0 4px rgba(45,212,232,0.18), 0 0 14px rgba(45,212,232,0.5)" : "none",
                                     transition: "all 0.3s",
                                   }} />
@@ -472,18 +472,18 @@ export default function PortalPage() {
                 } />
                 <div style={{ padding: "1rem 1.25rem" }}>
                   <div style={{ height: 6, background: "var(--surface-3)", borderRadius: 99, overflow: "hidden", marginBottom: "0.9rem" }}>
-                    <div style={{ width: `${checklist.length ? (doneCount / checklist.length) * 100 : 0}%`, height: "100%", background: "linear-gradient(90deg,#36d399,#059669)", borderRadius: 99, transition: "width 0.5s ease" }} />
+                    <div style={{ width: `${checklist.length ? (doneCount / checklist.length) * 100 : 0}%`, height: "100%", background: "linear-gradient(90deg,#10b981,#059669)", borderRadius: 99, transition: "width 0.5s ease" }} />
                   </div>
                   <div style={{ display: "grid", gap: "0.45rem" }}>
                     {checklist.map((item) => (
                       <div key={item.id} style={{ display: "flex", alignItems: "center", gap: "0.55rem", opacity: item.done ? 0.65 : 1 }}>
                         <div style={{
                           width: 18, height: 18, borderRadius: 6, flexShrink: 0,
-                          border: `2px solid ${item.done ? "#36d399" : "var(--border-3)"}`,
-                          background: item.done ? "#36d399" : "transparent",
+                          border: `2px solid ${item.done ? "#10b981" : "var(--border-3)"}`,
+                          background: item.done ? "#10b981" : "transparent",
                           display: "flex", alignItems: "center", justifyContent: "center",
                         }}>
-                          {item.done && <Check size={11} color="#07090f" strokeWidth={3} />}
+                          {item.done && <Check size={11} color="#ffffff" strokeWidth={3} />}
                         </div>
                         <span style={{ fontSize: "0.84rem", color: "var(--text-1)", textDecoration: item.done ? "line-through" : "none" }}>{item.text}</span>
                       </div>
@@ -506,7 +506,7 @@ export default function PortalPage() {
                   <div style={{ textAlign: "center", padding: "2rem 0" }}>
                     <div style={{
                       width: 44, height: 44, borderRadius: "50%", margin: "0 auto 0.7rem",
-                      background: "rgba(45,212,232,0.08)", border: "1px solid rgba(45,212,232,0.18)",
+                      background: "rgba(124,58,237,0.07)", border: "1px solid rgba(45,212,232,0.18)",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
                       <MessageSquare size={18} color="var(--accent)" />
@@ -522,7 +522,7 @@ export default function PortalPage() {
                       <div style={{
                         maxWidth: "78%",
                         background: mine ? "linear-gradient(135deg, rgba(45,212,232,0.14), rgba(14,165,233,0.1))" : "var(--surface-2)",
-                        border: `1px solid ${mine ? "rgba(45,212,232,0.25)" : "var(--border)"}`,
+                        border: `1px solid ${mine ? "rgba(124,58,237,0.25)" : "var(--border)"}`,
                         borderRadius: mine ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
                         padding: "0.65rem 0.85rem",
                       }}>
@@ -561,7 +561,7 @@ export default function PortalPage() {
                 </>
               } />
               {uploadErr && (
-                <div style={{ margin: "0.75rem 1.25rem 0", padding: "0.55rem 0.8rem", borderRadius: 9, fontSize: "0.8rem", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", color: "#f87171" }}>
+                <div style={{ margin: "0.75rem 1.25rem 0", padding: "0.55rem 0.8rem", borderRadius: 9, fontSize: "0.8rem", background: "rgba(225,29,72,0.07)", border: "1px solid rgba(225,29,72,0.2)", color: "#e11d48" }}>
                   {uploadErr}
                 </div>
               )}

@@ -14,15 +14,15 @@ interface Pot {
 
 const STAGES = [
   { key: "new",       label: "New",       color: "#60a5fa" },
-  { key: "contacted", label: "Contacted", color: "#fbbf24" },
-  { key: "qualified", label: "Qualified", color: "#a78bfa" },
-  { key: "proposal",  label: "Proposal",  color: "#fb923c" },
-  { key: "won",       label: "Won",       color: "#34d399" },
-  { key: "lost",      label: "Lost",      color: "#f87171" },
+  { key: "contacted", label: "Contacted", color: "#d97706" },
+  { key: "qualified", label: "Qualified", color: "#7c3aed" },
+  { key: "proposal",  label: "Proposal",  color: "#ea580c" },
+  { key: "won",       label: "Won",       color: "#059669" },
+  { key: "lost",      label: "Lost",      color: "#e11d48" },
 ];
 
 const ACTIVE = ["new", "contacted", "qualified", "proposal"];
-const SERIES = { active: "#7c85f3", won: "#36d399" };
+const SERIES = { active: "#7c85f3", won: "#10b981" };
 const DAY = 86400000;
 
 function monthKey(d: Date) {
@@ -60,9 +60,9 @@ export default function InsightsPage() {
 
   const tiles = [
     { label: "In Pipeline", value: pots.filter((p) => ACTIVE.includes(p.status)).length, icon: Target, color: "#7c85f3" },
-    { label: "Win Rate", value: winRate === null ? "—" : `${winRate}%`, icon: Award, color: "#36d399", sub: decided > 0 ? `${won.length} won · ${lost.length} lost` : "No decided deals yet" },
-    { label: "Added This Month", value: addedThisMonth, icon: CalendarPlus, color: "#2dd4e8" },
-    { label: "Avg Days to Win", value: avgClose === null ? "—" : avgClose, icon: Timer, color: "#fb923c", sub: avgClose === null ? "No wins yet" : "From created to won" },
+    { label: "Win Rate", value: winRate === null ? "—" : `${winRate}%`, icon: Award, color: "#10b981", sub: decided > 0 ? `${won.length} won · ${lost.length} lost` : "No decided deals yet" },
+    { label: "Added This Month", value: addedThisMonth, icon: CalendarPlus, color: "#0891b2" },
+    { label: "Avg Days to Win", value: avgClose === null ? "—" : avgClose, icon: Timer, color: "#ea580c", sub: avgClose === null ? "No wins yet" : "From created to won" },
   ];
 
   /* ── Funnel ── */

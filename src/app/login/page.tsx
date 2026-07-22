@@ -95,16 +95,16 @@ export default function LoginPage() {
     <div className="login-shell">
       {/* ── Brand panel (desktop only) ── */}
       <aside className="login-brand">
-        <div className="login-blob" style={{ width: 340, height: 340, top: -80, right: -80, background: "rgba(45,212,232,0.16)" }} />
-        <div className="login-blob" style={{ width: 300, height: 300, bottom: -100, left: -60, background: "rgba(124,133,243,0.14)" }} />
+        <div className="login-blob" style={{ width: 340, height: 340, top: -80, right: -80, background: "rgba(124,58,237,0.14)" }} />
+        <div className="login-blob" style={{ width: 300, height: 300, bottom: -100, left: -60, background: "rgba(219,39,119,0.10)" }} />
 
         <div style={{ position: "relative" }}>
           <div style={{
             width: 46, height: 46, borderRadius: 13,
-            background: "linear-gradient(135deg,#2dd4e8,#818cf8)",
+            background: "linear-gradient(135deg,#0891b2,#4f46e5)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontWeight: 900, fontSize: "1rem", color: "#07090f",
-            boxShadow: "0 8px 28px rgba(45,212,232,0.28)",
+            fontWeight: 900, fontSize: "1rem", color: "#ffffff",
+            boxShadow: "0 8px 28px rgba(124,58,237,0.28)",
           }}>KW</div>
         </div>
 
@@ -143,7 +143,7 @@ export default function LoginPage() {
       <div className="login-form-col">
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none",
-          background: "radial-gradient(ellipse 60% 50% at 50% 40%, rgba(34,211,238,0.06) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse 60% 50% at 50% 40%, rgba(124,58,237,0.05) 0%, transparent 70%)",
         }} />
 
         <div style={{ width: "100%", maxWidth: 380, position: "relative" }}>
@@ -151,11 +151,11 @@ export default function LoginPage() {
           <div className="login-fade-up" style={{ textAlign: "center", marginBottom: "2rem" }}>
             <div style={{
               width: 52, height: 52, borderRadius: 14,
-              background: "linear-gradient(135deg, #2dd4e8, #818cf8)",
+              background: "linear-gradient(135deg, #0891b2, #4f46e5)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontWeight: 900, fontSize: "1.1rem", color: "#07090f",
+              fontWeight: 900, fontSize: "1.1rem", color: "#ffffff",
               margin: "0 auto 1rem",
-              boxShadow: "0 8px 32px rgba(45,212,232,0.25)",
+              boxShadow: "0 8px 32px rgba(124,58,237,0.25)",
             }}>
               KW
             </div>
@@ -203,16 +203,16 @@ export default function LoginPage() {
               border: "1px solid var(--border-2)",
               borderRadius: 20,
               padding: "2rem",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.4)",
+              boxShadow: "0 24px 64px rgba(50,30,100,0.18)",
             }}
           >
             {(error || info) && (
               <div style={{
                 display: "flex", alignItems: "center", gap: "0.5rem",
                 padding: "0.65rem 0.85rem", borderRadius: 10, marginBottom: "1rem",
-                background: error ? "rgba(248,113,113,0.08)" : "rgba(45,212,232,0.08)",
-                border: `1px solid ${error ? "rgba(248,113,113,0.2)" : "rgba(45,212,232,0.2)"}`,
-                color: error ? "#f87171" : "var(--accent)", fontSize: "0.83rem",
+                background: error ? "rgba(225,29,72,0.07)" : "rgba(124,58,237,0.07)",
+                border: `1px solid ${error ? "rgba(225,29,72,0.2)" : "rgba(124,58,237,0.2)"}`,
+                color: error ? "#e11d48" : "var(--accent)", fontSize: "0.83rem",
               }}>
                 <AlertCircle size={14} style={{ flexShrink: 0 }} />
                 {error || info}
@@ -377,10 +377,10 @@ export default function LoginPage() {
               <div style={{ textAlign: "center", padding: "0.5rem 0" }}>
                 <div style={{
                   width: 44, height: 44, borderRadius: "50%", margin: "0 auto 0.75rem",
-                  background: "rgba(54,211,153,0.12)", border: "1px solid rgba(54,211,153,0.3)",
+                  background: "rgba(5,150,105,0.10)", border: "1px solid rgba(5,150,105,0.3)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  <CheckCircle2 size={20} color="#36d399" />
+                  <CheckCircle2 size={20} color="#10b981" />
                 </div>
                 <p style={{ fontWeight: 700, color: "var(--text-1)", marginBottom: "0.25rem" }}>Password reset</p>
                 <p style={{ fontSize: "0.8rem", color: "var(--text-3)", marginBottom: "1.25rem" }}>Sign in with your new password.</p>

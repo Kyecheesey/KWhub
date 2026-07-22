@@ -21,11 +21,11 @@ interface Potential {
 
 const STAGES = [
   { key: "new",         label: "New",          color: "#60a5fa", bg: "rgba(96,165,250,0.1)",  border: "rgba(96,165,250,0.2)"  },
-  { key: "contacted",   label: "Contacted",     color: "#fbbf24", bg: "rgba(251,191,36,0.1)",  border: "rgba(251,191,36,0.2)"  },
-  { key: "qualified",   label: "Qualified",     color: "#a78bfa", bg: "rgba(167,139,250,0.1)", border: "rgba(167,139,250,0.2)" },
-  { key: "proposal",    label: "Proposal Sent", color: "#fb923c", bg: "rgba(251,146,60,0.1)",  border: "rgba(251,146,60,0.2)"  },
-  { key: "won",         label: "Won",           color: "#34d399", bg: "rgba(52,211,153,0.1)",  border: "rgba(52,211,153,0.2)"  },
-  { key: "lost",        label: "Lost",          color: "#f87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.2)" },
+  { key: "contacted",   label: "Contacted",     color: "#d97706", bg: "rgba(251,191,36,0.1)",  border: "rgba(251,191,36,0.2)"  },
+  { key: "qualified",   label: "Qualified",     color: "#7c3aed", bg: "rgba(167,139,250,0.1)", border: "rgba(167,139,250,0.2)" },
+  { key: "proposal",    label: "Proposal Sent", color: "#ea580c", bg: "rgba(251,146,60,0.1)",  border: "rgba(251,146,60,0.2)"  },
+  { key: "won",         label: "Won",           color: "#059669", bg: "rgba(52,211,153,0.1)",  border: "rgba(52,211,153,0.2)"  },
+  { key: "lost",        label: "Lost",          color: "#e11d48", bg: "rgba(248,113,113,0.1)", border: "rgba(225,29,72,0.2)" },
 ];
 
 const AGENTS = ["All", "Kye", "Luka", "Aksel"];
@@ -70,7 +70,7 @@ function followUpDueDate(p: Potential): string {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  overdue: "#f87171", due_today: "#fbbf24", upcoming: "#2dd4e8",
+  overdue: "#e11d48", due_today: "#d97706", upcoming: "#0891b2",
 };
 const STATUS_LABEL: Record<string, string> = {
   overdue: "Overdue", due_today: "Due Today", upcoming: "Upcoming",
@@ -152,9 +152,9 @@ export default function FollowUpsPage() {
       <div style={{ display: "flex", gap: "0.65rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
         {[
           { key: "all",      label: "All",       count: followUps.length, color: "var(--text-2)" },
-          { key: "overdue",  label: "Overdue",   count: overdue.length,   color: "#f87171" },
-          { key: "due_today",label: "Due Today",  count: dueToday.length,  color: "#fbbf24" },
-          { key: "upcoming", label: "Upcoming",  count: upcoming.length,  color: "#2dd4e8" },
+          { key: "overdue",  label: "Overdue",   count: overdue.length,   color: "#e11d48" },
+          { key: "due_today",label: "Due Today",  count: dueToday.length,  color: "#d97706" },
+          { key: "upcoming", label: "Upcoming",  count: upcoming.length,  color: "#0891b2" },
         ].map(({ key, label, count, color }) => (
           <button
             key={key}
@@ -188,7 +188,7 @@ export default function FollowUpsPage() {
               padding: "0.4rem 0.8rem", borderRadius: 99, fontSize: "0.78rem", fontWeight: 600, cursor: "pointer",
               background: filterAgent === a ? "rgba(129,140,248,0.15)" : "var(--surface)",
               border: `1px solid ${filterAgent === a ? "rgba(129,140,248,0.4)" : "var(--border)"}`,
-              color: filterAgent === a ? "#818cf8" : "var(--text-2)",
+              color: filterAgent === a ? "#4f46e5" : "var(--text-2)",
             }}>{a}</button>
           ))}
         </div>
@@ -256,7 +256,7 @@ export default function FollowUpsPage() {
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.25rem", flexWrap: "wrap" }}>
                             {p.assigned_to && (
-                              <span style={{ fontSize: "0.72rem", color: "#818cf8", display: "flex", alignItems: "center", gap: "0.2rem" }}>
+                              <span style={{ fontSize: "0.72rem", color: "#4f46e5", display: "flex", alignItems: "center", gap: "0.2rem" }}>
                                 <UserCircle2 size={11} /> {p.assigned_to}
                               </span>
                             )}
@@ -311,7 +311,7 @@ export default function FollowUpsPage() {
                             style={{
                               padding: "0.35rem 0.65rem", borderRadius: 8, cursor: "pointer",
                               background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)",
-                              fontSize: "0.72rem", fontWeight: 700, color: "#34d399",
+                              fontSize: "0.72rem", fontWeight: 700, color: "#059669",
                               display: "flex", alignItems: "center", gap: "0.3rem",
                               transition: "all 0.12s",
                             }}

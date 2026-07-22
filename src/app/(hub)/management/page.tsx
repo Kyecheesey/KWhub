@@ -14,7 +14,7 @@ interface EventRow {
 }
 
 const ENTITY_LABEL: Record<string,string> = { client: "Client", potential: "Potential", task: "Task", activity: "Activity" };
-const ENTITY_COLOR: Record<string,string> = { client: "#22d3ee", potential: "#818cf8", task: "#fb923c", activity: "#34d399" };
+const ENTITY_COLOR: Record<string,string> = { client: "#0891b2", potential: "#4f46e5", task: "#ea580c", activity: "#059669" };
 const ACTION_LABEL: Record<string,string> = {
   created: "Created", updated: "Updated", deleted: "Deleted",
   stage_changed: "Stage changed", status_changed: "Status changed",
@@ -91,9 +91,9 @@ function PasswordReset() {
         {msg && (
           <div style={{
             padding: "0.55rem 0.8rem", borderRadius: 9, fontSize: "0.8rem", fontWeight: 500,
-            background: msg.ok ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)",
-            border: `1px solid ${msg.ok ? "rgba(52,211,153,0.2)" : "rgba(248,113,113,0.2)"}`,
-            color: msg.ok ? "#34d399" : "#f87171",
+            background: msg.ok ? "rgba(52,211,153,0.08)" : "rgba(225,29,72,0.07)",
+            border: `1px solid ${msg.ok ? "rgba(52,211,153,0.2)" : "rgba(225,29,72,0.2)"}`,
+            color: msg.ok ? "#059669" : "#e11d48",
           }}>
             {msg.text}
           </div>
@@ -174,9 +174,9 @@ function PortalSettings() {
         {msg && (
           <div style={{
             padding: "0.5rem 0.75rem", borderRadius: 9, fontSize: "0.78rem",
-            background: msg.ok ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)",
-            border: `1px solid ${msg.ok ? "rgba(52,211,153,0.2)" : "rgba(248,113,113,0.2)"}`,
-            color: msg.ok ? "#34d399" : "#f87171",
+            background: msg.ok ? "rgba(52,211,153,0.08)" : "rgba(225,29,72,0.07)",
+            border: `1px solid ${msg.ok ? "rgba(52,211,153,0.2)" : "rgba(225,29,72,0.2)"}`,
+            color: msg.ok ? "#059669" : "#e11d48",
           }}>
             {msg.text}
           </div>
@@ -287,8 +287,8 @@ const STAGE_LABEL: Record<string,string> = {
   proposal:"Proposal", won:"Won", lost:"Lost",
 };
 const STAGE_COLOR: Record<string,string> = {
-  new:"#60a5fa", contacted:"#fbbf24", qualified:"#a78bfa",
-  proposal:"#fb923c", won:"#34d399", lost:"#f87171",
+  new:"#60a5fa", contacted:"#d97706", qualified:"#7c3aed",
+  proposal:"#ea580c", won:"#059669", lost:"#e11d48",
 };
 
 function greet() {
@@ -409,10 +409,10 @@ export default function ManagementPage() {
       {/* ── Top stats ── */}
       <div className="stat-grid" style={{ marginBottom: "1.5rem" }}>
         {[
-          { label: "Open Tasks",      value: totalOpen,    icon: ClipboardList, color: "#22d3ee" },
-          { label: "Tasks Done",      value: totalDone,    icon: Check,         color: "#34d399" },
-          { label: "Calls Pending",   value: totalPending, icon: PhoneCall,     color: "#818cf8" },
-          { label: "Deals Won",       value: totalClosed,  icon: TrendingUp,    color: "#fb923c" },
+          { label: "Open Tasks",      value: totalOpen,    icon: ClipboardList, color: "#0891b2" },
+          { label: "Tasks Done",      value: totalDone,    icon: Check,         color: "#059669" },
+          { label: "Calls Pending",   value: totalPending, icon: PhoneCall,     color: "#4f46e5" },
+          { label: "Deals Won",       value: totalClosed,  icon: TrendingUp,    color: "#ea580c" },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} style={{
             background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: "1rem 1.15rem",
@@ -435,12 +435,12 @@ export default function ManagementPage() {
         {TEAM.map(name => {
           const s = teamStats(name);
           const initials = name.slice(0, 2).toUpperCase();
-          const gradients: Record<string,string> = { Kye: "#22d3ee,#0ea5e9", Luka: "#818cf8,#6366f1", Aksel: "#34d399,#059669" };
-          const grad = gradients[name] || "#818cf8,#6366f1";
+          const gradients: Record<string,string> = { Kye: "#0891b2,#0ea5e9", Luka: "#4f46e5,#6366f1", Aksel: "#059669,#059669" };
+          const grad = gradients[name] || "#4f46e5,#6366f1";
           return (
             <div key={name} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: "1.1rem 1.15rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.65rem", marginBottom: "0.9rem" }}>
-                <div style={{ width: 36, height: 36, borderRadius: "50%", background: `linear-gradient(135deg,${grad})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.8rem", fontWeight: 800, color: "#0b0d14", flexShrink: 0 }}>{initials}</div>
+                <div style={{ width: 36, height: 36, borderRadius: "50%", background: `linear-gradient(135deg,${grad})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.8rem", fontWeight: 800, color: "#ffffff", flexShrink: 0 }}>{initials}</div>
                 <div>
                   <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--text-1)" }}>{name}</div>
                   <div style={{ fontSize: "0.7rem", color: "var(--text-3)" }}>{s.myPots} potentials assigned</div>
@@ -448,9 +448,9 @@ export default function ManagementPage() {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.4rem", textAlign: "center" }}>
                 {[
-                  { label: "Open",   val: s.open,   col: "#22d3ee" },
-                  { label: "Done",   val: s.done,   col: "#34d399" },
-                  { label: "Overdue",val: s.overdue, col: s.overdue > 0 ? "#f87171" : "var(--text-3)" },
+                  { label: "Open",   val: s.open,   col: "#0891b2" },
+                  { label: "Done",   val: s.done,   col: "#059669" },
+                  { label: "Overdue",val: s.overdue, col: s.overdue > 0 ? "#e11d48" : "var(--text-3)" },
                 ].map(({ label, val, col }) => (
                   <div key={label} style={{ background: "var(--surface-2)", borderRadius: 10, padding: "0.5rem 0.25rem" }}>
                     <div style={{ fontSize: "1.2rem", fontWeight: 900, color: col }}>{val}</div>
@@ -459,7 +459,7 @@ export default function ManagementPage() {
                 ))}
               </div>
               {s.overdue > 0 && (
-                <div style={{ marginTop: "0.65rem", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", color: "#f87171", background: "rgba(248,113,113,0.1)", borderRadius: 8, padding: "0.35rem 0.6rem" }}>
+                <div style={{ marginTop: "0.65rem", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", color: "#e11d48", background: "rgba(248,113,113,0.1)", borderRadius: 8, padding: "0.35rem 0.6rem" }}>
                   <AlertCircle size={12} />
                   {s.overdue} overdue task{s.overdue > 1 ? "s" : ""}
                 </div>
@@ -485,7 +485,7 @@ export default function ManagementPage() {
                   borderRadius: 6, transition: "width 0.4s ease",
                   display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 6,
                 }}>
-                  {count > 0 && <span style={{ fontSize: "0.7rem", fontWeight: 800, color: "#0b0d14" }}>{count}</span>}
+                  {count > 0 && <span style={{ fontSize: "0.7rem", fontWeight: 800, color: "#ffffff" }}>{count}</span>}
                 </div>
               </div>
               <div style={{ width: 28, textAlign: "right", fontSize: "0.82rem", fontWeight: 700, color: STAGE_COLOR[stage] }}>{count}</div>
@@ -494,8 +494,8 @@ export default function ManagementPage() {
         </div>
         <div style={{ marginTop: "0.85rem", paddingTop: "0.85rem", borderTop: "1px solid var(--border)", display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
           <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>Total: <span style={{ fontWeight: 800, color: "var(--text-1)" }}>{pots.length}</span></div>
-          <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>Won: <span style={{ fontWeight: 800, color: "#34d399" }}>{totalClosed}</span></div>
-          <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>Active: <span style={{ fontWeight: 800, color: "#22d3ee" }}>{pots.filter(p => ["contacted","qualified","proposal"].includes(p.status)).length}</span></div>
+          <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>Won: <span style={{ fontWeight: 800, color: "#059669" }}>{totalClosed}</span></div>
+          <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>Active: <span style={{ fontWeight: 800, color: "#0891b2" }}>{pots.filter(p => ["contacted","qualified","proposal"].includes(p.status)).length}</span></div>
         </div>
       </div>
 
@@ -506,7 +506,7 @@ export default function ManagementPage() {
       <div style={{
         background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16,
         overflow: "hidden", marginBottom: "1.5rem",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.18)",
+        boxShadow: "0 4px 24px rgba(50,30,100,0.12)",
       }}>
         {/* Card header */}
         <div style={{
@@ -518,10 +518,10 @@ export default function ManagementPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
             <div style={{
               width: 32, height: 32, borderRadius: 9,
-              background: "linear-gradient(135deg,#22d3ee,#818cf8)",
+              background: "linear-gradient(135deg,#0891b2,#4f46e5)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0b0d14" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
               </svg>
             </div>
@@ -590,9 +590,9 @@ export default function ManagementPage() {
               }}
             />
             <button onClick={addItem} style={{
-              background: "linear-gradient(135deg,#22d3ee,#0ea5e9)", border: "none",
+              background: "linear-gradient(135deg,#0891b2,#0ea5e9)", border: "none",
               borderRadius: 8, padding: "0.45rem 0.7rem", cursor: "pointer",
-              display: "flex", alignItems: "center", color: "#0b0d14",
+              display: "flex", alignItems: "center", color: "#ffffff",
             }}>
               <Plus size={16} strokeWidth={2.5} />
             </button>
@@ -613,12 +613,12 @@ export default function ManagementPage() {
               }}>
                 <button onClick={() => toggleItem(item)} style={{
                   width: 20, height: 20, borderRadius: 6, flexShrink: 0, cursor: "pointer",
-                  border: `2px solid ${item.done ? "#34d399" : "var(--border)"}`,
-                  background: item.done ? "#34d399" : "transparent",
+                  border: `2px solid ${item.done ? "#059669" : "var(--border)"}`,
+                  background: item.done ? "#059669" : "transparent",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   transition: "all 0.15s",
                 }}>
-                  {item.done && <Check size={11} color="#0b0d14" strokeWidth={3} />}
+                  {item.done && <Check size={11} color="#ffffff" strokeWidth={3} />}
                 </button>
                 <span style={{
                   flex: 1, fontSize: "0.87rem", color: "var(--text-1)",
@@ -631,7 +631,7 @@ export default function ManagementPage() {
                   color: "var(--text-3)", padding: "0.2rem", borderRadius: 4,
                   display: "flex", opacity: 0.6,
                 }}
-                  onMouseEnter={e => (e.currentTarget.style.color = "#f87171")}
+                  onMouseEnter={e => (e.currentTarget.style.color = "#e11d48")}
                   onMouseLeave={e => (e.currentTarget.style.color = "var(--text-3)")}
                 >
                   <Trash2 size={13} />
