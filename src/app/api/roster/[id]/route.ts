@@ -1,8 +1,9 @@
 import { sql, migrate } from "@/lib/db";
 import { auth } from "../../../../../auth";
 
-const isKye = (session: { user?: { email?: string | null } } | null) =>
-  (session?.user?.email ?? "").toLowerCase() === "kye";
+const isKye = (session: { user?: { email?: string | null; name?: string | null } } | null) =>
+  (session?.user?.email ?? "").toLowerCase() === "kye" ||
+  (session?.user?.name ?? "").toLowerCase() === "kye";
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();

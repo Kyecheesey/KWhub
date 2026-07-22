@@ -36,23 +36,32 @@ const focusDot = (focus: string) => {
 export default function RosterPage() {
   const { data: session } = useSession();
   const currentUser = (session?.user?.name ?? "").toLowerCase();
+  // Same check the sidebar uses for the Management tab — don't wait on the API
+  const canManage = currentUser === "kye";
 
   const [shifts, setShifts] = useState<Shift[]>([]);
-  const [canManage, setCanManage] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(BLANK_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/roster");
-    if (res.ok) {
+    setLoadError("");
+    try {
+      const res = await fetch("/api/roster", { cache: "no-store" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `Roster failed to load (${res.status})`);
+      }
       const data = await res.json();
       setShifts(data.shifts ?? []);
-      setCanManage(Boolean(data.canManage));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Roster failed to load");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -77,7 +86,9 @@ export default function RosterPage() {
   };
 
   const removeShift = async (id: number) => {
-    await fetch(`/api/roster/${id}`, { method: "DELETE" });
+    try {
+      await fetch(`/api/roster/${id}`, { method: "DELETE" });
+    } catch { /* surfaced by reload below */ }
     await load();
   };
 
@@ -245,9 +256,18 @@ export default function RosterPage() {
           <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
             This Week
           </span>
-          <span style={{ fontSize: "0.75rem", color: "var(--text-3)" }}>
-            {loading ? "Loading…" : shifts.length === 0 ? "No shifts yet" : `${shifts.length} shift${shifts.length === 1 ? "" : "s"}`}
-          </span>
+          {loadError ? (
+            <button onClick={load} style={{
+              background: "none", border: "none", cursor: "pointer", padding: 0,
+              fontSize: "0.75rem", fontWeight: 600, color: "var(--danger)",
+            }}>
+              {loadError} — tap to retry
+            </button>
+          ) : (
+            <span style={{ fontSize: "0.75rem", color: "var(--text-3)" }}>
+              {loading ? "Loading…" : shifts.length === 0 ? "No shifts yet" : `${shifts.length} shift${shifts.length === 1 ? "" : "s"}`}
+            </span>
+          )}
         </div>
 
         {DAYS.map((day, i) => {

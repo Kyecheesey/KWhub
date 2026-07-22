@@ -3,8 +3,9 @@ import { auth } from "../../../../auth";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-const isKye = (session: { user?: { email?: string | null } } | null) =>
-  (session?.user?.email ?? "").toLowerCase() === "kye";
+const isKye = (session: { user?: { email?: string | null; name?: string | null } } | null) =>
+  (session?.user?.email ?? "").toLowerCase() === "kye" ||
+  (session?.user?.name ?? "").toLowerCase() === "kye";
 
 export async function GET() {
   const session = await auth();
