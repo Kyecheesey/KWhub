@@ -123,6 +123,17 @@ export async function migrate() {
     )
   `;
   await sql`
+    CREATE TABLE IF NOT EXISTS roster_shifts (
+      id         SERIAL PRIMARY KEY,
+      day        TEXT NOT NULL,
+      time       TEXT NOT NULL,
+      person     TEXT NOT NULL,
+      hours      REAL NOT NULL DEFAULT 0,
+      focus      TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
     CREATE TABLE IF NOT EXISTS checklist (
       id         SERIAL PRIMARY KEY,
       text       TEXT NOT NULL,
