@@ -2,10 +2,38 @@ import { sql, migrate } from "@/lib/db";
 import { logEvent } from "@/lib/events";
 import { notifyAssignment } from "@/lib/notify";
 
+function nextDueDate(recurrence: string, from: Date): string {
+  const d = new Date(from);
+  if (recurrence === "daily") d.setDate(d.getDate() + 1);
+  else if (recurrence === "weekly") d.setDate(d.getDate() + 7);
+  else if (recurrence === "fortnightly") d.setDate(d.getDate() + 14);
+  else d.setMonth(d.getMonth() + 1); // monthly
+  return d.toISOString().slice(0, 10);
+}
+
+// When a recurring task is completed, spawn the next occurrence
+async function spawnNextOccurrence(id: number) {
+  const rows = await sql`SELECT * FROM tasks WHERE id = ${id}`;
+  const t = rows[0] as {
+    title: string; description: string | null; priority: string;
+    assigned_to: string; assigned_by: string | null;
+    due_date: string | null; recurrence: string | null;
+  } | undefined;
+  if (!t?.recurrence) return;
+  const base = t.due_date ? new Date(t.due_date) : new Date();
+  await sql`
+    INSERT INTO tasks (title, description, status, priority, assigned_to, assigned_by, due_date, recurrence)
+    VALUES (${t.title}, ${t.description}, 'pending', ${t.priority}, ${t.assigned_to},
+            ${t.assigned_by}, ${nextDueDate(t.recurrence, base)}, ${t.recurrence})
+  `;
+  // The completed instance stops recurring — the new one carries it forward
+  await sql`UPDATE tasks SET recurrence = NULL WHERE id = ${id}`;
+}
+
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   await migrate();
   const { id } = await params;
-  const { title, description, status, priority, assigned_to, assigned_by, due_date } = await req.json();
+  const { title, description, status, priority, assigned_to, assigned_by, due_date, recurrence } = await req.json();
   const prev = await sql`SELECT status, assigned_to FROM tasks WHERE id = ${id}`;
   const rows = await sql`
     UPDATE tasks SET
@@ -16,6 +44,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       assigned_to  = ${assigned_to},
       assigned_by  = ${assigned_by || null},
       due_date     = ${due_date || null},
+      recurrence   = ${recurrence || null},
       completed_at = ${status === "done" ? sql`NOW()` : null},
       updated_at   = NOW()
     WHERE id = ${id}
@@ -30,6 +59,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (assigned_to && old && old.assigned_to !== assigned_to) {
     await notifyAssignment({ kind: "task", title, assignee: assigned_to, dueDate: due_date, priority, description });
   }
+  if (old && old.status !== "done" && status === "done") await spawnNextOccurrence(Number(id));
   return Response.json(rows[0]);
 }
 
@@ -53,6 +83,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       action: "status_changed", detail: `${old.status} → ${body.status}`,
     });
   }
+  if (old && old.status !== "done" && body.status === "done") await spawnNextOccurrence(Number(id));
   return Response.json(rows[0]);
 }
 

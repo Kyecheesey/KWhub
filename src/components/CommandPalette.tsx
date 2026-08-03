@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, CornerDownLeft, ArrowUp, ArrowDown, Users, Target } from "lucide-react";
+import { Search, CornerDownLeft, ArrowUp, ArrowDown, Users, Target, Briefcase, Kanban, ClipboardList } from "lucide-react";
 import { flatNavItems } from "@/lib/nav";
 
 interface RecordHit {
@@ -14,8 +14,16 @@ interface RecordHit {
   status?: string;
 }
 
+interface WorkHit {
+  id: number;
+  title: string;
+  status: string;
+  assigned_to: string | null;
+  business_name?: string | null;
+}
+
 type PaletteItem = {
-  kind: "page" | "client" | "potential";
+  kind: "page" | "client" | "potential" | "job" | "activity" | "task";
   key: string;
   label: string;
   sub?: string;
@@ -40,7 +48,7 @@ export default function CommandPalette({
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [wasOpen, setWasOpen] = useState(open);
-  const [records, setRecords] = useState<{ clients: RecordHit[]; potentials: RecordHit[] }>({ clients: [], potentials: [] });
+  const [records, setRecords] = useState<{ clients: RecordHit[]; potentials: RecordHit[]; jobs: WorkHit[]; activities: WorkHit[]; tasks: WorkHit[] }>({ clients: [], potentials: [], jobs: [], activities: [], tasks: [] });
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -49,7 +57,7 @@ export default function CommandPalette({
     if (open) {
       setQuery("");
       setActiveIndex(0);
-      setRecords({ clients: [], potentials: [] });
+      setRecords({ clients: [], potentials: [], jobs: [], activities: [], tasks: [] });
     }
   }
 
@@ -60,13 +68,16 @@ export default function CommandPalette({
     const q = query.trim();
     const timer = setTimeout(() => {
       if (q.length < 2) {
-        setRecords({ clients: [], potentials: [] });
+        setRecords({ clients: [], potentials: [], jobs: [], activities: [], tasks: [] });
         return;
       }
       fetch(`/api/search?q=${encodeURIComponent(q)}`)
         .then((r) => r.json())
-        .then((data) => setRecords({ clients: data.clients ?? [], potentials: data.potentials ?? [] }))
-        .catch(() => setRecords({ clients: [], potentials: [] }));
+        .then((data) => setRecords({
+          clients: data.clients ?? [], potentials: data.potentials ?? [],
+          jobs: data.jobs ?? [], activities: data.activities ?? [], tasks: data.tasks ?? [],
+        }))
+        .catch(() => setRecords({ clients: [], potentials: [], jobs: [], activities: [], tasks: [] }));
     }, 220);
     return () => clearTimeout(timer);
   }, [query]);
@@ -86,7 +97,20 @@ export default function CommandPalette({
       sub: [p.status ? STAGE_LABELS[p.status] ?? p.status : null, p.contact_name].filter(Boolean).join(" · ") || undefined,
       href: `/potentials?q=${encodeURIComponent(p.business_name)}`, icon: Target,
     }));
-    return [...pages, ...clients, ...potentials];
+    const jobs: PaletteItem[] = records.jobs.map((j) => ({
+      kind: "job", key: `job-${j.id}`, label: j.title,
+      sub: [j.business_name, j.assigned_to].filter(Boolean).join(" · ") || undefined,
+      href: "/client-jobs", icon: Briefcase,
+    }));
+    const activities: PaletteItem[] = records.activities.map((a) => ({
+      kind: "activity", key: `activity-${a.id}`, label: a.title,
+      sub: a.assigned_to ?? undefined, href: "/activities", icon: Kanban,
+    }));
+    const tasks: PaletteItem[] = records.tasks.map((t) => ({
+      kind: "task", key: `task-${t.id}`, label: t.title,
+      sub: t.assigned_to ?? undefined, href: "/tasks", icon: ClipboardList,
+    }));
+    return [...pages, ...clients, ...potentials, ...jobs, ...activities, ...tasks];
   }, [navItems, query, records]);
 
   useEffect(() => {
@@ -131,6 +155,7 @@ export default function CommandPalette({
 
   const KIND_LABEL: Record<PaletteItem["kind"], string> = {
     page: "Pages", client: "Clients", potential: "Potentials",
+    job: "Client Jobs", activity: "Activities", task: "Tasks",
   };
 
   return (

@@ -28,7 +28,7 @@ export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promis
 let _migrated: Promise<void> | null = null;
 
 // Bump whenever a statement is added/changed below, so existing databases re-run the set.
-const SCHEMA_VERSION = "2026-08-03.2";
+const SCHEMA_VERSION = "2026-08-03.3";
 
 export function migrate(): Promise<void> {
   if (!_migrated) {
@@ -308,6 +308,44 @@ async function runMigrations() {
     )
   `;
   await sql`CREATE INDEX IF NOT EXISTS client_jobs_client_idx ON client_jobs (client_id)`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS job_comments (
+      id         SERIAL PRIMARY KEY,
+      job_id     INTEGER NOT NULL,
+      author     TEXT,
+      body       TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS job_comments_job_idx ON job_comments (job_id)`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS job_time_entries (
+      id         SERIAL PRIMARY KEY,
+      job_id     INTEGER NOT NULL,
+      person     TEXT,
+      hours      REAL NOT NULL,
+      note       TEXT,
+      entry_date DATE DEFAULT CURRENT_DATE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS job_time_job_idx ON job_time_entries (job_id)`;
+  await sql`ALTER TABLE client_jobs ADD COLUMN IF NOT EXISTS visible_to_client BOOLEAN DEFAULT FALSE`;
+  await sql`ALTER TABLE potentials ADD COLUMN IF NOT EXISTS value_cents INTEGER`;
+  await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS recurrence TEXT`;
+  await sql`ALTER TABLE job_comments ENABLE ROW LEVEL SECURITY`;
+  await sql`ALTER TABLE job_time_entries ENABLE ROW LEVEL SECURITY`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id         SERIAL PRIMARY KEY,
+      username   TEXT NOT NULL,
+      endpoint   TEXT NOT NULL UNIQUE,
+      p256dh     TEXT NOT NULL,
+      auth       TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY`;
   await sql`
     INSERT INTO settings (key, value) VALUES ('schema_version', ${SCHEMA_VERSION})
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()

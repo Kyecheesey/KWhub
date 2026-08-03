@@ -9,11 +9,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   await migrate();
-  const { business_name, contact_name, phone, email, notes, status, assigned_to, contact_method, follow_up_date } = await request.json();
+  const { business_name, contact_name, phone, email, notes, status, assigned_to, contact_method, follow_up_date, value_cents } = await request.json();
   if (!business_name) return Response.json({ error: "business_name is required" }, { status: 400 });
   const rows = await sql`
-    INSERT INTO potentials (business_name, contact_name, phone, email, notes, status, assigned_to, contact_method, follow_up_date)
-    VALUES (${business_name}, ${contact_name ?? null}, ${phone ?? null}, ${email ?? null}, ${notes ?? null}, ${status ?? "new"}, ${assigned_to ?? null}, ${contact_method ?? null}, ${follow_up_date ?? null})
+    INSERT INTO potentials (business_name, contact_name, phone, email, notes, status, assigned_to, contact_method, follow_up_date, value_cents)
+    VALUES (${business_name}, ${contact_name ?? null}, ${phone ?? null}, ${email ?? null}, ${notes ?? null}, ${status ?? "new"}, ${assigned_to ?? null}, ${contact_method ?? null}, ${follow_up_date ?? null}, ${value_cents ?? null})
     RETURNING *
   `;
   const created = rows[0] as { id: number };

@@ -27,6 +27,14 @@ interface Approval { id: number; title: string; description: string | null; stat
 interface PortalFile { id: number; filename: string; url: string; size_bytes: number | null; uploaded_by: string | null; created_at: string; }
 interface Invoice { id: number; number: string; amount_cents: number; due_date: string | null; status: string; pdf_url: string | null; pay_url: string | null; }
 interface ChecklistItem { id: number; text: string; done: boolean; }
+interface VisibleJob { id: number; title: string; description: string | null; status: string; due_date: string | null; updated_at: string; }
+
+const JOB_STATUS: Record<string, { label: string; color: string }> = {
+  todo: { label: "Queued", color: "#60a5fa" },
+  in_progress: { label: "In progress", color: "#d97706" },
+  in_review: { label: "In review", color: "#4f46e5" },
+  done: { label: "Done", color: "#059669" },
+};
 
 const STAGES = ["Discovery", "Design", "Build", "Review", "Launch"];
 const POLL_MS = 20_000;
@@ -81,6 +89,7 @@ export default function PortalPage() {
   const [files, setFiles] = useState<PortalFile[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+  const [visibleJobs, setVisibleJobs] = useState<VisibleJob[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -133,7 +142,8 @@ export default function PortalPage() {
       fetch(`/api/portal/files${qs}`).then((r) => r.json()),
       fetch(`/api/portal/invoices${qs}`).then((r) => r.json()),
       fetch(`/api/portal/checklist${qs}`).then((r) => r.json()),
-    ]).then(([me, msgs, projs, apprs, fls, invs, chk]) => {
+      fetch(`/api/portal/jobs${qs}`).then((r) => r.json()),
+    ]).then(([me, msgs, projs, apprs, fls, invs, chk, jbs]) => {
       if (cancelled) return;
       if (!me.error) setClient(me);
       if (Array.isArray(msgs)) setMessages(msgs);
@@ -142,6 +152,7 @@ export default function PortalPage() {
       if (Array.isArray(fls)) setFiles(fls);
       if (Array.isArray(invs)) setInvoices(invs);
       if (Array.isArray(chk)) setChecklist(chk);
+      if (Array.isArray(jbs)) setVisibleJobs(jbs);
       setLoading(false);
     });
     const interval = setInterval(() => { loadMessages(); loadApprovals(); }, POLL_MS);
@@ -412,6 +423,30 @@ export default function PortalPage() {
                       </a>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* ── What we're working on ── */}
+            {visibleJobs.length > 0 && (
+              <div className="card fade-up" style={{ overflow: "hidden", animationDelay: "0.05s" }}>
+                <CardHeader icon={Rocket} title="What we're working on" />
+                <div>
+                  {visibleJobs.map((jb, ji) => {
+                    const st = JOB_STATUS[jb.status] ?? JOB_STATUS.todo;
+                    return (
+                      <div key={jb.id} style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem", padding: "0.9rem 1.25rem", borderBottom: ji < visibleJobs.length - 1 ? "1px solid var(--border)" : "none" }}>
+                        <span style={{ width: 9, height: 9, borderRadius: "50%", background: st.color, flexShrink: 0, marginTop: 6 }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, fontSize: "0.88rem", textDecoration: jb.status === "done" ? "line-through" : "none", color: jb.status === "done" ? "var(--text-3)" : "var(--text-1)" }}>{jb.title}</div>
+                          {jb.description && <div style={{ fontSize: "0.76rem", color: "var(--text-3)", lineHeight: 1.5, marginTop: 2 }}>{jb.description}</div>}
+                        </div>
+                        <span style={{ fontSize: "0.66rem", fontWeight: 700, color: st.color, background: `${st.color}14`, border: `1px solid ${st.color}30`, padding: "0.15rem 0.55rem", borderRadius: 99, whiteSpace: "nowrap", flexShrink: 0 }}>
+                          {st.label}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

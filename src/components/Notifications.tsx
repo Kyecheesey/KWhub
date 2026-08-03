@@ -27,6 +27,38 @@ const URGENCY_COLOR: Record<NotificationItem["urgency"], string> = {
 
 const POLL_MS = 90_000;
 
+function urlBase64ToUint8Array(base64: string) {
+  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+  const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(b64);
+  return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+}
+
+/** Register the service worker and subscribe this device to push notifications. */
+export async function registerPush(): Promise<boolean> {
+  try {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
+    const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!vapid) return false;
+    const reg = await navigator.serviceWorker.register("/sw.js");
+    await navigator.serviceWorker.ready;
+    const sub =
+      (await reg.pushManager.getSubscription()) ??
+      (await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapid),
+      }));
+    const res = await fetch("/api/push/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(sub.toJSON()),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 /** Single source of truth for notifications — call once in LayoutShell. */
 export function useNotifications() {
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -59,6 +91,10 @@ export function useNotifications() {
 
     poll();
     const interval = setInterval(poll, POLL_MS);
+    // Keep this device's push subscription registered when permission is already granted
+    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+      registerPush();
+    }
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
@@ -124,7 +160,12 @@ export function NotificationsPanel({
           <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
             {permission === "default" && (
               <button
-                onClick={() => Notification.requestPermission().then(setPermission)}
+                onClick={() =>
+                  Notification.requestPermission().then((p) => {
+                    setPermission(p);
+                    if (p === "granted") registerPush();
+                  })
+                }
                 style={{
                   display: "flex", alignItems: "center", gap: "0.3rem",
                   fontSize: "0.7rem", fontWeight: 700, color: "var(--accent)",

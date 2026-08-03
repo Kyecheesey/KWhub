@@ -11,7 +11,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { business_name, contact_name, phone, email, notes, status, assigned_to, contact_method, follow_up_date } = await request.json();
+  const { business_name, contact_name, phone, email, notes, status, assigned_to, contact_method, follow_up_date, value_cents } = await request.json();
   const prev = await sql`SELECT status, assigned_to FROM potentials WHERE id=${id}`;
   const rows = await sql`
     UPDATE potentials
@@ -20,6 +20,7 @@ export async function PUT(
         status=${status ?? "new"}, assigned_to=${assigned_to ?? null},
         contact_method=${contact_method ?? null},
         follow_up_date=${follow_up_date ?? null},
+        value_cents=${value_cents ?? null},
         updated_at=NOW()
     WHERE id=${id}
     RETURNING *

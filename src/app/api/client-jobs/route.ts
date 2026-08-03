@@ -6,20 +6,28 @@ export async function GET(req: Request) {
   await migrate();
   const clientId = new URL(req.url).searchParams.get("client_id");
   const rows = clientId
-    ? await sql`SELECT * FROM client_jobs WHERE client_id = ${clientId} ORDER BY created_at DESC`
-    : await sql`SELECT * FROM client_jobs ORDER BY created_at DESC`;
+    ? await sql`
+        SELECT j.*,
+          (SELECT COUNT(*) FROM job_comments c WHERE c.job_id = j.id)::int AS comment_count,
+          COALESCE((SELECT SUM(hours) FROM job_time_entries t WHERE t.job_id = j.id), 0)::real AS hours_logged
+        FROM client_jobs j WHERE j.client_id = ${clientId} ORDER BY j.created_at DESC`
+    : await sql`
+        SELECT j.*,
+          (SELECT COUNT(*) FROM job_comments c WHERE c.job_id = j.id)::int AS comment_count,
+          COALESCE((SELECT SUM(hours) FROM job_time_entries t WHERE t.job_id = j.id), 0)::real AS hours_logged
+        FROM client_jobs j ORDER BY j.created_at DESC`;
   return Response.json(rows);
 }
 
 export async function POST(req: Request) {
   await migrate();
-  const { client_id, title, description, status, priority, assigned_to, due_date } = await req.json();
+  const { client_id, title, description, status, priority, assigned_to, due_date, visible_to_client } = await req.json();
   if (!client_id) return Response.json({ error: "client_id required" }, { status: 400 });
   if (!title?.trim()) return Response.json({ error: "Title required" }, { status: 400 });
   const rows = await sql`
-    INSERT INTO client_jobs (client_id, title, description, status, priority, assigned_to, due_date)
+    INSERT INTO client_jobs (client_id, title, description, status, priority, assigned_to, due_date, visible_to_client)
     VALUES (${client_id}, ${title.trim()}, ${description || null}, ${status || "todo"},
-            ${priority || "medium"}, ${assigned_to || null}, ${due_date || null})
+            ${priority || "medium"}, ${assigned_to || null}, ${due_date || null}, ${Boolean(visible_to_client)})
     RETURNING *
   `;
   const created = rows[0] as { id: number };

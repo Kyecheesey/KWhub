@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, Target, PhoneCall,
   FileText, Zap, Kanban, ClipboardList, CalendarDays, Briefcase,
-  UsersRound, Settings, Bell, TrendingUp,
+  UsersRound, Settings, Bell, TrendingUp, UserRound,
 } from "lucide-react";
 
 export interface NavItem {
@@ -34,6 +34,7 @@ export const navGroups: NavGroup[] = [
   {
     label: "Team",
     items: [
+      { href: "/my-work", label: "My Work", icon: UserRound, keywords: "assigned to me today" },
       { href: "/activities", label: "Activities", icon: Kanban, keywords: "kanban board" },
       { href: "/tasks", label: "Tasks", icon: ClipboardList, keywords: "todo assignments" },
       { href: "/roster", label: "Roster", icon: CalendarDays, keywords: "schedule shifts calendar" },

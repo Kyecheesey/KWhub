@@ -19,6 +19,7 @@ interface Task {
   assigned_by: string | null;
   due_date: string | null;
   completed_at: string | null;
+  recurrence?: string | null;
   created_at: string;
 }
 
@@ -48,9 +49,9 @@ function avatarStyle(name: string) {
 
 type Form = {
   title: string; description: string; status: string;
-  priority: string; assigned_to: string; assigned_by: string; due_date: string;
+  priority: string; assigned_to: string; assigned_by: string; due_date: string; recurrence: string;
 };
-const BLANK: Form = { title: "", description: "", status: "pending", priority: "medium", assigned_to: "", assigned_by: "", due_date: "" };
+const BLANK: Form = { title: "", description: "", status: "pending", priority: "medium", assigned_to: "", assigned_by: "", due_date: "", recurrence: "" };
 
 function isOverdue(due_date: string | null, status: string) {
   if (!due_date || status === "done") return false;
@@ -109,6 +110,7 @@ export default function TasksPage() {
       status: t.status, priority: t.priority,
       assigned_to: t.assigned_to, assigned_by: t.assigned_by ?? currentUser,
       due_date: t.due_date ? t.due_date.slice(0, 10) : "",
+      recurrence: t.recurrence ?? "",
     });
     setShowForm(true);
   }
@@ -522,12 +524,26 @@ export default function TasksPage() {
                 </div>
               </div>
 
-              {/* Due date */}
-              <div>
-                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.35rem" }}>
-                  <Calendar size={11} style={{ display: "inline", marginRight: 4 }} />Due Date
-                </label>
-                <input type="date" className="field" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
+              {/* Due date + recurrence */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.35rem" }}>
+                    <Calendar size={11} style={{ display: "inline", marginRight: 4 }} />Due Date
+                  </label>
+                  <input type="date" className="field" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.35rem" }}>
+                    <Clock size={11} style={{ display: "inline", marginRight: 4 }} />Repeats
+                  </label>
+                  <select className="field" value={form.recurrence} onChange={(e) => setForm({ ...form, recurrence: e.target.value })}>
+                    <option value="">Never</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="fortnightly">Fortnightly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
               </div>
             </div>
 

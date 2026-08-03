@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Plus, X, Pencil, Trash2, Flag, Calendar,
   UserCircle2, CheckCircle2, Briefcase,
+  MessageSquare, Clock, Eye,
 } from "lucide-react";
 import { swrJson } from "@/lib/cache";
 
@@ -21,9 +22,15 @@ interface Job {
   priority: string;
   assigned_to: string | null;
   due_date: string | null;
+  visible_to_client?: boolean;
+  comment_count?: number;
+  hours_logged?: number;
   created_at: string;
   updated_at: string;
 }
+
+interface JobComment { id: number; author: string | null; body: string; created_at: string; }
+interface TimeEntry { id: number; person: string | null; hours: number; note: string | null; entry_date: string; }
 
 const COLUMNS = [
   { key: "todo",        label: "To Do",       color: "#60a5fa", bg: "rgba(96,165,250,0.1)",  border: "rgba(96,165,250,0.2)"  },
@@ -43,8 +50,9 @@ const TEAM = ["Kye", "Luka", "Aksel", "Kaylie"];
 type Form = {
   title: string; description: string; status: string;
   priority: string; assigned_to: string; due_date: string;
+  visible_to_client: boolean;
 };
-const BLANK: Form = { title: "", description: "", status: "todo", priority: "medium", assigned_to: "", due_date: "" };
+const BLANK: Form = { title: "", description: "", status: "todo", priority: "medium", assigned_to: "", due_date: "", visible_to_client: false };
 
 function priorityOf(key: string) { return PRIORITIES.find((p) => p.key === key) ?? PRIORITIES[1]; }
 
@@ -70,6 +78,13 @@ export default function ClientJobsPage() {
 
   const dragId = useRef<number | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+
+  // Comments + time entries for the job being edited
+  const [comments, setComments] = useState<JobComment[]>([]);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [newHours, setNewHours] = useState("");
+  const [newTimeNote, setNewTimeNote] = useState("");
 
   const load = useCallback(() => {
     return Promise.all([
@@ -97,8 +112,40 @@ export default function ClientJobsPage() {
       status: j.status, priority: j.priority,
       assigned_to: j.assigned_to ?? "",
       due_date: j.due_date ? j.due_date.slice(0, 10) : "",
+      visible_to_client: Boolean(j.visible_to_client),
     });
+    setComments([]); setTimeEntries([]); setNewComment(""); setNewHours(""); setNewTimeNote("");
+    fetch(`/api/client-jobs/${j.id}/comments`).then((r) => r.json()).then((d) => setComments(Array.isArray(d) ? d : []));
+    fetch(`/api/client-jobs/${j.id}/time`).then((r) => r.json()).then((d) => setTimeEntries(Array.isArray(d) ? d : []));
     setShowForm(true);
+  }
+
+  async function addComment() {
+    if (!newComment.trim() || !editId) return;
+    const res = await fetch(`/api/client-jobs/${editId}/comments`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body: newComment }),
+    });
+    if (res.ok) {
+      const c = await res.json();
+      setComments((prev) => [...prev, c]);
+      setNewComment("");
+      load();
+    }
+  }
+
+  async function logTime() {
+    if (!newHours || !editId) return;
+    const res = await fetch(`/api/client-jobs/${editId}/time`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hours: newHours, note: newTimeNote }),
+    });
+    if (res.ok) {
+      const t = await res.json();
+      setTimeEntries((prev) => [t, ...prev]);
+      setNewHours(""); setNewTimeNote("");
+      load();
+    }
   }
 
   async function save() {
@@ -296,6 +343,21 @@ export default function ClientJobsPage() {
                                 <Calendar size={10} /> {formatDate(j.due_date)}{overdue ? " ⚠" : ""}
                               </span>
                             )}
+                            {(j.comment_count ?? 0) > 0 && (
+                              <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", color: "var(--text-3)" }}>
+                                <MessageSquare size={10} /> {j.comment_count}
+                              </span>
+                            )}
+                            {(j.hours_logged ?? 0) > 0 && (
+                              <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", color: "var(--text-3)" }}>
+                                <Clock size={10} /> {j.hours_logged}h
+                              </span>
+                            )}
+                            {j.visible_to_client && (
+                              <span title="Visible in the client's portal" style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", color: "#059669" }}>
+                                <Eye size={10} /> Client
+                              </span>
+                            )}
                           </div>
 
                           {/* Actions */}
@@ -392,6 +454,65 @@ export default function ClientJobsPage() {
                   <input type="date" className="field" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
                 </div>
               </div>
+
+              {/* Client visibility */}
+              <label style={{ display: "flex", alignItems: "center", gap: "0.55rem", fontSize: "0.82rem", fontWeight: 600, color: "var(--text-2)", cursor: "pointer", padding: "0.55rem 0.75rem", background: form.visible_to_client ? "rgba(5,150,105,0.06)" : "var(--surface-2)", border: `1px solid ${form.visible_to_client ? "rgba(5,150,105,0.25)" : "var(--border-2)"}`, borderRadius: 10 }}>
+                <input type="checkbox" checked={form.visible_to_client} onChange={(e) => setForm({ ...form, visible_to_client: e.target.checked })} style={{ accentColor: "#059669" }} />
+                <Eye size={13} style={{ color: form.visible_to_client ? "#059669" : "var(--text-3)" }} />
+                Show this job in the client&apos;s portal (&ldquo;What we&apos;re working on&rdquo;)
+              </label>
+
+              {/* Comments + time — existing jobs only */}
+              {editId && (
+                <div style={{ display: "grid", gap: "1rem", borderTop: "1px solid var(--border)", paddingTop: "1rem" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.45rem" }}>
+                      <MessageSquare size={11} style={{ display: "inline", marginRight: 4 }} />Comments {comments.length > 0 && `(${comments.length})`}
+                    </label>
+                    {comments.length > 0 && (
+                      <div style={{ display: "grid", gap: "0.45rem", marginBottom: "0.6rem", maxHeight: 180, overflowY: "auto" }}>
+                        {comments.map((c) => (
+                          <div key={c.id} style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 9, padding: "0.5rem 0.7rem" }}>
+                            <div style={{ fontSize: "0.68rem", color: "var(--text-3)", marginBottom: 2 }}>
+                              <strong style={{ color: "#4f46e5" }}>{c.author ?? "Someone"}</strong> · {new Date(c.created_at).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+                            </div>
+                            <div style={{ fontSize: "0.8rem", color: "var(--text-1)", whiteSpace: "pre-wrap" }}>{c.body}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <input className="field" placeholder="Add a comment…" value={newComment} onChange={(e) => setNewComment(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addComment(); } }} />
+                      <button onClick={addComment} className="btn-ghost" disabled={!newComment.trim()}>Post</button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.45rem" }}>
+                      <Clock size={11} style={{ display: "inline", marginRight: 4 }} />Time logged {timeEntries.length > 0 && `— ${timeEntries.reduce((n, t) => n + t.hours, 0)}h total`}
+                    </label>
+                    {timeEntries.length > 0 && (
+                      <div style={{ display: "grid", gap: "0.3rem", marginBottom: "0.6rem", maxHeight: 120, overflowY: "auto" }}>
+                        {timeEntries.map((t) => (
+                          <div key={t.id} style={{ display: "flex", gap: "0.5rem", fontSize: "0.76rem", color: "var(--text-2)" }}>
+                            <strong style={{ color: "var(--text-1)" }}>{t.hours}h</strong>
+                            <span style={{ color: "#4f46e5" }}>{t.person ?? ""}</span>
+                            <span style={{ color: "var(--text-3)" }}>{new Date(t.entry_date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}</span>
+                            {t.note && <span style={{ color: "var(--text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>· {t.note}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <input className="field" type="number" min="0.25" step="0.25" placeholder="Hours" value={newHours} onChange={(e) => setNewHours(e.target.value)} style={{ width: 90, flexShrink: 0 }} />
+                      <input className="field" placeholder="What did you work on? (optional)" value={newTimeNote} onChange={(e) => setNewTimeNote(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); logTime(); } }} />
+                      <button onClick={logTime} className="btn-ghost" disabled={!newHours}>Log</button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>

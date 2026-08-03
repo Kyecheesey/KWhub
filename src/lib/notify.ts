@@ -1,5 +1,6 @@
 import { sql } from "./db";
 import { sendEmail } from "./email";
+import { sendPush } from "./push";
 import { auth } from "../../auth";
 
 /**
@@ -18,8 +19,17 @@ export async function notifyAssignment(input: {
   description?: string | null;
 }) {
   try {
-    const rows = await sql`SELECT email FROM users WHERE LOWER(name) = LOWER(${input.assignee})`;
-    const email = (rows[0] as { email: string | null } | undefined)?.email;
+    const rows = await sql`SELECT username, email FROM users WHERE LOWER(name) = LOWER(${input.assignee})`;
+    const user = rows[0] as { username: string; email: string | null } | undefined;
+    if (!user) return;
+
+    await sendPush(user.username, {
+      title: `New ${input.kind} assigned to you`,
+      body: input.title + (input.clientName ? ` · ${input.clientName}` : ""),
+      url: input.kind === "client job" ? "/client-jobs" : input.kind === "activity" ? "/activities" : "/tasks",
+    });
+
+    const email = user.email;
     if (!email) return;
 
     let assignedBy: string | null = null;

@@ -10,13 +10,13 @@ export async function GET() {
 
 export async function POST(req: Request) {
   await migrate();
-  const { title, description, status, priority, assigned_to, assigned_by, due_date } = await req.json();
+  const { title, description, status, priority, assigned_to, assigned_by, due_date, recurrence } = await req.json();
   if (!title?.trim()) return Response.json({ error: "Title required" }, { status: 400 });
   if (!assigned_to?.trim()) return Response.json({ error: "Must assign to someone" }, { status: 400 });
   const rows = await sql`
-    INSERT INTO tasks (title, description, status, priority, assigned_to, assigned_by, due_date)
+    INSERT INTO tasks (title, description, status, priority, assigned_to, assigned_by, due_date, recurrence)
     VALUES (${title.trim()}, ${description || null}, ${status || "pending"}, ${priority || "medium"},
-            ${assigned_to}, ${assigned_by || null}, ${due_date || null})
+            ${assigned_to}, ${assigned_by || null}, ${due_date || null}, ${recurrence || null})
     RETURNING *
   `;
   const created = rows[0] as { id: number };

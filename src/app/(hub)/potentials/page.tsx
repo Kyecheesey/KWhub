@@ -32,6 +32,7 @@ interface Potential {
   assigned_to: string | null;
   contact_method: string | null;
   follow_up_date: string | null;
+  value_cents: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -46,8 +47,8 @@ const STAGES = [
   { key: "lost",      label: "Lost",          color: "#dc2626", bg: "rgba(248,113,113,0.1)", border: "rgba(220,38,38,0.2)" },
 ];
 
-type Form = { business_name: string; contact_name: string; phone: string; email: string; notes: string; status: string; assigned_to: string; contact_method: string; follow_up_date: string };
-const BLANK: Form = { business_name: "", contact_name: "", phone: "", email: "", notes: "", status: "new", assigned_to: "", contact_method: "", follow_up_date: "" };
+type Form = { business_name: string; contact_name: string; phone: string; email: string; notes: string; status: string; assigned_to: string; contact_method: string; follow_up_date: string; value: string };
+const BLANK: Form = { business_name: "", contact_name: "", phone: "", email: "", notes: "", status: "new", assigned_to: "", contact_method: "", follow_up_date: "", value: "" };
 
 function followUpStatus(p: Potential): "overdue" | "due_today" | "upcoming" | "none" {
   if (!p.follow_up_date) {
@@ -149,14 +150,14 @@ export default function PotentialsPage() {
   }
   function openEdit(p: Potential) {
     setEditId(p.id);
-    setForm({ business_name: p.business_name, contact_name: p.contact_name ?? "", phone: p.phone ?? "", email: p.email ?? "", notes: p.notes ?? "", status: p.status, assigned_to: p.assigned_to ?? "", contact_method: p.contact_method ?? "", follow_up_date: p.follow_up_date ? p.follow_up_date.slice(0,10) : "" });
+    setForm({ business_name: p.business_name, contact_name: p.contact_name ?? "", phone: p.phone ?? "", email: p.email ?? "", notes: p.notes ?? "", status: p.status, assigned_to: p.assigned_to ?? "", contact_method: p.contact_method ?? "", follow_up_date: p.follow_up_date ? p.follow_up_date.slice(0,10) : "", value: p.value_cents != null ? String(p.value_cents / 100) : "" });
     setShowForm(true);
   }
 
   async function save() {
     if (!form.business_name.trim()) return;
     const url = editId ? `/api/potentials/${editId}` : "/api/potentials";
-    await fetch(url, { method: editId ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+    await fetch(url, { method: editId ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, value_cents: form.value ? Math.round(parseFloat(form.value) * 100) : null }) });
     setShowForm(false); load();
   }
 
@@ -777,6 +778,17 @@ export default function PotentialsPage() {
                     ><X size={13} /></button>
                   )}
                 </div>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.35rem" }}>
+                  Estimated Value ($AUD)
+                  <span style={{ marginLeft: "0.4rem", fontSize: "0.68rem", color: "var(--text-3)", fontWeight: 500 }}>(what winning this is worth)</span>
+                </label>
+                <input
+                  type="number" min="0" step="50" className="field" placeholder="e.g. 5000"
+                  value={form.value}
+                  onChange={(e) => setForm({ ...form, value: e.target.value })}
+                />
               </div>
             </div>
             <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>

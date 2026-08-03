@@ -7,7 +7,7 @@ import {
   ArrowLeft, Send, KeyRound, UserPlus, Trash2,
   MessageSquare, Building2, Eye, Rocket, Plus,
   ThumbsUp, FolderOpen, Upload, Receipt, ListChecks,
-  Check, Image as ImageIcon, ChevronRight,
+  Check, Image as ImageIcon, ChevronRight, Briefcase,
 } from "lucide-react";
 
 interface ClientInfo { id: number; business_name: string; contact_name: string | null; assigned_to: string | null; logo_url: string | null; }
@@ -18,8 +18,15 @@ interface Approval { id: number; title: string; description: string | null; stat
 interface PortalFile { id: number; filename: string; url: string; size_bytes: number | null; uploaded_by: string | null; created_at: string; }
 interface Invoice { id: number; number: string; amount_cents: number; due_date: string | null; status: string; }
 interface ChecklistItem { id: number; text: string; done: boolean; }
+interface ClientJob { id: number; title: string; status: string; priority: string; assigned_to: string | null; due_date: string | null; visible_to_client?: boolean; }
 
 const STAGES = ["Discovery", "Design", "Build", "Review", "Launch"];
+const JOB_COLUMNS = [
+  { key: "todo", label: "To Do", color: "#60a5fa" },
+  { key: "in_progress", label: "In Progress", color: "#d97706" },
+  { key: "in_review", label: "In Review", color: "#4f46e5" },
+  { key: "done", label: "Done", color: "#059669" },
+];
 
 function msgTime(iso: string) {
   return new Date(iso).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
@@ -56,6 +63,7 @@ export default function ClientPortalAdminPage() {
   const [files, setFiles] = useState<PortalFile[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+  const [clientJobs, setClientJobs] = useState<ClientJob[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [draft, setDraft] = useState("");
@@ -92,6 +100,7 @@ export default function ClientPortalAdminPage() {
     if (all || keys.includes("files")) jobs.push(j(`/api/portal/files${q}`, (d: PortalFile[]) => setFiles(Array.isArray(d) ? d : [])));
     if (all || keys.includes("invoices")) jobs.push(j(`/api/portal/invoices${q}`, (d: Invoice[]) => setInvoices(Array.isArray(d) ? d : [])));
     if (all || keys.includes("checklist")) jobs.push(j(`/api/portal/checklist${q}`, (d: ChecklistItem[]) => setChecklist(Array.isArray(d) ? d : [])));
+    if (all || keys.includes("clientJobs")) jobs.push(j(`/api/client-jobs${q}`, (d: ClientJob[]) => setClientJobs(Array.isArray(d) ? d : [])));
     return Promise.all(jobs);
   }, [q]);
 
@@ -244,6 +253,46 @@ export default function ClientPortalAdminPage() {
                   <button type="submit" className="btn-ghost" disabled={busy || !newProject.trim()}><Plus size={14} /> Add</button>
                 </form>
               </div>
+            </Section>
+
+            {/* Jobs board for this client */}
+            <Section icon={Briefcase} title="Jobs" extra={
+              <Link href="/client-jobs" className="btn-ghost" style={{ minHeight: 0, padding: "0.35rem 0.7rem", fontSize: "0.75rem" }}>Open full board</Link>
+            }>
+              {clientJobs.length === 0 ? (
+                <div style={{ padding: "1.5rem 1.15rem", color: "var(--text-3)", fontSize: "0.83rem" }}>
+                  No jobs for this client yet — add them on the Client Jobs board.
+                </div>
+              ) : (
+                <div>
+                  {JOB_COLUMNS.filter((col) => clientJobs.some((jb) => jb.status === col.key)).map((col) => (
+                    <div key={col.key}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", padding: "0.6rem 1.15rem 0.25rem", fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-3)" }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: col.color }} /> {col.label}
+                      </div>
+                      {clientJobs.filter((jb) => jb.status === col.key).map((jb) => (
+                        <div key={jb.id} style={{ display: "flex", alignItems: "center", gap: "0.65rem", padding: "0.55rem 1.15rem", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
+                          <span style={{ fontWeight: 700, fontSize: "0.85rem", flex: 1, minWidth: 140, textDecoration: jb.status === "done" ? "line-through" : "none", color: jb.status === "done" ? "var(--text-3)" : "var(--text-1)" }}>{jb.title}</span>
+                          {jb.assigned_to && <span style={{ fontSize: "0.72rem", color: "#4f46e5" }}>{jb.assigned_to}</span>}
+                          {jb.due_date && <span style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>{new Date(jb.due_date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}</span>}
+                          <select
+                            className="field"
+                            style={{ width: "auto", padding: "0.25rem 0.45rem", fontSize: "0.74rem" }}
+                            value={jb.status}
+                            disabled={busy}
+                            onChange={async (e) => {
+                              await fetch(`/api/client-jobs/${jb.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: e.target.value }) });
+                              reload(["clientJobs"]);
+                            }}
+                          >
+                            {JOB_COLUMNS.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
             </Section>
 
             {/* Approvals */}

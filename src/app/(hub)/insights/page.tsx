@@ -9,8 +9,13 @@ interface Pot {
   business_name: string;
   status: string;
   assigned_to: string | null;
+  value_cents: number | null;
   created_at: string;
   updated_at: string;
+}
+
+function money(cents: number) {
+  return new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(cents / 100);
 }
 
 const STAGES = [
@@ -57,9 +62,12 @@ export default function InsightsPage() {
     .filter((d) => d >= 0);
   const avgClose = closeDays.length > 0 ? Math.round(closeDays.reduce((a, b) => a + b, 0) / closeDays.length) : null;
 
+  const pipelineValue = pots.filter((p) => ACTIVE.includes(p.status)).reduce((n, p) => n + (p.value_cents ?? 0), 0);
+  const wonValue = won.reduce((n, p) => n + (p.value_cents ?? 0), 0);
+
   const tiles = [
-    { label: "In Pipeline", value: pots.filter((p) => ACTIVE.includes(p.status)).length, icon: Target, color: "#7c85f3" },
-    { label: "Win Rate", value: winRate === null ? "—" : `${winRate}%`, icon: Award, color: "#10b981", sub: decided > 0 ? `${won.length} won · ${lost.length} lost` : "No decided deals yet" },
+    { label: "In Pipeline", value: pots.filter((p) => ACTIVE.includes(p.status)).length, icon: Target, color: "#7c85f3", sub: pipelineValue > 0 ? `${money(pipelineValue)} potential value` : undefined },
+    { label: "Win Rate", value: winRate === null ? "—" : `${winRate}%`, icon: Award, color: "#10b981", sub: decided > 0 ? `${won.length} won · ${lost.length} lost${wonValue > 0 ? ` · ${money(wonValue)} won` : ""}` : "No decided deals yet" },
     { label: "Added This Month", value: addedThisMonth, icon: CalendarPlus, color: "#0891b2" },
     { label: "Avg Days to Win", value: avgClose === null ? "—" : avgClose, icon: Timer, color: "#ea580c", sub: avgClose === null ? "No wins yet" : "From created to won" },
   ];

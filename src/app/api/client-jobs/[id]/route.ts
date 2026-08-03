@@ -5,7 +5,7 @@ import { notifyAssignment } from "@/lib/notify";
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   await migrate();
   const { id } = await params;
-  const { title, description, status, priority, assigned_to, due_date } = await req.json();
+  const { title, description, status, priority, assigned_to, due_date, visible_to_client } = await req.json();
   const prev = await sql`SELECT status, assigned_to, client_id FROM client_jobs WHERE id = ${id}`;
   const rows = await sql`
     UPDATE client_jobs SET
@@ -15,6 +15,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       priority    = ${priority},
       assigned_to = ${assigned_to || null},
       due_date    = ${due_date || null},
+      visible_to_client = ${Boolean(visible_to_client)},
       updated_at  = NOW()
     WHERE id = ${id}
     RETURNING *
