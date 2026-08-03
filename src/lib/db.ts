@@ -16,6 +16,9 @@ export function sql(...args: Parameters<NeonQueryFunction<false, false>>) {
 // Runs the full migration only once per server instance; later calls return instantly.
 let _migrated: Promise<void> | null = null;
 
+// Bump whenever a statement is added/changed below, so existing databases re-run the set.
+const SCHEMA_VERSION = "2026-08-03.1";
+
 export function migrate(): Promise<void> {
   if (!_migrated) {
     _migrated = runMigrations().catch((err) => {
@@ -27,6 +30,13 @@ export function migrate(): Promise<void> {
 }
 
 async function runMigrations() {
+  // Fast path: an up-to-date database costs one query per cold start instead of ~50.
+  try {
+    const rows = await sql`SELECT value FROM settings WHERE key = 'schema_version'`;
+    if ((rows[0] as { value: string } | undefined)?.value === SCHEMA_VERSION) return;
+  } catch {
+    // settings table doesn't exist yet — first run, do the full migration
+  }
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id            SERIAL PRIMARY KEY,
@@ -284,4 +294,8 @@ async function runMigrations() {
     )
   `;
   await sql`CREATE INDEX IF NOT EXISTS client_jobs_client_idx ON client_jobs (client_id)`;
+  await sql`
+    INSERT INTO settings (key, value) VALUES ('schema_version', ${SCHEMA_VERSION})
+    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+  `;
 }
