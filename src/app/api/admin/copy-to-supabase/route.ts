@@ -67,13 +67,23 @@ export async function GET(req: Request) {
         continue;
       }
       await dst.unsafe(`DELETE FROM ${table}`);
-      for (const row of rows) {
-        const cols = Object.keys(row);
-        const vals = cols.map((_, i) => `$${i + 1}`).join(", ");
-        await dst.unsafe(
-          `INSERT INTO ${table} (${cols.map((c) => `"${c}"`).join(", ")}) VALUES (${vals})`,
-          cols.map((c) => row[c] as never),
-        );
+      // Batch inserts — one multi-row statement per chunk instead of one round trip per row
+      if (rows.length > 0) {
+        const cols = Object.keys(rows[0]);
+        const colList = cols.map((c) => `"${c}"`).join(", ");
+        const CHUNK = 100;
+        for (let i = 0; i < rows.length; i += CHUNK) {
+          const chunk = rows.slice(i, i + CHUNK);
+          const params: unknown[] = [];
+          const tuples = chunk.map((row) => {
+            const ph = cols.map((c) => { params.push(row[c]); return `$${params.length}`; });
+            return `(${ph.join(", ")})`;
+          });
+          await dst.unsafe(
+            `INSERT INTO ${table} (${colList}) VALUES ${tuples.join(", ")}`,
+            params as never[],
+          );
+        }
       }
       if (rows.length > 0 && "id" in rows[0]) {
         await dst.unsafe(
