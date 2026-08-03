@@ -34,7 +34,7 @@ const SHORTCUTS: [string, string][] = [
 
 /* ─── Helpers ─── */
 function avatarGradient(name: string) {
-  const opts = ["#8b5cf6,#7c3aed", "#ec4899,#db2777", "#14b8a6,#0d9488", "#f59e0b,#ea580c"];
+  const opts = ["#6366f1,#4f46e5", "#0ea5e9,#0284c7", "#14b8a6,#0d9488", "#f59e0b,#ea580c"];
   let h = 0;
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
   return `linear-gradient(135deg, ${opts[Math.abs(h) % opts.length]})`;
@@ -102,10 +102,10 @@ function SidebarContent({
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
           <div style={{
             width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-            background: "linear-gradient(135deg,#8b5cf6,#ec4899)",
+            background: "linear-gradient(135deg,#6366f1,#0ea5e9)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontWeight: 900, fontSize: "0.8rem", color: "#fff",
-            boxShadow: "0 2px 8px rgba(124,58,237,0.35)",
+            boxShadow: "0 2px 8px rgba(79,70,229,0.35)",
           }}>KW</div>
           <div>
             <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "var(--text-1)", letterSpacing: "-0.02em", lineHeight: 1.1 }}>Innovations</div>
@@ -304,7 +304,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           <Menu size={22} />
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
-          <div style={{ width: 26, height: 26, borderRadius: 7, background: "linear-gradient(135deg,#8b5cf6,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "0.68rem", color: "#fff" }}>KW</div>
+          <div style={{ width: 26, height: 26, borderRadius: 7, background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "0.68rem", color: "#fff" }}>KW</div>
           <span style={{ fontWeight: 800, fontSize: "0.88rem", color: "var(--text-1)", letterSpacing: "-0.02em" }}>Innovations</span>
         </div>
         <div style={{ display: "flex", alignItems: "center" }}>
@@ -325,7 +325,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         transform: open ? "translateX(0)" : "translateX(-100%)",
         transition: "transform 0.22s cubic-bezier(0.4,0,0.2,1)",
         willChange: "transform",
-        boxShadow: open ? "8px 0 40px rgba(50,30,100,0.22)" : "none",
+        boxShadow: open ? "8px 0 40px rgba(23,42,94,0.22)" : "none",
       }}>
         <SidebarContent groups={groups} path={path} userName={userName} onSearchClick={() => setPaletteOpen(true)} notifCount={notifications.length} onBellClick={() => setNotifOpen((v) => !v)} onChangePassword={() => setPwOpen(true)} onClose={() => setOpen(false)} />
       </aside>
@@ -333,7 +333,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
       {open && (
         <div onClick={() => setOpen(false)} style={{
           position: "fixed", inset: 0, zIndex: 199,
-          background: "rgba(34,26,61,0.45)", backdropFilter: "blur(3px)",
+          background: "rgba(22,30,52,0.45)", backdropFilter: "blur(3px)",
         }} />
       )}
 
@@ -354,7 +354,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
             }}>
               <div style={{
                 padding: "0.28rem 0.85rem", borderRadius: 99,
-                background: active ? "rgba(124,58,237,0.10)" : "transparent",
+                background: active ? "rgba(79,70,229,0.10)" : "transparent",
                 transition: "background 0.15s",
               }}>
                 <Icon size={19} strokeWidth={active ? 2.5 : 1.8} />
@@ -375,7 +375,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           onClick={() => setHelpOpen(false)}
           style={{
             position: "fixed", inset: 0, zIndex: 400,
-            background: "rgba(34,26,61,0.45)", backdropFilter: "blur(6px)",
+            background: "rgba(22,30,52,0.45)", backdropFilter: "blur(6px)",
             display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem",
           }}
         >

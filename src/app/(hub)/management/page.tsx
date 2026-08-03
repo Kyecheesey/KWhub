@@ -91,9 +91,9 @@ function PasswordReset() {
         {msg && (
           <div style={{
             padding: "0.55rem 0.8rem", borderRadius: 9, fontSize: "0.8rem", fontWeight: 500,
-            background: msg.ok ? "rgba(52,211,153,0.08)" : "rgba(225,29,72,0.07)",
-            border: `1px solid ${msg.ok ? "rgba(52,211,153,0.2)" : "rgba(225,29,72,0.2)"}`,
-            color: msg.ok ? "#059669" : "#e11d48",
+            background: msg.ok ? "rgba(52,211,153,0.08)" : "rgba(220,38,38,0.07)",
+            border: `1px solid ${msg.ok ? "rgba(52,211,153,0.2)" : "rgba(220,38,38,0.2)"}`,
+            color: msg.ok ? "#059669" : "#dc2626",
           }}>
             {msg.text}
           </div>
@@ -174,9 +174,9 @@ function PortalSettings() {
         {msg && (
           <div style={{
             padding: "0.5rem 0.75rem", borderRadius: 9, fontSize: "0.78rem",
-            background: msg.ok ? "rgba(52,211,153,0.08)" : "rgba(225,29,72,0.07)",
-            border: `1px solid ${msg.ok ? "rgba(52,211,153,0.2)" : "rgba(225,29,72,0.2)"}`,
-            color: msg.ok ? "#059669" : "#e11d48",
+            background: msg.ok ? "rgba(52,211,153,0.08)" : "rgba(220,38,38,0.07)",
+            border: `1px solid ${msg.ok ? "rgba(52,211,153,0.2)" : "rgba(220,38,38,0.2)"}`,
+            color: msg.ok ? "#059669" : "#dc2626",
           }}>
             {msg.text}
           </div>
@@ -287,8 +287,8 @@ const STAGE_LABEL: Record<string,string> = {
   proposal:"Proposal", won:"Won", lost:"Lost",
 };
 const STAGE_COLOR: Record<string,string> = {
-  new:"#60a5fa", contacted:"#d97706", qualified:"#7c3aed",
-  proposal:"#ea580c", won:"#059669", lost:"#e11d48",
+  new:"#60a5fa", contacted:"#d97706", qualified:"#4f46e5",
+  proposal:"#ea580c", won:"#059669", lost:"#dc2626",
 };
 
 function greet() {
@@ -450,7 +450,7 @@ export default function ManagementPage() {
                 {[
                   { label: "Open",   val: s.open,   col: "#0891b2" },
                   { label: "Done",   val: s.done,   col: "#059669" },
-                  { label: "Overdue",val: s.overdue, col: s.overdue > 0 ? "#e11d48" : "var(--text-3)" },
+                  { label: "Overdue",val: s.overdue, col: s.overdue > 0 ? "#dc2626" : "var(--text-3)" },
                 ].map(({ label, val, col }) => (
                   <div key={label} style={{ background: "var(--surface-2)", borderRadius: 10, padding: "0.5rem 0.25rem" }}>
                     <div style={{ fontSize: "1.2rem", fontWeight: 900, color: col }}>{val}</div>
@@ -459,7 +459,7 @@ export default function ManagementPage() {
                 ))}
               </div>
               {s.overdue > 0 && (
-                <div style={{ marginTop: "0.65rem", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", color: "#e11d48", background: "rgba(248,113,113,0.1)", borderRadius: 8, padding: "0.35rem 0.6rem" }}>
+                <div style={{ marginTop: "0.65rem", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", color: "#dc2626", background: "rgba(248,113,113,0.1)", borderRadius: 8, padding: "0.35rem 0.6rem" }}>
                   <AlertCircle size={12} />
                   {s.overdue} overdue task{s.overdue > 1 ? "s" : ""}
                 </div>
@@ -506,7 +506,7 @@ export default function ManagementPage() {
       <div style={{
         background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16,
         overflow: "hidden", marginBottom: "1.5rem",
-        boxShadow: "0 4px 24px rgba(50,30,100,0.12)",
+        boxShadow: "0 4px 24px rgba(23,42,94,0.12)",
       }}>
         {/* Card header */}
         <div style={{
@@ -631,7 +631,7 @@ export default function ManagementPage() {
                   color: "var(--text-3)", padding: "0.2rem", borderRadius: 4,
                   display: "flex", opacity: 0.6,
                 }}
-                  onMouseEnter={e => (e.currentTarget.style.color = "#e11d48")}
+                  onMouseEnter={e => (e.currentTarget.style.color = "#dc2626")}
                   onMouseLeave={e => (e.currentTarget.style.color = "var(--text-3)")}
                 >
                   <Trash2 size={13} />

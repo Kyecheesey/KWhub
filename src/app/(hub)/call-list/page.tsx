@@ -24,8 +24,8 @@ interface CallEntry {
 }
 
 const STAGE_COLOR: Record<string, string> = {
-  new: "#60a5fa", contacted: "#d97706", qualified: "#7c3aed",
-  proposal: "#ea580c", won: "#059669", lost: "#e11d48",
+  new: "#60a5fa", contacted: "#d97706", qualified: "#4f46e5",
+  proposal: "#ea580c", won: "#059669", lost: "#dc2626",
 };
 
 export default function CallListPage() {

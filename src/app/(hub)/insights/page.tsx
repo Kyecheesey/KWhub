@@ -15,10 +15,10 @@ interface Pot {
 const STAGES = [
   { key: "new",       label: "New",       color: "#60a5fa" },
   { key: "contacted", label: "Contacted", color: "#d97706" },
-  { key: "qualified", label: "Qualified", color: "#7c3aed" },
+  { key: "qualified", label: "Qualified", color: "#4f46e5" },
   { key: "proposal",  label: "Proposal",  color: "#ea580c" },
   { key: "won",       label: "Won",       color: "#059669" },
-  { key: "lost",      label: "Lost",      color: "#e11d48" },
+  { key: "lost",      label: "Lost",      color: "#dc2626" },
 ];
 
 const ACTIVE = ["new", "contacted", "qualified", "proposal"];

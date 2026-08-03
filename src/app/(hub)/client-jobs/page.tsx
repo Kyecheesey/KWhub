@@ -27,14 +27,14 @@ interface Job {
 const COLUMNS = [
   { key: "todo",        label: "To Do",       color: "#60a5fa", bg: "rgba(96,165,250,0.1)",  border: "rgba(96,165,250,0.2)"  },
   { key: "in_progress", label: "In Progress",  color: "#d97706", bg: "rgba(251,191,36,0.1)",  border: "rgba(251,191,36,0.2)"  },
-  { key: "in_review",   label: "In Review",    color: "#7c3aed", bg: "rgba(167,139,250,0.1)", border: "rgba(167,139,250,0.2)" },
+  { key: "in_review",   label: "In Review",    color: "#4f46e5", bg: "rgba(165,180,252,0.1)", border: "rgba(165,180,252,0.2)" },
   { key: "done",        label: "Done",         color: "#059669", bg: "rgba(52,211,153,0.1)",  border: "rgba(52,211,153,0.2)"  },
 ];
 
 const PRIORITIES = [
   { key: "low",    label: "Low",    color: "#60a5fa" },
   { key: "medium", label: "Medium", color: "#d97706" },
-  { key: "high",   label: "High",   color: "#e11d48" },
+  { key: "high",   label: "High",   color: "#dc2626" },
 ];
 
 const TEAM = ["Kye", "Luka", "Aksel", "Kaylie"];
@@ -154,7 +154,7 @@ export default function ClientJobsPage() {
       {/* ── Header ── */}
       <div className="page-header">
         <div>
-          <p style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#7c3aed", marginBottom: "0.35rem" }}>KW | Innovations</p>
+          <p style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#4f46e5", marginBottom: "0.35rem" }}>KW | Innovations</p>
           <h1 style={{ fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>Client Jobs</h1>
           <p style={{ color: "var(--text-2)", fontSize: "0.875rem", marginTop: "0.3rem" }}>
             {loading ? "Loading…" : `${filtered.length} jobs · ${totalDone} done${totalOverdue ? ` · ${totalOverdue} overdue` : ""}`}
@@ -171,17 +171,17 @@ export default function ClientJobsPage() {
       {!loading && (
         <div className="stage-pills" style={{ marginBottom: "1.25rem", display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
           <span style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-3)", alignSelf: "center", whiteSpace: "nowrap" }}>Client:</span>
-          <button onClick={() => setSelected("all")} style={{ padding: "0.35rem 0.85rem", borderRadius: 99, fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", background: selected === "all" ? "rgba(167,139,250,0.15)" : "var(--surface)", border: `1px solid ${selected === "all" ? "rgba(167,139,250,0.35)" : "var(--border)"}`, color: selected === "all" ? "#7c3aed" : "var(--text-2)", whiteSpace: "nowrap" }}>
+          <button onClick={() => setSelected("all")} style={{ padding: "0.35rem 0.85rem", borderRadius: 99, fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", background: selected === "all" ? "rgba(165,180,252,0.15)" : "var(--surface)", border: `1px solid ${selected === "all" ? "rgba(165,180,252,0.35)" : "var(--border)"}`, color: selected === "all" ? "#4f46e5" : "var(--text-2)", whiteSpace: "nowrap" }}>
             All clients ({jobs.length})
           </button>
           {clients.map((c) => {
             const active = selected === c.id;
             const open = countFor(c.id);
             return (
-              <button key={c.id} onClick={() => setSelected(c.id)} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.35rem 0.85rem", borderRadius: 99, fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", background: active ? "rgba(167,139,250,0.15)" : "var(--surface)", border: `1px solid ${active ? "rgba(167,139,250,0.35)" : "var(--border)"}`, color: active ? "#7c3aed" : "var(--text-2)", whiteSpace: "nowrap" }}>
+              <button key={c.id} onClick={() => setSelected(c.id)} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.35rem 0.85rem", borderRadius: 99, fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", background: active ? "rgba(165,180,252,0.15)" : "var(--surface)", border: `1px solid ${active ? "rgba(165,180,252,0.35)" : "var(--border)"}`, color: active ? "#4f46e5" : "var(--text-2)", whiteSpace: "nowrap" }}>
                 <Briefcase size={11} /> {c.business_name}
                 {open > 0 && (
-                  <span style={{ fontSize: "0.65rem", fontWeight: 700, background: active ? "rgba(124,58,237,0.15)" : "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 99, padding: "0 0.35rem" }}>{open}</span>
+                  <span style={{ fontSize: "0.65rem", fontWeight: 700, background: active ? "rgba(79,70,229,0.15)" : "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 99, padding: "0 0.35rem" }}>{open}</span>
                 )}
               </button>
             );
@@ -253,7 +253,7 @@ export default function ClientJobsPage() {
                           opacity: done ? 0.65 : 1,
                           transition: "box-shadow 0.15s, transform 0.15s",
                         }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(50,30,100,0.12)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(23,42,94,0.12)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "none"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
                       >
                         {/* Priority stripe */}
@@ -262,7 +262,7 @@ export default function ClientJobsPage() {
                         <div style={{ padding: "0.8rem" }}>
                           {/* Client chip (only in All view) */}
                           {selected === "all" && (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", fontSize: "0.62rem", fontWeight: 700, color: "#7c3aed", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", padding: "0.1rem 0.45rem", borderRadius: 99, marginBottom: "0.4rem" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", fontSize: "0.62rem", fontWeight: 700, color: "#4f46e5", background: "rgba(165,180,252,0.1)", border: "1px solid rgba(165,180,252,0.2)", padding: "0.1rem 0.45rem", borderRadius: 99, marginBottom: "0.4rem" }}>
                               <Briefcase size={8} /> {clientName(j.client_id)}
                             </span>
                           )}
@@ -295,7 +295,7 @@ export default function ClientJobsPage() {
                               </span>
                             )}
                             {j.due_date && (
-                              <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", color: overdue ? "#e11d48" : "var(--text-3)", fontWeight: overdue ? 700 : 400 }}>
+                              <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", color: overdue ? "#dc2626" : "var(--text-3)", fontWeight: overdue ? 700 : 400 }}>
                                 <Calendar size={10} /> {formatDate(j.due_date)}{overdue ? " ⚠" : ""}
                               </span>
                             )}
@@ -311,7 +311,7 @@ export default function ClientJobsPage() {
                             <button onClick={() => openEdit(j)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", color: "var(--text-3)" }}>
                               <Pencil size={11} />
                             </button>
-                            <button onClick={() => remove(j.id)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, background: "rgba(248,113,113,0.06)", border: "1px solid rgba(225,29,72,0.2)", borderRadius: 6, cursor: "pointer", color: "#e11d48" }}>
+                            <button onClick={() => remove(j.id)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, background: "rgba(248,113,113,0.06)", border: "1px solid rgba(220,38,38,0.2)", borderRadius: 6, cursor: "pointer", color: "#dc2626" }}>
                               <Trash2 size={11} />
                             </button>
                           </div>
@@ -338,7 +338,7 @@ export default function ClientJobsPage() {
               {/* Client */}
               <div>
                 <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.35rem" }}>
-                  <Briefcase size={11} style={{ display: "inline", marginRight: 4 }} />Client <span style={{ color: "#7c3aed" }}>*</span>
+                  <Briefcase size={11} style={{ display: "inline", marginRight: 4 }} />Client <span style={{ color: "#4f46e5" }}>*</span>
                 </label>
                 <select className="field" value={formClientId ?? ""} onChange={(e) => setFormClientId(Number(e.target.value) || null)}>
                   {clients.map((c) => <option key={c.id} value={c.id}>{c.business_name}</option>)}
@@ -348,7 +348,7 @@ export default function ClientJobsPage() {
               {/* Title */}
               <div>
                 <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)", marginBottom: "0.35rem" }}>
-                  Title <span style={{ color: "#7c3aed" }}>*</span>
+                  Title <span style={{ color: "#4f46e5" }}>*</span>
                 </label>
                 <input className="field" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="What needs doing for this client?" autoFocus />
               </div>
@@ -398,7 +398,7 @@ export default function ClientJobsPage() {
             </div>
 
             <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
-              <button onClick={save} className="btn-primary" style={{ flex: 1, justifyContent: "center", background: "linear-gradient(135deg, #7c3aed, #7c3aed)" }}>
+              <button onClick={save} className="btn-primary" style={{ flex: 1, justifyContent: "center", background: "linear-gradient(135deg, #4f46e5, #4f46e5)" }}>
                 {editId ? "Save Changes" : "Create Job"}
               </button>
               <button onClick={() => setShowForm(false)} className="btn-ghost">Cancel</button>

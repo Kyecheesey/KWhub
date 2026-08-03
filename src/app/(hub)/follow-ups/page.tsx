@@ -22,10 +22,10 @@ interface Potential {
 const STAGES = [
   { key: "new",         label: "New",          color: "#60a5fa", bg: "rgba(96,165,250,0.1)",  border: "rgba(96,165,250,0.2)"  },
   { key: "contacted",   label: "Contacted",     color: "#d97706", bg: "rgba(251,191,36,0.1)",  border: "rgba(251,191,36,0.2)"  },
-  { key: "qualified",   label: "Qualified",     color: "#7c3aed", bg: "rgba(167,139,250,0.1)", border: "rgba(167,139,250,0.2)" },
+  { key: "qualified",   label: "Qualified",     color: "#4f46e5", bg: "rgba(165,180,252,0.1)", border: "rgba(165,180,252,0.2)" },
   { key: "proposal",    label: "Proposal Sent", color: "#ea580c", bg: "rgba(251,146,60,0.1)",  border: "rgba(251,146,60,0.2)"  },
   { key: "won",         label: "Won",           color: "#059669", bg: "rgba(52,211,153,0.1)",  border: "rgba(52,211,153,0.2)"  },
-  { key: "lost",        label: "Lost",          color: "#e11d48", bg: "rgba(248,113,113,0.1)", border: "rgba(225,29,72,0.2)" },
+  { key: "lost",        label: "Lost",          color: "#dc2626", bg: "rgba(248,113,113,0.1)", border: "rgba(220,38,38,0.2)" },
 ];
 
 const AGENTS = ["All", "Kye", "Luka", "Aksel"];
@@ -70,7 +70,7 @@ function followUpDueDate(p: Potential): string {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  overdue: "#e11d48", due_today: "#d97706", upcoming: "#0891b2",
+  overdue: "#dc2626", due_today: "#d97706", upcoming: "#0891b2",
 };
 const STATUS_LABEL: Record<string, string> = {
   overdue: "Overdue", due_today: "Due Today", upcoming: "Upcoming",
@@ -152,7 +152,7 @@ export default function FollowUpsPage() {
       <div style={{ display: "flex", gap: "0.65rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
         {[
           { key: "all",      label: "All",       count: followUps.length, color: "var(--text-2)" },
-          { key: "overdue",  label: "Overdue",   count: overdue.length,   color: "#e11d48" },
+          { key: "overdue",  label: "Overdue",   count: overdue.length,   color: "#dc2626" },
           { key: "due_today",label: "Due Today",  count: dueToday.length,  color: "#d97706" },
           { key: "upcoming", label: "Upcoming",  count: upcoming.length,  color: "#0891b2" },
         ].map(({ key, label, count, color }) => (

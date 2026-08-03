@@ -138,7 +138,7 @@ export default function CommandPalette({
       onClick={onClose}
       style={{
         position: "fixed", inset: 0, zIndex: 400,
-        background: "rgba(34,26,61,0.45)",
+        background: "rgba(22,30,52,0.45)",
         backdropFilter: "blur(6px)",
         display: "flex", alignItems: "flex-start", justifyContent: "center",
         padding: "12vh 1rem 1rem",

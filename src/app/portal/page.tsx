@@ -54,7 +54,7 @@ function avatarGradient(name: string) {
 function invoiceState(inv: Invoice): { label: string; color: string } {
   if (inv.status === "paid") return { label: "Paid", color: "#10b981" };
   if (inv.status === "draft") return { label: "Draft", color: "#8b95c0" };
-  if (inv.due_date && new Date(inv.due_date) < new Date()) return { label: "Overdue", color: "#e11d48" };
+  if (inv.due_date && new Date(inv.due_date) < new Date()) return { label: "Overdue", color: "#dc2626" };
   return { label: "Due", color: "#d97706" };
 }
 
@@ -265,7 +265,7 @@ export default function PortalPage() {
             display: "inline-flex", alignItems: "center", gap: "0.4rem",
             fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
             color: "var(--accent)", background: "rgba(45,212,232,0.1)",
-            border: "1px solid rgba(124,58,237,0.2)", padding: "0.22rem 0.7rem", borderRadius: 99,
+            border: "1px solid rgba(79,70,229,0.2)", padding: "0.22rem 0.7rem", borderRadius: 99,
             marginBottom: "0.85rem",
           }}>
             <span className="pulse-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
@@ -373,7 +373,7 @@ export default function PortalPage() {
                         background: avatarGradient(client.business_name),
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontWeight: 900, fontSize: "0.95rem", color: "#ffffff",
-                        boxShadow: "0 4px 18px rgba(124,58,237,0.2)",
+                        boxShadow: "0 4px 18px rgba(79,70,229,0.2)",
                       }}>
                         {client.business_name.slice(0, 2).toUpperCase()}
                       </div>
@@ -509,7 +509,7 @@ export default function PortalPage() {
                   <div style={{ textAlign: "center", padding: "2rem 0" }}>
                     <div style={{
                       width: 44, height: 44, borderRadius: "50%", margin: "0 auto 0.7rem",
-                      background: "rgba(124,58,237,0.07)", border: "1px solid rgba(45,212,232,0.18)",
+                      background: "rgba(79,70,229,0.07)", border: "1px solid rgba(45,212,232,0.18)",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
                       <MessageSquare size={18} color="var(--accent)" />
@@ -525,7 +525,7 @@ export default function PortalPage() {
                       <div style={{
                         maxWidth: "78%",
                         background: mine ? "linear-gradient(135deg, rgba(45,212,232,0.14), rgba(14,165,233,0.1))" : "var(--surface-2)",
-                        border: `1px solid ${mine ? "rgba(124,58,237,0.25)" : "var(--border)"}`,
+                        border: `1px solid ${mine ? "rgba(79,70,229,0.25)" : "var(--border)"}`,
                         borderRadius: mine ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
                         padding: "0.65rem 0.85rem",
                       }}>
@@ -564,7 +564,7 @@ export default function PortalPage() {
                 </>
               } />
               {uploadErr && (
-                <div style={{ margin: "0.75rem 1.25rem 0", padding: "0.55rem 0.8rem", borderRadius: 9, fontSize: "0.8rem", background: "rgba(225,29,72,0.07)", border: "1px solid rgba(225,29,72,0.2)", color: "#e11d48" }}>
+                <div style={{ margin: "0.75rem 1.25rem 0", padding: "0.55rem 0.8rem", borderRadius: 9, fontSize: "0.8rem", background: "rgba(220,38,38,0.07)", border: "1px solid rgba(220,38,38,0.2)", color: "#dc2626" }}>
                   {uploadErr}
                 </div>
               )}

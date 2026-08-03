@@ -84,8 +84,8 @@ export default function ChangePassword({ open, onClose }: { open: boolean; onClo
               <div style={{
                 display: "flex", alignItems: "center", gap: "0.5rem",
                 padding: "0.65rem 0.85rem", borderRadius: 10,
-                background: "rgba(225,29,72,0.07)", border: "1px solid rgba(225,29,72,0.2)",
-                color: "#e11d48", fontSize: "0.83rem",
+                background: "rgba(220,38,38,0.07)", border: "1px solid rgba(220,38,38,0.2)",
+                color: "#dc2626", fontSize: "0.83rem",
               }}>
                 <AlertCircle size={14} style={{ flexShrink: 0 }} />
                 {error}

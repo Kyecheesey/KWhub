@@ -32,7 +32,7 @@ const BLANK: Form = { business_name: "", contact_name: "", phone: "", email: "",
 function initials(name: string) {
   return name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 }
-const COLORS = ["#0891b2", "#4f46e5", "#059669", "#ea580c", "#db2777", "#7c3aed"];
+const COLORS = ["#0891b2", "#4f46e5", "#059669", "#ea580c", "#0284c7", "#4f46e5"];
 function colorFor(name: string) {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
@@ -269,7 +269,7 @@ export default function ClientsPage() {
                         display: "flex", alignItems: "center", gap: "0.75rem",
                         padding: "0.65rem 1rem 0.65rem 1.5rem",
                         borderTop: ci > 0 ? "1px dashed var(--border)" : "none",
-                        background: ci % 2 === 1 ? "rgba(76,49,138,0.025)" : "transparent",
+                        background: ci % 2 === 1 ? "rgba(43,63,124,0.025)" : "transparent",
                       }}>
                         <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem", fontWeight: 800, color: "var(--text-2)" }}>
                           {c.business_name.slice(0, 2).toUpperCase()}
@@ -286,7 +286,7 @@ export default function ClientsPage() {
                           <button onClick={() => openEdit(c)} style={{ padding: "0.3rem 0.6rem", background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 7, cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, color: "var(--text-2)", display: "flex", alignItems: "center", gap: "0.25rem" }}>
                             <Pencil size={11} /> Edit
                           </button>
-                          <button onClick={() => remove(c.id)} style={{ padding: "0.3rem 0.6rem", background: "rgba(248,113,113,0.07)", border: "1px solid rgba(225,29,72,0.2)", borderRadius: 7, cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, color: "#e11d48", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                          <button onClick={() => remove(c.id)} style={{ padding: "0.3rem 0.6rem", background: "rgba(248,113,113,0.07)", border: "1px solid rgba(220,38,38,0.2)", borderRadius: 7, cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, color: "#dc2626", display: "flex", alignItems: "center", gap: "0.25rem" }}>
                             <Trash2 size={11} /> Delete
                           </button>
                         </div>

@@ -79,7 +79,7 @@ export default function Home() {
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const statCards = [
-    { label: "Current Clients", value: stats.clients, icon: Users, color: "#0891b2", bg: "rgba(124,58,237,0.07)", border: "rgba(45,212,232,0.15)", href: "/clients" },
+    { label: "Current Clients", value: stats.clients, icon: Users, color: "#0891b2", bg: "rgba(79,70,229,0.07)", border: "rgba(45,212,232,0.15)", href: "/clients" },
     { label: "Potentials", value: stats.potentials, icon: Target, color: "#7c85f3", bg: "rgba(124,133,243,0.08)", border: "rgba(124,133,243,0.15)", href: "/potentials" },
     { label: "Active Pipeline", value: stats.active, icon: TrendingUp, color: "#ea580c", bg: "rgba(251,146,60,0.08)", border: "rgba(251,146,60,0.15)", href: "/potentials" },
     { label: "Deals Won", value: stats.won, icon: Award, color: "#10b981", bg: "rgba(54,211,153,0.08)", border: "rgba(54,211,153,0.15)", href: "/potentials" },
@@ -97,7 +97,7 @@ export default function Home() {
     { title: "Potentials CRM", desc: "Track every potential client through New → Contacted → Qualified → Proposal → Won/Lost with notes.", icon: Target, href: "/potentials", gradient: "linear-gradient(135deg, #7c85f3 0%, #6366f1 100%)", live: true },
     { title: "Activities", desc: "Kanban board for team activities — plan, track and move work through to done.", icon: Kanban, href: "/activities", gradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)", live: true },
     { title: "Tasks", desc: "Assign and track tasks across the team with due dates and priority.", icon: ClipboardList, href: "/tasks", gradient: "linear-gradient(135deg, #ea580c 0%, #ea580c 100%)", live: true },
-    { title: "Roster", desc: "Weekly schedule for the team, synced with the shared calendar.", icon: CalendarDays, href: "/roster", gradient: "linear-gradient(135deg, #db2777 0%, #db2777 100%)", live: true },
+    { title: "Roster", desc: "Weekly schedule for the team, synced with the shared calendar.", icon: CalendarDays, href: "/roster", gradient: "linear-gradient(135deg, #0284c7 0%, #0284c7 100%)", live: true },
     { title: "Call List", desc: "Working call list for outbound outreach and follow-through.", icon: PhoneCall, href: "/call-list", gradient: "linear-gradient(135deg, #0891b2 0%, #0891b2 100%)", live: true },
     { title: "Team Hub", desc: "Staff profiles, roles, onboarding checklists and internal contacts.", icon: UsersRound, href: "#", gradient: "linear-gradient(135deg, #94a3b8 0%, #475569 100%)", live: false },
     { title: "AI Tools", desc: "AI-assisted drafting, summarisation and lead research.", icon: Zap, href: "#", gradient: "linear-gradient(135deg, #94a3b8 0%, #475569 100%)", live: false },
@@ -128,7 +128,7 @@ export default function Home() {
                 letterSpacing: "0.08em", textTransform: "uppercase",
                 color: "var(--accent)",
                 background: "rgba(45,212,232,0.1)",
-                border: "1px solid rgba(124,58,237,0.2)",
+                border: "1px solid rgba(79,70,229,0.2)",
                 padding: "0.2rem 0.65rem", borderRadius: 99,
               }}
             >

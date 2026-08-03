@@ -184,9 +184,9 @@ export default function ClientPortalAdminPage() {
       {flash && (
         <div style={{
           padding: "0.65rem 0.9rem", borderRadius: 10, fontSize: "0.83rem", fontWeight: 500, marginBottom: "1rem",
-          background: flash.ok ? "rgba(52,211,153,0.08)" : "rgba(225,29,72,0.07)",
-          border: `1px solid ${flash.ok ? "rgba(52,211,153,0.2)" : "rgba(225,29,72,0.2)"}`,
-          color: flash.ok ? "#059669" : "#e11d48",
+          background: flash.ok ? "rgba(52,211,153,0.08)" : "rgba(220,38,38,0.07)",
+          border: `1px solid ${flash.ok ? "rgba(52,211,153,0.2)" : "rgba(220,38,38,0.2)"}`,
+          color: flash.ok ? "#059669" : "#dc2626",
         }}>
           {flash.text}
         </div>
@@ -257,7 +257,7 @@ export default function ClientPortalAdminPage() {
                     </div>
                     {a.status === "pending" && pill("Pending", "#d97706")}
                     {a.status === "approved" && pill("Approved", "#10b981")}
-                    {a.status === "changes_requested" && pill("Changes", "#e11d48")}
+                    {a.status === "changes_requested" && pill("Changes", "#dc2626")}
                     <button
                       onClick={async () => {
                         if (!confirm(`Delete approval "${a.title}"?`)) return;

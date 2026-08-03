@@ -17,7 +17,7 @@ interface EventRow {
 const ACTION_META: Record<string, { label: string; icon: React.FC<{ size?: number }>; color: string }> = {
   created:        { label: "Created",     icon: Plus,           color: "#10b981" },
   updated:        { label: "Updated",     icon: Pencil,         color: "#8b95c0" },
-  deleted:        { label: "Deleted",     icon: Trash2,         color: "#e11d48" },
+  deleted:        { label: "Deleted",     icon: Trash2,         color: "#dc2626" },
   stage_changed:  { label: "Stage",       icon: ArrowRightLeft, color: "#7c85f3" },
   status_changed: { label: "Status",      icon: ArrowRightLeft, color: "#7c85f3" },
   reassigned:     { label: "Reassigned",  icon: UserCircle2,    color: "#d97706" },
@@ -94,7 +94,7 @@ export default function RecordTimeline({
               style={{
                 flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem",
                 padding: "0.5rem 0.6rem", borderRadius: 9, textDecoration: "none",
-                background: "rgba(124,58,237,0.07)", border: "1px solid rgba(124,58,237,0.2)",
+                background: "rgba(79,70,229,0.07)", border: "1px solid rgba(79,70,229,0.2)",
                 color: "var(--accent)", fontSize: "0.78rem", fontWeight: 700,
               }}
             >

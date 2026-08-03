@@ -39,10 +39,10 @@ interface TeamMember { id: number; name: string; role: string | null; }
 const STAGES = [
   { key: "new",       label: "New",          color: "#60a5fa", bg: "rgba(96,165,250,0.1)",  border: "rgba(96,165,250,0.2)"  },
   { key: "contacted", label: "Contacted",     color: "#d97706", bg: "rgba(251,191,36,0.1)",  border: "rgba(251,191,36,0.2)"  },
-  { key: "qualified", label: "Qualified",     color: "#7c3aed", bg: "rgba(167,139,250,0.1)", border: "rgba(167,139,250,0.2)" },
+  { key: "qualified", label: "Qualified",     color: "#4f46e5", bg: "rgba(165,180,252,0.1)", border: "rgba(165,180,252,0.2)" },
   { key: "proposal",  label: "Proposal Sent", color: "#ea580c", bg: "rgba(251,146,60,0.1)",  border: "rgba(251,146,60,0.2)"  },
   { key: "won",       label: "Won",           color: "#059669", bg: "rgba(52,211,153,0.1)",  border: "rgba(52,211,153,0.2)"  },
-  { key: "lost",      label: "Lost",          color: "#e11d48", bg: "rgba(248,113,113,0.1)", border: "rgba(225,29,72,0.2)" },
+  { key: "lost",      label: "Lost",          color: "#dc2626", bg: "rgba(248,113,113,0.1)", border: "rgba(220,38,38,0.2)" },
 ];
 
 type Form = { business_name: string; contact_name: string; phone: string; email: string; notes: string; status: string; assigned_to: string; contact_method: string; follow_up_date: string };
@@ -313,7 +313,7 @@ export default function PotentialsPage() {
       </div>
 
       {importMsg && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", borderRadius: 12, marginBottom: "1.25rem", background: importMsg.ok ? "rgba(52,211,153,0.08)" : "rgba(225,29,72,0.07)", border: `1px solid ${importMsg.ok ? "rgba(52,211,153,0.2)" : "rgba(225,29,72,0.2)"}`, color: importMsg.ok ? "#059669" : "#e11d48", fontSize: "0.85rem", fontWeight: 500 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", borderRadius: 12, marginBottom: "1.25rem", background: importMsg.ok ? "rgba(52,211,153,0.08)" : "rgba(220,38,38,0.07)", border: `1px solid ${importMsg.ok ? "rgba(52,211,153,0.2)" : "rgba(220,38,38,0.2)"}`, color: importMsg.ok ? "#059669" : "#dc2626", fontSize: "0.85rem", fontWeight: 500 }}>
           {importMsg.text}
           <button onClick={() => setImportMsg(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", opacity: 0.6 }}><X size={14} /></button>
         </div>
@@ -394,7 +394,7 @@ export default function PotentialsPage() {
                           display: "flex", alignItems: "center", gap: "0.75rem",
                           padding: "0.65rem 1rem 0.65rem 1.5rem",
                           borderTop: pi > 0 ? "1px dashed var(--border)" : "none",
-                          background: pi % 2 === 1 ? "rgba(76,49,138,0.025)" : "transparent",
+                          background: pi % 2 === 1 ? "rgba(43,63,124,0.025)" : "transparent",
                         }}>
                           <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem", fontWeight: 800, color: "var(--text-2)" }}>
                             {p.business_name.slice(0, 2).toUpperCase()}
@@ -412,7 +412,7 @@ export default function PotentialsPage() {
                             <button onClick={() => openEdit(p)} style={{ padding: "0.3rem 0.6rem", background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 7, cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, color: "var(--text-2)", display: "flex", alignItems: "center", gap: "0.25rem" }}>
                               <Pencil size={11} /> Edit
                             </button>
-                            <button onClick={() => remove(p.id)} style={{ padding: "0.3rem 0.6rem", background: "rgba(248,113,113,0.07)", border: "1px solid rgba(225,29,72,0.2)", borderRadius: 7, cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, color: "#e11d48", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                            <button onClick={() => remove(p.id)} style={{ padding: "0.3rem 0.6rem", background: "rgba(248,113,113,0.07)", border: "1px solid rgba(220,38,38,0.2)", borderRadius: 7, cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, color: "#dc2626", display: "flex", alignItems: "center", gap: "0.25rem" }}>
                               <Trash2 size={11} /> Delete
                             </button>
                           </div>
@@ -498,7 +498,7 @@ export default function PotentialsPage() {
                           userSelect: "none",
                           transition: "box-shadow 0.15s, transform 0.15s",
                         }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(50,30,100,0.12)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(23,42,94,0.12)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "none"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
                       >
                         {/* Stage stripe */}
@@ -529,7 +529,7 @@ export default function PotentialsPage() {
                           {p.contact_method && (() => {
                             const cm = CONTACT_METHODS.find(m => m.value === p.contact_method);
                             return cm ? (
-                              <div style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", fontSize: "0.66rem", fontWeight: 600, color: "var(--accent)", background: "rgba(124,58,237,0.07)", border: "1px solid rgba(45,212,232,0.18)", borderRadius: 6, padding: "0.18rem 0.45rem", marginBottom: "0.25rem" }}>
+                              <div style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", fontSize: "0.66rem", fontWeight: 600, color: "var(--accent)", background: "rgba(79,70,229,0.07)", border: "1px solid rgba(45,212,232,0.18)", borderRadius: 6, padding: "0.18rem 0.45rem", marginBottom: "0.25rem" }}>
                                 {cm.icon} {cm.label}
                               </div>
                             ) : null;
@@ -537,7 +537,7 @@ export default function PotentialsPage() {
                           {(() => {
                             const fus = followUpStatus(p);
                             if (fus === "none") return null;
-                            const colors: Record<string,string> = { overdue: "#e11d48", due_today: "#d97706", upcoming: "#0891b2" };
+                            const colors: Record<string,string> = { overdue: "#dc2626", due_today: "#d97706", upcoming: "#0891b2" };
                             const col = colors[fus];
                             return (
                               <div style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", fontSize: "0.66rem", fontWeight: 700, color: col, background: `${col}18`, border: `1px solid ${col}30`, borderRadius: 6, padding: "0.18rem 0.45rem", marginBottom: "0.25rem" }}>
@@ -565,7 +565,7 @@ export default function PotentialsPage() {
                             <button onClick={() => toggleCall(p)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, borderRadius: 6, border: "none", cursor: "pointer", background: onCall ? "rgba(34,211,238,0.12)" : "var(--surface-2)", color: onCall ? "var(--accent)" : "var(--text-3)" }}>
                               {onCall ? <PhoneCall size={11} /> : <PhoneOff size={11} />}
                             </button>
-                            <button onClick={() => remove(p.id)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, borderRadius: 6, border: "1px solid rgba(225,29,72,0.2)", cursor: "pointer", background: "rgba(248,113,113,0.06)", color: "#e11d48" }}>
+                            <button onClick={() => remove(p.id)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, borderRadius: 6, border: "1px solid rgba(220,38,38,0.2)", cursor: "pointer", background: "rgba(248,113,113,0.06)", color: "#dc2626" }}>
                               <Trash2 size={10} />
                             </button>
                           </div>

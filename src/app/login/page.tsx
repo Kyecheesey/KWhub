@@ -95,8 +95,8 @@ export default function LoginPage() {
     <div className="login-shell">
       {/* ── Brand panel (desktop only) ── */}
       <aside className="login-brand">
-        <div className="login-blob" style={{ width: 340, height: 340, top: -80, right: -80, background: "rgba(124,58,237,0.14)" }} />
-        <div className="login-blob" style={{ width: 300, height: 300, bottom: -100, left: -60, background: "rgba(219,39,119,0.10)" }} />
+        <div className="login-blob" style={{ width: 340, height: 340, top: -80, right: -80, background: "rgba(79,70,229,0.14)" }} />
+        <div className="login-blob" style={{ width: 300, height: 300, bottom: -100, left: -60, background: "rgba(2,132,199,0.10)" }} />
 
         <div style={{ position: "relative" }}>
           <div style={{
@@ -104,7 +104,7 @@ export default function LoginPage() {
             background: "linear-gradient(135deg,#0891b2,#4f46e5)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontWeight: 900, fontSize: "1rem", color: "#ffffff",
-            boxShadow: "0 8px 28px rgba(124,58,237,0.28)",
+            boxShadow: "0 8px 28px rgba(79,70,229,0.28)",
           }}>KW</div>
         </div>
 
@@ -143,7 +143,7 @@ export default function LoginPage() {
       <div className="login-form-col">
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none",
-          background: "radial-gradient(ellipse 60% 50% at 50% 40%, rgba(124,58,237,0.05) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse 60% 50% at 50% 40%, rgba(79,70,229,0.05) 0%, transparent 70%)",
         }} />
 
         <div style={{ width: "100%", maxWidth: 380, position: "relative" }}>
@@ -155,7 +155,7 @@ export default function LoginPage() {
               display: "flex", alignItems: "center", justifyContent: "center",
               fontWeight: 900, fontSize: "1.1rem", color: "#ffffff",
               margin: "0 auto 1rem",
-              boxShadow: "0 8px 32px rgba(124,58,237,0.25)",
+              boxShadow: "0 8px 32px rgba(79,70,229,0.25)",
             }}>
               KW
             </div>
@@ -203,16 +203,16 @@ export default function LoginPage() {
               border: "1px solid var(--border-2)",
               borderRadius: 20,
               padding: "2rem",
-              boxShadow: "0 24px 64px rgba(50,30,100,0.18)",
+              boxShadow: "0 24px 64px rgba(23,42,94,0.18)",
             }}
           >
             {(error || info) && (
               <div style={{
                 display: "flex", alignItems: "center", gap: "0.5rem",
                 padding: "0.65rem 0.85rem", borderRadius: 10, marginBottom: "1rem",
-                background: error ? "rgba(225,29,72,0.07)" : "rgba(124,58,237,0.07)",
-                border: `1px solid ${error ? "rgba(225,29,72,0.2)" : "rgba(124,58,237,0.2)"}`,
-                color: error ? "#e11d48" : "var(--accent)", fontSize: "0.83rem",
+                background: error ? "rgba(220,38,38,0.07)" : "rgba(79,70,229,0.07)",
+                border: `1px solid ${error ? "rgba(220,38,38,0.2)" : "rgba(79,70,229,0.2)"}`,
+                color: error ? "#dc2626" : "var(--accent)", fontSize: "0.83rem",
               }}>
                 <AlertCircle size={14} style={{ flexShrink: 0 }} />
                 {error || info}
