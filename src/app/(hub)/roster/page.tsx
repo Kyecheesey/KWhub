@@ -47,21 +47,21 @@ export default function RosterPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = useCallback(async () => {
-    setLoadError("");
-    try {
-      const res = await fetch("/api/roster", { cache: "no-store" });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.error ?? `Roster failed to load (${res.status})`);
-      }
-      const data = await res.json();
-      setShifts(data.shifts ?? []);
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Roster failed to load");
-    } finally {
-      setLoading(false);
-    }
+  const load = useCallback(() => {
+    return fetch("/api/roster", { cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          throw new Error(data?.error ?? `Roster failed to load (${res.status})`);
+        }
+        const data = await res.json();
+        setShifts(data.shifts ?? []);
+        setLoadError("");
+      })
+      .catch((err) => {
+        setLoadError(err instanceof Error ? err.message : "Roster failed to load");
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { load(); }, [load]);
