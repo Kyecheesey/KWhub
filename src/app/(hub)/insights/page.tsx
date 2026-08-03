@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { TrendingUp, Target, Award, CalendarPlus, Timer } from "lucide-react";
+import { swrJson } from "@/lib/cache";
 
 interface Pot {
   id: number;
@@ -35,11 +36,9 @@ export default function InsightsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/potentials")
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled) { setPots(Array.isArray(data) ? data : []); setLoading(false); }
-      });
+    swrJson<Pot[]>("/api/potentials", (data) => {
+      if (!cancelled) { setPots(Array.isArray(data) ? data : []); setLoading(false); }
+    });
     return () => { cancelled = true; };
   }, []);
 

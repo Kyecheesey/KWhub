@@ -6,6 +6,7 @@ import {
   UserCircle2, CheckCircle2, Circle, Clock,
   LayoutGrid, List,
 } from "lucide-react";
+import { swrJson } from "@/lib/cache";
 import { useSession } from "next-auth/react";
 
 interface Task {
@@ -90,9 +91,7 @@ export default function TasksPage() {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    return fetch("/api/tasks")
-      .then((r) => r.json())
-      .then((data) => { setTasks(data); setLoading(false); });
+    return swrJson<Task[]>("/api/tasks", (data) => { setTasks(data); setLoading(false); });
   }, []);
 
   useEffect(() => { load(); }, [load]);

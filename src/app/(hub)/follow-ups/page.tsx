@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CalendarClock, CheckCheck, RefreshCw, UserCircle2, Phone, Mail, Search } from "lucide-react";
+import { swrJson } from "@/lib/cache";
 
 /* ─── Types ─── */
 interface Potential {
@@ -85,12 +86,10 @@ export default function FollowUpsPage() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
   function load() {
-    return fetch("/api/potentials")
-      .then(r => r.json())
-      .then(data => {
-        setPotentials(Array.isArray(data) ? data : []);
-        setLoading(false);
-      });
+    return swrJson<Potential[]>("/api/potentials", (data) => {
+      setPotentials(Array.isArray(data) ? data : []);
+      setLoading(false);
+    });
   }
   useEffect(() => { load(); }, []);
 

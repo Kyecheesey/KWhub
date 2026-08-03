@@ -8,6 +8,7 @@ import {
   Clock, Award, PhoneCall, Kanban, ClipboardList, CalendarDays,
   Bell, FileText, UsersRound, Zap, Circle, CheckCircle,
 } from "lucide-react";
+import { getCached, setCached } from "@/lib/cache";
 
 interface Stats {
   clients: number;
@@ -43,14 +44,12 @@ export default function Home() {
   const [feed, setFeed] = useState<FeedItem[]>([]);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/clients"),
-      fetch("/api/potentials"),
-      fetch("/api/activities"),
-      fetch("/api/tasks"),
-    ])
-      .then(([c, p, a, t]) => Promise.all([c.json(), p.json(), a.json(), t.json()]))
-      .then(([clients, potentials, activities, tasks]) => {
+    const apply = ([clients, potentials, activities, tasks]: [
+      unknown[],
+      { status: string }[],
+      { id: number; title: string; status: string; assigned_to: string | null; created_at: string }[],
+      { id: number; title: string; status: string; assigned_to: string | null; created_at: string }[],
+    ]) => {
         setStats({
           clients: clients.length,
           potentials: potentials.length,
@@ -71,6 +70,21 @@ export default function Home() {
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
           .slice(0, 6);
         setFeed(combined);
+    };
+
+    const cached = ["/api/clients", "/api/potentials", "/api/activities", "/api/tasks"].map((u) => getCached<never[]>(u));
+    if (cached.every((c) => c != null)) apply(cached as unknown as Parameters<typeof apply>[0]);
+
+    Promise.all([
+      fetch("/api/clients"),
+      fetch("/api/potentials"),
+      fetch("/api/activities"),
+      fetch("/api/tasks"),
+    ])
+      .then(([c, p, a, t]) => Promise.all([c.json(), p.json(), a.json(), t.json()]))
+      .then((results) => {
+        ["/api/clients", "/api/potentials", "/api/activities", "/api/tasks"].forEach((u, i) => setCached(u, results[i]));
+        apply(results as Parameters<typeof apply>[0]);
       });
   }, []);
 

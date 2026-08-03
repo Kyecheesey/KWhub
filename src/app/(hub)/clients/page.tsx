@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import RecordTimeline from "@/components/RecordTimeline";
 import { findDuplicateGroups, matchReasons } from "@/lib/dupes";
+import { swrJson } from "@/lib/cache";
 
 interface Client {
   id: number;
@@ -56,20 +57,12 @@ export default function ClientsPage() {
 
   const load = useCallback(() => {
     return Promise.all([
-      fetch("/api/clients").then((r) => r.json()),
-      fetch("/api/team").then((r) => r.json()),
-      fetch("/api/call-list").then((r) => r.json()),
-    ]).then(([cr, tr, clr]) => {
-      setClients(cr);
-      setTeam(tr);
-      const onList = new Set<number>(
-        (clr as { record_type: string; record_id: number }[])
-          .filter((e) => e.record_type === "client")
-          .map((e) => e.record_id)
-      );
-      setCallSet(onList);
-      setLoading(false);
-    });
+      swrJson<Client[]>("/api/clients", (cr) => { setClients(cr); setLoading(false); }),
+      swrJson<TeamMember[]>("/api/team", (tr) => setTeam(tr)),
+      swrJson<{ record_type: string; record_id: number }[]>("/api/call-list", (clr) => {
+        setCallSet(new Set(clr.filter((e) => e.record_type === "client").map((e) => e.record_id)));
+      }),
+    ]);
   }, []);
 
   useEffect(() => { load(); }, [load]);

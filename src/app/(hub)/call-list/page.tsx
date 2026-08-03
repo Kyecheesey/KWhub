@@ -5,6 +5,7 @@ import {
   Phone, CheckCircle2, Circle, UserCircle2,
   Trash2, ExternalLink, PhoneCall, RefreshCw,
 } from "lucide-react";
+import { swrJson } from "@/lib/cache";
 
 interface CallEntry {
   id: number;
@@ -34,9 +35,7 @@ export default function CallListPage() {
   const [filter, setFilter] = useState<"all" | "pending" | "done">("pending");
 
   const load = useCallback(() => {
-    return fetch("/api/call-list")
-      .then((res) => res.json())
-      .then((data) => { setEntries(data); setLoading(false); });
+    return swrJson<CallEntry[]>("/api/call-list", (data) => { setEntries(data); setLoading(false); });
   }, []);
 
   useEffect(() => { load(); }, [load]);

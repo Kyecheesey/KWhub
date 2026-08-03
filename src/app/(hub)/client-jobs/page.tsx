@@ -5,6 +5,7 @@ import {
   Plus, X, Pencil, Trash2, Flag, Calendar,
   UserCircle2, CheckCircle2, Briefcase,
 } from "lucide-react";
+import { swrJson } from "@/lib/cache";
 
 interface Client {
   id: number;
@@ -72,13 +73,9 @@ export default function ClientJobsPage() {
 
   const load = useCallback(() => {
     return Promise.all([
-      fetch("/api/clients").then((r) => r.json()),
-      fetch("/api/client-jobs").then((r) => r.json()),
-    ]).then(([c, j]) => {
-      setClients(Array.isArray(c) ? c : []);
-      setJobs(Array.isArray(j) ? j : []);
-      setLoading(false);
-    });
+      swrJson<Client[]>("/api/clients", (c) => setClients(Array.isArray(c) ? c : [])),
+      swrJson<Job[]>("/api/client-jobs", (j) => { setJobs(Array.isArray(j) ? j : []); setLoading(false); }),
+    ]);
   }, []);
 
   useEffect(() => { load(); }, [load]);

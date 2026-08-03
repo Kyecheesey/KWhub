@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import RecordTimeline from "@/components/RecordTimeline";
 import { findDuplicateGroups, matchReasons } from "@/lib/dupes";
+import { swrJson } from "@/lib/cache";
 
 const CONTACT_METHODS = [
   { value: "intro_email",   label: "Intro Email",   icon: "✉️" },
@@ -112,20 +113,12 @@ export default function PotentialsPage() {
 
   const load = useCallback(() => {
     return Promise.all([
-      fetch("/api/potentials").then((r) => r.json()),
-      fetch("/api/team").then((r) => r.json()),
-      fetch("/api/call-list").then((r) => r.json()),
-    ]).then(([pr, tr, clr]) => {
-      setPotentials(pr);
-      setTeam(tr);
-      const onList = new Set<number>(
-        (clr as { record_type: string; record_id: number }[])
-          .filter((e) => e.record_type === "potential")
-          .map((e) => e.record_id)
-      );
-      setCallSet(onList);
-      setLoading(false);
-    });
+      swrJson<Potential[]>("/api/potentials", (pr) => { setPotentials(pr); setLoading(false); }),
+      swrJson<TeamMember[]>("/api/team", (tr) => setTeam(tr)),
+      swrJson<{ record_type: string; record_id: number }[]>("/api/call-list", (clr) => {
+        setCallSet(new Set(clr.filter((e) => e.record_type === "potential").map((e) => e.record_id)));
+      }),
+    ]);
   }, []);
 
   useEffect(() => { load(); }, [load]);

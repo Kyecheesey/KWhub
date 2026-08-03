@@ -5,6 +5,7 @@ import {
   Plus, X, Pencil, Trash2, Flag, Calendar,
   UserCircle2, Tag, CheckCircle2,
 } from "lucide-react";
+import { swrJson } from "@/lib/cache";
 
 interface Activity {
   id: number;
@@ -66,9 +67,7 @@ export default function ActivitiesPage() {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    return fetch("/api/activities")
-      .then((r) => r.json())
-      .then((data) => { setActivities(data); setLoading(false); });
+    return swrJson<Activity[]>("/api/activities", (data) => { setActivities(data); setLoading(false); });
   }, []);
 
   useEffect(() => { load(); }, [load]);
