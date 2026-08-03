@@ -5,8 +5,13 @@ import postgres from "postgres";
 // the cutover. Guarded by a single-use token.
 
 const TOKEN = "fb707c8280611bd1f789fd2f5910a5e4";
-const TARGET_URL =
-  "postgresql://postgres.uvvbuqkjpdqvyigdiupn:D3Rmnz8quHzy0cex@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres";
+// Candidate Supabase connection strings — pooler cluster varies by project.
+const TARGET_CANDIDATES = [
+  "postgresql://postgres.uvvbuqkjpdqvyigdiupn:D3Rmnz8quHzy0cex@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres",
+  "postgresql://postgres.uvvbuqkjpdqvyigdiupn:D3Rmnz8quHzy0cex@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres",
+  "postgresql://postgres.uvvbuqkjpdqvyigdiupn:D3Rmnz8quHzy0cex@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres",
+  "postgresql://postgres.uvvbuqkjpdqvyigdiupn:D3Rmnz8quHzy0cex@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres",
+];
 
 const TABLES = [
   "users", "clients", "potentials", "team_members", "call_list", "tasks",
@@ -29,8 +34,27 @@ export async function GET(req: Request) {
     return Response.json({ error: "DATABASE_URL already points at Supabase — nothing to copy. Delete this route." }, { status: 400 });
   }
 
+  // Find the pooler host that accepts this project
+  let dst: ReturnType<typeof postgres> | null = null;
+  let workingUrl = "";
+  const attempts: Record<string, string> = {};
+  for (const candidate of TARGET_CANDIDATES) {
+    const c = postgres(candidate, { prepare: false, max: 1, connect_timeout: 8 });
+    try {
+      await c.unsafe("SELECT 1");
+      dst = c;
+      workingUrl = candidate;
+      break;
+    } catch (err) {
+      attempts[candidate.split("@")[1]] = err instanceof Error ? err.message : String(err);
+      await c.end({ timeout: 1 });
+    }
+  }
+  if (!dst) {
+    return Response.json({ ok: false, error: "Could not connect to Supabase on any candidate host", attempts }, { status: 502 });
+  }
+
   const src = postgres(process.env.DATABASE_URL, { prepare: false, max: 1 });
-  const dst = postgres(TARGET_URL, { prepare: false, max: 1 });
   const copied: Record<string, number | string> = {};
 
   try {
@@ -58,7 +82,12 @@ export async function GET(req: Request) {
       }
       copied[table] = rows.length;
     }
-    return Response.json({ ok: true, copied, next: "Update DATABASE_URL in Vercel to the Supabase URL and redeploy." });
+    return Response.json({
+      ok: true,
+      copied,
+      use_this_database_url: workingUrl,
+      next: "Update DATABASE_URL in Vercel to the value in use_this_database_url and redeploy.",
+    });
   } catch (err) {
     return Response.json({ ok: false, copied, error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   } finally {
