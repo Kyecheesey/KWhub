@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
   const sent = await sendEmail({
     to: email,
-    subject: "Your KW Hub password reset code",
+    subject: "Your KW | Innovations Hub password reset code",
     text: [
       `Hi,`,
       ``,

@@ -31,7 +31,7 @@ export async function notifyAssignment(input: {
     }
 
     const lines = [
-      `You've been assigned a ${input.kind} in the KW Hub${assignedBy ? ` by ${assignedBy}` : ""}:`,
+      `You've been assigned a ${input.kind} in the KW | Innovations Hub${assignedBy ? ` by ${assignedBy}` : ""}:`,
       "",
       `  ${input.title}`,
       input.clientName ? `  Client: ${input.clientName}` : null,

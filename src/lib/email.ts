@@ -12,7 +12,7 @@ export async function sendEmail({
   if (!apiKey) {
     return { ok: false, error: "Email is not configured (RESEND_API_KEY is missing)." };
   }
-  const from = process.env.RESEND_FROM ?? "KW Hub <onboarding@resend.dev>";
+  const from = process.env.RESEND_FROM ?? "KW | Innovations Hub <onboarding@resend.dev>";
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
