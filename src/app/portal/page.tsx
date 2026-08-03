@@ -407,6 +407,9 @@ export default function PortalPage() {
                         <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-1)" }}>{client.assigned_to}</div>
                         <div style={{ fontSize: "0.68rem", color: "var(--text-3)" }}>Your contact at KW Innovations</div>
                       </div>
+                      <a href="mailto:director@kwinnovations.com.au" className="btn-ghost" style={{ marginLeft: "auto", minHeight: 0, padding: "0.4rem 0.75rem", fontSize: "0.78rem" }}>
+                        <Mail size={12} /> director@kwinnovations.com.au
+                      </a>
                     </div>
                   )}
                 </div>
