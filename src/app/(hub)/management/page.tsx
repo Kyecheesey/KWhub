@@ -280,7 +280,7 @@ function AuditLog() {
   );
 }
 
-const TEAM = ["Kye", "Luka", "Aksel"];
+const TEAM = ["Kye", "Luka", "Aksel", "Kaylie"];
 const STAGES = ["new","contacted","qualified","proposal","won","lost"];
 const STAGE_LABEL: Record<string,string> = {
   new:"New", contacted:"Contacted", qualified:"Qualified",

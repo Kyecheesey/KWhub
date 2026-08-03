@@ -1,7 +1,7 @@
 import { sql } from "./db";
 import { auth } from "../../auth";
 
-export type EntityType = "client" | "potential" | "task" | "activity";
+export type EntityType = "client" | "potential" | "task" | "activity" | "client_job";
 
 export interface EventRow {
   id: number;

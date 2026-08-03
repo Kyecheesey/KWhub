@@ -12,8 +12,21 @@ export function sql(...args: Parameters<NeonQueryFunction<false, false>>) {
   return _sql(...args);
 }
 
-// Ensure all tables exist + seed initial users — called at the start of each handler
-export async function migrate() {
+// Ensure all tables exist + seed initial users — called at the start of each handler.
+// Runs the full migration only once per server instance; later calls return instantly.
+let _migrated: Promise<void> | null = null;
+
+export function migrate(): Promise<void> {
+  if (!_migrated) {
+    _migrated = runMigrations().catch((err) => {
+      _migrated = null;
+      throw err;
+    });
+  }
+  return _migrated;
+}
+
+async function runMigrations() {
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id            SERIAL PRIMARY KEY,
@@ -245,4 +258,30 @@ export async function migrate() {
     )
   `;
   await sql`CREATE INDEX IF NOT EXISTS events_entity_idx ON events (entity_type, entity_id)`;
+  // One-shot cleanup: scraped imports that saved page blurbs or "Visit …" links as business names
+  await sql`
+    DELETE FROM clients
+    WHERE source = 'scraped'
+      AND (LENGTH(business_name) > 60 OR business_name ILIKE 'visit %')
+  `;
+  await sql`
+    INSERT INTO clients (business_name, website, source)
+    SELECT 'L&V Civil Contracting', 'https://lvcivilcontracting.com.au', 'manual'
+    WHERE NOT EXISTS (SELECT 1 FROM clients WHERE business_name ILIKE '%L&V Civil%')
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS client_jobs (
+      id          SERIAL PRIMARY KEY,
+      client_id   INTEGER NOT NULL,
+      title       TEXT NOT NULL,
+      description TEXT,
+      status      TEXT DEFAULT 'todo',
+      priority    TEXT DEFAULT 'medium',
+      assigned_to TEXT,
+      due_date    DATE,
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS client_jobs_client_idx ON client_jobs (client_id)`;
 }

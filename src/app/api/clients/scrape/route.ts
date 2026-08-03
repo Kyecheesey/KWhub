@@ -24,7 +24,7 @@ export async function POST() {
   ];
   for (const sel of selectors) {
     $(sel).each((_, el) => {
-      const text = $(el).text().trim();
+      const text = $(el).text().trim().replace(/\s+/g, " ");
       const href = $(el).attr("href") ?? "";
       if (text && text.length > 1) found.push({ business_name: text, website: href });
     });
@@ -33,7 +33,7 @@ export async function POST() {
 
   if (found.length === 0) {
     $("a[href^='http']").each((_, el) => {
-      const text = $(el).text().trim();
+      const text = $(el).text().trim().replace(/\s+/g, " ");
       const href = $(el).attr("href") ?? "";
       if (text.length > 2 && !href.includes("kwinnovations.com.au") &&
           !["facebook","instagram","linkedin"].some((s) => text.toLowerCase().includes(s))) {
@@ -46,8 +46,14 @@ export async function POST() {
     return Response.json({ imported: 0, message: "No client data found on the page. Add clients manually." });
   }
 
+  const clean = found.filter((c) =>
+    c.business_name.length <= 60 &&
+    !/^visit\s/i.test(c.business_name) &&
+    !c.business_name.includes("●")
+  );
+
   let imported = 0;
-  for (const c of found) {
+  for (const c of clean) {
     const r = await sql`
       INSERT INTO clients (business_name, website, source)
       VALUES (${c.business_name}, ${c.website}, 'scraped')

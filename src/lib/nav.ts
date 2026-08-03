@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, Target, PhoneCall,
-  FileText, Zap, Kanban, ClipboardList, CalendarDays,
+  FileText, Zap, Kanban, ClipboardList, CalendarDays, Briefcase,
   UsersRound, Settings, Bell, TrendingUp,
 } from "lucide-react";
 
@@ -24,6 +24,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { href: "/", label: "Dashboard", icon: LayoutDashboard, keywords: "home overview" },
       { href: "/clients", label: "Clients", icon: Users, keywords: "customers accounts" },
+      { href: "/client-jobs", label: "Client Jobs", icon: Briefcase, keywords: "kanban board jobs work per client" },
       { href: "/potentials", label: "Potentials", icon: Target, keywords: "pipeline crm leads deals" },
       { href: "/follow-ups", label: "Follow-ups", icon: Bell, keywords: "reminders" },
       { href: "/call-list", label: "Call List", icon: PhoneCall, keywords: "calls phone" },
