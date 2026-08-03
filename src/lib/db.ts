@@ -7,8 +7,14 @@ function client(): Sql {
     if (!process.env.DATABASE_URL) {
       throw new Error("DATABASE_URL environment variable is not set. Add it to .env.local (dev) or Vercel environment variables (production).");
     }
-    // Supabase transaction-mode pooler (port 6543) doesn't support prepared statements
-    _sql = postgres(process.env.DATABASE_URL, { prepare: false, max: 1 });
+    // Supabase transaction-mode pooler (port 6543) doesn't support prepared statements.
+    // Fail fast on connect issues instead of hanging until the function times out.
+    _sql = postgres(process.env.DATABASE_URL, {
+      prepare: false,
+      max: 1,
+      connect_timeout: 10,
+      idle_timeout: 20,
+    });
   }
   return _sql;
 }
