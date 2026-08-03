@@ -1,5 +1,6 @@
 import { sql, migrate } from "@/lib/db";
 import { logEvent } from "@/lib/events";
+import { notifyAssignment } from "@/lib/notify";
 
 export async function GET() {
   await migrate();
@@ -23,5 +24,6 @@ export async function POST(req: Request) {
     entity_type: "task", entity_id: created.id, entity_name: title.trim(),
     action: "created", detail: `Assigned to ${assigned_to}`,
   });
+  await notifyAssignment({ kind: "task", title: title.trim(), assignee: assigned_to, dueDate: due_date, priority, description });
   return Response.json(rows[0], { status: 201 });
 }

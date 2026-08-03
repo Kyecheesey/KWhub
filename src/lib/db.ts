@@ -28,7 +28,7 @@ export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promis
 let _migrated: Promise<void> | null = null;
 
 // Bump whenever a statement is added/changed below, so existing databases re-run the set.
-const SCHEMA_VERSION = "2026-08-03.1";
+const SCHEMA_VERSION = "2026-08-03.2";
 
 export function migrate(): Promise<void> {
   if (!_migrated) {
@@ -178,7 +178,10 @@ async function runMigrations() {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'staff'`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS client_id INTEGER`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT`;
-  await sql`UPDATE users SET email = 'director@kwinnovations.com.au' WHERE username = 'kye' AND email IS NULL`;
+  await sql`
+    UPDATE users SET email = username || '@kwinnovations.com.au'
+    WHERE email IS NULL AND username IN ('kye', 'luka', 'aksel', 'kaylie')
+  `;
   await sql`
     CREATE TABLE IF NOT EXISTS password_resets (
       id         SERIAL PRIMARY KEY,

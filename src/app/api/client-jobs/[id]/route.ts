@@ -1,11 +1,12 @@
 import { sql, migrate } from "@/lib/db";
 import { logEvent } from "@/lib/events";
+import { notifyAssignment } from "@/lib/notify";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   await migrate();
   const { id } = await params;
   const { title, description, status, priority, assigned_to, due_date } = await req.json();
-  const prev = await sql`SELECT status FROM client_jobs WHERE id = ${id}`;
+  const prev = await sql`SELECT status, assigned_to, client_id FROM client_jobs WHERE id = ${id}`;
   const rows = await sql`
     UPDATE client_jobs SET
       title       = ${title},
@@ -18,12 +19,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     WHERE id = ${id}
     RETURNING *
   `;
-  const old = prev[0] as { status: string } | undefined;
+  const old = prev[0] as { status: string; assigned_to: string | null; client_id: number } | undefined;
   await logEvent({
     entity_type: "client_job", entity_id: Number(id), entity_name: title,
     action: old && old.status !== status ? "status_changed" : "updated",
     detail: old && old.status !== status ? `${old.status} → ${status}` : null,
   });
+  if (assigned_to && old && old.assigned_to !== assigned_to) {
+    const client = await sql`SELECT business_name FROM clients WHERE id = ${old.client_id}`;
+    await notifyAssignment({
+      kind: "client job", title, assignee: assigned_to,
+      clientName: (client[0] as { business_name: string } | undefined)?.business_name,
+      dueDate: due_date, priority, description,
+    });
+  }
   return Response.json(rows[0]);
 }
 
