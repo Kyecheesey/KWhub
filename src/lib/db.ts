@@ -1,15 +1,20 @@
-import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
+import postgres, { type Sql } from "postgres";
 
-let _sql: NeonQueryFunction<false, false> | null = null;
+let _sql: Sql | null = null;
 
-export function sql(...args: Parameters<NeonQueryFunction<false, false>>) {
+function client(): Sql {
   if (!_sql) {
     if (!process.env.DATABASE_URL) {
       throw new Error("DATABASE_URL environment variable is not set. Add it to .env.local (dev) or Vercel environment variables (production).");
     }
-    _sql = neon(process.env.DATABASE_URL);
+    // Supabase transaction-mode pooler (port 6543) doesn't support prepared statements
+    _sql = postgres(process.env.DATABASE_URL, { prepare: false, max: 1 });
   }
-  return _sql(...args);
+  return _sql;
+}
+
+export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promise<Record<string, unknown>[]> {
+  return client()(strings, ...(params as never[])) as unknown as Promise<Record<string, unknown>[]>;
 }
 
 // Ensure all tables exist + seed initial users — called at the start of each handler.
