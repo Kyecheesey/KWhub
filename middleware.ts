@@ -7,8 +7,19 @@ export default auth((req) => {
   const isLoginPage = path === "/login";
   const role = req.auth?.user?.role ?? "staff";
 
+  // Friendly shareable links — send clients straight to a portal section
+  if (path === "/it-support" || path === "/support") {
+    return NextResponse.redirect(new URL("/portal?section=support", req.nextUrl.origin));
+  }
+  if (path === "/marketing") {
+    return NextResponse.redirect(new URL("/portal?section=marketing", req.nextUrl.origin));
+  }
+
   if (!isLoggedIn && !isLoginPage) {
-    return NextResponse.redirect(new URL("/login", req.nextUrl.origin));
+    const login = new URL("/login", req.nextUrl.origin);
+    // Keep portal deep links (e.g. /it-support → /portal?section=support) across login
+    if (path.startsWith("/portal")) login.searchParams.set("next", path + req.nextUrl.search);
+    return NextResponse.redirect(login);
   }
   if (isLoggedIn && isLoginPage) {
     return NextResponse.redirect(new URL(role === "client" ? "/portal" : "/", req.nextUrl.origin));

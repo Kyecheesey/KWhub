@@ -108,7 +108,12 @@ export default function PortalPage() {
   const { data: session } = useSession();
   const [client, setClient] = useState<ClientInfo | null>(null);
   const [modules, setModules] = useState<string[]>(["overview"]);
-  const [section, setSection] = useState("overview");
+  // Deep links: /portal?section=support (via /it-support) opens that tab directly
+  const [section, setSection] = useState(() =>
+    typeof window === "undefined"
+      ? "overview"
+      : new URLSearchParams(window.location.search).get("section") ?? "overview"
+  );
   const [messages, setMessages] = useState<Message[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [approvals, setApprovals] = useState<Approval[]>([]);

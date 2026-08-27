@@ -48,7 +48,8 @@ export default function LoginPage() {
     if (res?.error) {
       setError("Incorrect username or password.");
     } else {
-      router.push("/");
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.push(next && next.startsWith("/") ? next : "/");
       router.refresh();
     }
   }
