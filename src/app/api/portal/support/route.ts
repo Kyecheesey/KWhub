@@ -1,6 +1,9 @@
 import { sql, migrate } from "@/lib/db";
 import { resolvePortalScope } from "@/lib/portalAuth";
 import { notifyStaff } from "@/lib/portalNotify";
+import { sendEmail } from "@/lib/email";
+
+const SUPPORT_EMAIL = process.env.SUPPORT_NOTIFY_EMAIL ?? "director@kwinnovations.com.au";
 
 /**
  * IT Support requests — stored as client_jobs (kind = 'support') so they land
@@ -33,10 +36,10 @@ export async function POST(request: Request) {
             'todo', ${priority}, 'support', TRUE)
     RETURNING id, title, description, status, priority, due_date, created_at, updated_at
   `;
-  await notifyStaff(
-    r.scope.clientId,
-    `New IT support request: ${body.title.trim()}`,
-    `${r.scope.name ?? "A client"} raised a support request${priority === "high" ? " (HIGH priority)" : ""}:\n\n${body.title.trim()}${body.description ? `\n\n${body.description.trim()}` : ""}\n\nIt's on the Client Jobs board.`
-  );
+  const subject = `New IT support request: ${body.title.trim()}`;
+  const text = `${r.scope.name ?? "A client"} raised a support request${priority === "high" ? " (HIGH priority)" : ""}:\n\n${body.title.trim()}${body.description ? `\n\n${body.description.trim()}` : ""}\n\nIt's on the Client Jobs board.`;
+  await notifyStaff(r.scope.clientId, subject, text);
+  // The director always hears about support requests directly
+  await sendEmail({ to: SUPPORT_EMAIL, subject, text });
   return Response.json(rows[0], { status: 201 });
 }

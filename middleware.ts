@@ -7,9 +7,19 @@ export default auth((req) => {
   const isLoginPage = path === "/login";
   const role = req.auth?.user?.role ?? "staff";
 
-  // Friendly shareable links — send clients straight to a portal section
-  if (path === "/it-support" || path === "/support") {
-    return NextResponse.redirect(new URL("/portal?section=support", req.nextUrl.origin));
+  // Public support intake — no login required
+  if (path.startsWith("/api/public")) {
+    return;
+  }
+  if (path === "/support") {
+    return NextResponse.redirect(new URL("/it-support", req.nextUrl.origin));
+  }
+  if (path === "/it-support") {
+    // Logged-in clients get their portal's support tab instead of the public form
+    if (isLoggedIn && role === "client") {
+      return NextResponse.redirect(new URL("/portal?section=support", req.nextUrl.origin));
+    }
+    return;
   }
   if (path === "/marketing") {
     return NextResponse.redirect(new URL("/portal?section=marketing", req.nextUrl.origin));
