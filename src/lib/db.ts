@@ -28,7 +28,7 @@ export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promis
 let _migrated: Promise<void> | null = null;
 
 // Bump whenever a statement is added/changed below, so existing databases re-run the set.
-const SCHEMA_VERSION = "2026-08-03.3";
+const SCHEMA_VERSION = "2026-08-27.1";
 
 export function migrate(): Promise<void> {
   if (!_migrated) {
@@ -346,6 +346,87 @@ async function runMigrations() {
     )
   `;
   await sql`ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY`;
+  // Per-client portal module toggles (JSON array of module keys; NULL = default set)
+  await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS portal_modules TEXT`;
+  // Support requests reuse client_jobs; kind distinguishes them on the board
+  await sql`ALTER TABLE client_jobs ADD COLUMN IF NOT EXISTS kind TEXT DEFAULT 'job'`;
+  // ── Content planner / social scheduling ──
+  await sql`
+    CREATE TABLE IF NOT EXISTS social_accounts (
+      id               SERIAL PRIMARY KEY,
+      client_id        INTEGER NOT NULL,
+      platform         TEXT NOT NULL,
+      account_name     TEXT NOT NULL,
+      account_ref      TEXT,
+      access_token     TEXT,
+      refresh_token    TEXT,
+      token_expires_at TIMESTAMPTZ,
+      status           TEXT DEFAULT 'connected',
+      connected_by     TEXT,
+      created_at       TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS social_accounts_client_idx ON social_accounts (client_id)`;
+  await sql`ALTER TABLE social_accounts ENABLE ROW LEVEL SECURITY`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS posts (
+      id            SERIAL PRIMARY KEY,
+      client_id     INTEGER NOT NULL,
+      title         TEXT,
+      caption       TEXT,
+      scheduled_at  TIMESTAMPTZ,
+      status        TEXT DEFAULT 'draft',
+      created_by    TEXT,
+      approval_note TEXT,
+      responded_at  TIMESTAMPTZ,
+      published_at  TIMESTAMPTZ,
+      publish_error TEXT,
+      created_at    TIMESTAMPTZ DEFAULT NOW(),
+      updated_at    TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS posts_client_idx ON posts (client_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS posts_sched_idx ON posts (status, scheduled_at)`;
+  await sql`ALTER TABLE posts ENABLE ROW LEVEL SECURITY`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS post_channels (
+      id                SERIAL PRIMARY KEY,
+      post_id           INTEGER NOT NULL,
+      social_account_id INTEGER,
+      platform          TEXT NOT NULL,
+      publish_status    TEXT DEFAULT 'pending',
+      external_post_id  TEXT,
+      published_at      TIMESTAMPTZ,
+      error             TEXT
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS post_channels_post_idx ON post_channels (post_id)`;
+  await sql`ALTER TABLE post_channels ENABLE ROW LEVEL SECURITY`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS post_media (
+      id           SERIAL PRIMARY KEY,
+      post_id      INTEGER NOT NULL,
+      filename     TEXT NOT NULL,
+      url          TEXT NOT NULL,
+      content_type TEXT,
+      size_bytes   INTEGER,
+      created_at   TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS post_media_post_idx ON post_media (post_id)`;
+  await sql`ALTER TABLE post_media ENABLE ROW LEVEL SECURITY`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS post_comments (
+      id          SERIAL PRIMARY KEY,
+      post_id     INTEGER NOT NULL,
+      author      TEXT,
+      author_role TEXT,
+      body        TEXT NOT NULL,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS post_comments_post_idx ON post_comments (post_id)`;
+  await sql`ALTER TABLE post_comments ENABLE ROW LEVEL SECURITY`;
   await sql`
     INSERT INTO settings (key, value) VALUES ('schema_version', ${SCHEMA_VERSION})
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
