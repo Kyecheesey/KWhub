@@ -1020,6 +1020,50 @@ export default function PortalPage() {
               <div style={{ display: "grid", gap: "1.25rem" }}>
                 {active === "overview" && (
                   <>
+                    {/* ── At-a-glance tiles ── */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0.6rem" }}>
+                      {([
+                        {
+                          label: "Awaiting your approval",
+                          value: pendingApprovals.length + (modules.includes("marketing") ? pendingPosts.length : 0),
+                          color: "#d97706", icon: ThumbsUp,
+                          target: pendingPosts.length > 0 && modules.includes("marketing") ? "marketing" : "overview",
+                        },
+                        modules.includes("marketing") ? {
+                          label: "Next post scheduled",
+                          value: (() => {
+                            const next = posts.filter((p) => ["approved", "pending_approval"].includes(p.status) && p.scheduled_at && new Date(p.scheduled_at) > new Date())
+                              .sort((a, b) => new Date(a.scheduled_at!).getTime() - new Date(b.scheduled_at!).getTime())[0];
+                            return next?.scheduled_at ? new Date(next.scheduled_at).toLocaleDateString("en-AU", { day: "numeric", month: "short" }) : "—";
+                          })(),
+                          color: "#4f46e5", icon: CalendarClock, target: "marketing",
+                        } : null,
+                        modules.includes("support") ? {
+                          label: "Open requests",
+                          value: tickets.filter((t) => t.status !== "done").length,
+                          color: "#0284c7", icon: LifeBuoy, target: "support",
+                        } : null,
+                        modules.includes("invoices") ? {
+                          label: "Invoices due",
+                          value: invoices.filter((i) => !["paid", "draft"].includes(i.status)).length,
+                          color: "#dc2626", icon: Receipt, target: "invoices",
+                        } : null,
+                      ].filter(Boolean) as { label: string; value: number | string; color: string; icon: React.FC<{ size?: number; color?: string }>; target: string }[]).map((tile) => {
+                        const Icon = tile.icon;
+                        return (
+                          <button key={tile.label} onClick={() => setSection(tile.target)} className="card fade-up" style={{ padding: "0.8rem 0.9rem", textAlign: "left", cursor: "pointer" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", marginBottom: "0.45rem" }}>
+                              <span style={{ width: 24, height: 24, borderRadius: 7, background: `${tile.color}14`, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                                <Icon size={12} color={tile.color} />
+                              </span>
+                              <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.05em", lineHeight: 1.2 }}>{tile.label}</span>
+                            </div>
+                            <div style={{ fontSize: "1.35rem", fontWeight: 900, color: "var(--text-1)", lineHeight: 1 }}>{tile.value}</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
                     {pendingPosts.length > 0 && modules.includes("marketing") && (
                       <button onClick={() => setSection("marketing")} className="card fade-up" style={{
                         display: "flex", alignItems: "center", gap: "0.7rem", padding: "0.85rem 1.1rem",
