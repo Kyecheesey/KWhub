@@ -38,7 +38,7 @@ export default function PublicSupportPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "100vh", width: "100%", flex: 1, background: "var(--bg)", display: "flex", flexDirection: "column" }}>
       {/* Ambient background */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
         <div className="login-blob" style={{ width: 420, height: 420, top: -140, right: -120, background: "rgba(45,212,232,0.09)" }} />
