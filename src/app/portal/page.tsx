@@ -8,7 +8,8 @@ import {
   MessageSquare, Sparkles, Eye, ArrowLeft, CalendarPlus,
   Rocket, ThumbsUp, PencilLine, FolderOpen, Download,
   Upload, Receipt, ListChecks, Check, ExternalLink,
-  LayoutDashboard, Megaphone, LifeBuoy, CalendarClock, Plus, X,
+  LayoutDashboard, Megaphone, LifeBuoy, CalendarClock, Plus, X, Lock,
+  Smartphone, Search, ShieldCheck, Cpu, Boxes,
 } from "lucide-react";
 import { platformInfo } from "@/lib/social/platforms";
 
@@ -52,12 +53,25 @@ const POLL_MS = 20_000;
 
 const SECTIONS: { key: string; label: string; icon: React.FC<{ size?: number; color?: string }> }[] = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
+  { key: "websites", label: "Websites", icon: Globe },
+  { key: "apps", label: "Apps", icon: Smartphone },
+  { key: "seo", label: "SEO", icon: Search },
+  { key: "cybersecurity", label: "Cybersecurity", icon: ShieldCheck },
+  { key: "ai", label: "AI", icon: Cpu },
   { key: "marketing", label: "Marketing", icon: Megaphone },
-  { key: "projects", label: "Projects & App", icon: Rocket },
+  { key: "systems", label: "Systems", icon: Boxes },
   { key: "support", label: "IT Support", icon: LifeBuoy },
   { key: "files", label: "Files", icon: FolderOpen },
   { key: "invoices", label: "Invoices", icon: Receipt },
 ];
+
+/** Blurb shown on service sections that don't have bespoke portal content yet. */
+const SERVICE_BLURB: Record<string, string> = {
+  seo: "Search visibility and optimisation work — rankings, on-page fixes and reporting.",
+  cybersecurity: "Security monitoring and protection for your website, email and systems.",
+  ai: "AI and automation solutions built around how your business runs.",
+  systems: "Your business systems and operations tooling — your ops, one login.",
+};
 
 function msgTime(iso: string) {
   return new Date(iso).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
@@ -337,6 +351,8 @@ export default function PortalPage() {
   const doneCount = checklist.filter((i) => i.done).length;
   const projectJobs = visibleJobs.filter((jb) => jb.kind !== "support");
   const enabledSections = SECTIONS.filter((s) => modules.includes(s.key));
+  // Locked sections stay visible but greyed out until staff unlock them
+  const isLocked = (key: string) => !modules.includes(key);
   const active = enabledSections.some((s) => s.key === section) ? section : "overview";
   const attention = (key: string) =>
     key === "marketing" ? pendingPosts.length : key === "overview" ? pendingApprovals.length : 0;
@@ -947,21 +963,26 @@ export default function PortalPage() {
           <div className="portal-layout">
             {/* ── Sidebar (desktop) ── */}
             <nav className="portal-side">
-              {enabledSections.map((s) => {
+              {SECTIONS.map((s) => {
                 const Icon = s.icon;
-                const on = active === s.key;
-                const dot = attention(s.key);
+                const locked = isLocked(s.key);
+                const on = !locked && active === s.key;
+                const dot = locked ? 0 : attention(s.key);
                 return (
-                  <button key={s.key} onClick={() => setSection(s.key)} style={{
-                    display: "flex", alignItems: "center", gap: "0.6rem", width: "100%",
-                    padding: "0.6rem 0.85rem", borderRadius: 11, cursor: "pointer", textAlign: "left",
-                    border: `1px solid ${on ? "rgba(79,70,229,0.3)" : "transparent"}`,
-                    background: on ? "linear-gradient(135deg, rgba(45,212,232,0.1), rgba(124,133,243,0.08))" : "transparent",
-                    color: on ? "var(--text-1)" : "var(--text-2)",
-                    fontWeight: on ? 800 : 600, fontSize: "0.84rem",
-                  }}>
-                    <Icon size={15} color={on ? "var(--accent)" : "var(--text-3)"} />
+                  <button key={s.key} onClick={() => !locked && setSection(s.key)} disabled={locked}
+                    title={locked ? `${s.label} is locked — it unlocks when this service is added to your plan` : undefined}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "0.6rem", width: "100%",
+                      padding: "0.6rem 0.85rem", borderRadius: 11, cursor: locked ? "not-allowed" : "pointer", textAlign: "left",
+                      border: `1px solid ${on ? "rgba(79,70,229,0.3)" : "transparent"}`,
+                      background: on ? "linear-gradient(135deg, rgba(45,212,232,0.1), rgba(124,133,243,0.08))" : "transparent",
+                      color: on ? "var(--text-1)" : locked ? "var(--text-4)" : "var(--text-2)",
+                      fontWeight: on ? 800 : 600, fontSize: "0.84rem",
+                      opacity: locked ? 0.55 : 1,
+                    }}>
+                    <Icon size={15} color={on ? "var(--accent)" : locked ? "var(--text-4)" : "var(--text-3)"} />
                     <span style={{ flex: 1 }}>{s.label}</span>
+                    {locked && <Lock size={12} color="var(--text-4)" />}
                     {dot > 0 && (
                       <span style={{ fontSize: "0.62rem", fontWeight: 800, color: "#fff", background: "#d97706", borderRadius: 99, padding: "0.05rem 0.4rem", minWidth: 17, textAlign: "center" }}>{dot}</span>
                     )}
@@ -969,26 +990,29 @@ export default function PortalPage() {
                 );
               })}
               <div style={{ marginTop: "0.75rem", padding: "0.75rem 0.85rem", borderRadius: 11, border: "1px dashed var(--border-2)", fontSize: "0.66rem", color: "var(--text-4)", lineHeight: 1.5 }}>
-                Your dashboard shows the KW | Innovations services on your plan.
+                Locked sections unlock as services are added to your plan — message the KW team to get one switched on.
               </div>
             </nav>
 
             <div style={{ flex: 1, minWidth: 0 }}>
               {/* ── Tabs (mobile) ── */}
               <div className="portal-tabs">
-                {enabledSections.map((s) => {
+                {SECTIONS.map((s) => {
                   const Icon = s.icon;
-                  const on = active === s.key;
-                  const dot = attention(s.key);
+                  const locked = isLocked(s.key);
+                  const on = !locked && active === s.key;
+                  const dot = locked ? 0 : attention(s.key);
                   return (
-                    <button key={s.key} onClick={() => setSection(s.key)} style={{
+                    <button key={s.key} onClick={() => !locked && setSection(s.key)} disabled={locked} style={{
                       display: "inline-flex", alignItems: "center", gap: "0.4rem", whiteSpace: "nowrap",
-                      padding: "0.45rem 0.8rem", borderRadius: 99, cursor: "pointer", flexShrink: 0,
+                      padding: "0.45rem 0.8rem", borderRadius: 99, cursor: locked ? "not-allowed" : "pointer", flexShrink: 0,
                       border: `1px solid ${on ? "rgba(79,70,229,0.3)" : "var(--border)"}`,
                       background: on ? "linear-gradient(135deg, rgba(45,212,232,0.12), rgba(124,133,243,0.1))" : "var(--surface)",
-                      color: on ? "var(--text-1)" : "var(--text-2)", fontWeight: 700, fontSize: "0.76rem",
+                      color: on ? "var(--text-1)" : locked ? "var(--text-4)" : "var(--text-2)", fontWeight: 700, fontSize: "0.76rem",
+                      opacity: locked ? 0.55 : 1,
                     }}>
-                      <Icon size={13} color={on ? "var(--accent)" : "var(--text-3)"} /> {s.label}
+                      <Icon size={13} color={on ? "var(--accent)" : locked ? "var(--text-4)" : "var(--text-3)"} /> {s.label}
+                      {locked && <Lock size={11} color="var(--text-4)" />}
                       {dot > 0 && <span style={{ fontSize: "0.6rem", fontWeight: 800, color: "#fff", background: "#d97706", borderRadius: 99, padding: "0 0.35rem" }}>{dot}</span>}
                     </button>
                   );
@@ -1088,17 +1112,35 @@ export default function PortalPage() {
                   </>
                 )}
                 {active === "marketing" && marketingSection}
-                {active === "projects" && (
+                {(active === "websites" || active === "apps") && (
                   <>
                     {jobsCard}
                     {projectsCard}
                     {!jobsCard && !projectsCard && (
                       <div className="card fade-up" style={{ padding: "1.5rem", textAlign: "center", fontSize: "0.82rem", color: "var(--text-3)" }}>
-                        Nothing in flight right now — active projects and work will show up here.
+                        Nothing in flight right now — active {active === "apps" ? "app" : "website"} projects and work will show up here.
                       </div>
                     )}
                   </>
                 )}
+                {SERVICE_BLURB[active] && (() => {
+                  const s = SECTIONS.find((x) => x.key === active)!;
+                  const Icon = s.icon;
+                  return (
+                    <div className="card fade-up" style={{ padding: "2rem 1.5rem", textAlign: "center" }}>
+                      <div style={{ width: 48, height: 48, borderRadius: 14, margin: "0 auto 0.85rem", background: "rgba(79,70,229,0.08)", border: "1px solid rgba(79,70,229,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Icon size={22} color="var(--accent)" />
+                      </div>
+                      <h2 style={{ fontSize: "1.1rem", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: "0.35rem" }}>{s.label}</h2>
+                      <p style={{ fontSize: "0.85rem", color: "var(--text-2)", lineHeight: 1.6, maxWidth: 420, margin: "0 auto 0.85rem" }}>
+                        {SERVICE_BLURB[active]}
+                      </p>
+                      <p style={{ fontSize: "0.76rem", color: "var(--text-3)" }}>
+                        This service is active on your plan — updates and work will appear here, and the team will keep you posted in <button onClick={() => setSection("overview")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--accent)", fontWeight: 700, fontSize: "inherit", padding: 0 }}>Overview</button>.
+                      </p>
+                    </div>
+                  );
+                })()}
                 {active === "support" && supportSection}
                 {active === "files" && filesCard}
                 {active === "invoices" && invoicesCard}

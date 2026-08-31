@@ -58,9 +58,11 @@ export async function POST(request: Request) {
 
   const notes = [about && `About: ${about}`, `Signed up via kwinnovationshub.com.au/signup`]
     .filter(Boolean).join("\n");
+  // Self-signups start with every portal section locked (overview only) —
+  // staff unlock services from the hub once they've onboarded the client
   const client = (await sql`
-    INSERT INTO clients (business_name, contact_name, phone, email, website, notes, source)
-    VALUES (${business}, ${name}, ${phone || null}, ${email}, ${website || null}, ${notes}, 'signup')
+    INSERT INTO clients (business_name, contact_name, phone, email, website, notes, source, portal_modules)
+    VALUES (${business}, ${name}, ${phone || null}, ${email}, ${website || null}, ${notes}, 'signup', ${JSON.stringify(["overview"])})
     RETURNING id, business_name
   `)[0] as { id: number; business_name: string };
 
@@ -79,7 +81,8 @@ export async function POST(request: Request) {
     (phone ? `Phone: ${phone}\n` : "") +
     (website ? `Website: ${website}\n` : "") +
     (about ? `\nWhat they're after:\n${about}\n` : "") +
-    `\nView them in the hub: https://kwinnovationshub.com.au/clients/${client.id}`;
+    `\nTheir portal sections are locked until you enable them:\n` +
+    `https://kwinnovationshub.com.au/clients/${client.id}/portal`;
   await sendEmail({ to: SIGNUP_EMAIL, subject: `New client sign-up: ${business}`, text: summary });
   await sendPush("kye", {
     title: "New client sign-up",
