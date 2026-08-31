@@ -12,7 +12,7 @@ interface Task {
 
 export interface Notification {
   id: string;
-  type: "follow_up" | "task" | "stale" | "portal";
+  type: "follow_up" | "task" | "stale" | "portal" | "signup";
   title: string;
   detail: string;
   href: string;
@@ -48,7 +48,7 @@ export async function GET() {
   const session = await auth();
   const me = (session?.user?.name ?? "").toLowerCase();
 
-  const [potRows, taskRows, portalRows] = await Promise.all([
+  const [potRows, taskRows, portalRows, signupRows] = await Promise.all([
     sql`SELECT id, business_name, status, assigned_to, follow_up_date, updated_at FROM potentials`,
     sql`SELECT id, title, status, assigned_to, due_date FROM tasks WHERE status != 'done'`,
     sql`
@@ -57,10 +57,16 @@ export async function GET() {
       WHERE pm.author_role = 'client' AND pm.created_at > NOW() - INTERVAL '48 hours'
       ORDER BY pm.created_at DESC LIMIT 10
     `,
+    sql`
+      SELECT id, business_name, contact_name FROM clients
+      WHERE source = 'signup' AND created_at > NOW() - INTERVAL '7 days'
+      ORDER BY created_at DESC LIMIT 10
+    `,
   ]);
   const pots = potRows as unknown as Pot[];
   const tasks = taskRows as unknown as Task[];
   const portalMsgs = portalRows as unknown as { id: number; client_id: number; body: string; business_name: string }[];
+  const signups = signupRows as unknown as { id: number; business_name: string; contact_name: string | null }[];
 
   const items: Notification[] = [];
 
@@ -113,6 +119,17 @@ export async function GET() {
       title: m.business_name,
       detail: `Client message: "${m.body.length > 60 ? `${m.body.slice(0, 60)}…` : m.body}"`,
       href: `/clients/${m.client_id}/portal`,
+      urgency: "medium",
+    });
+  }
+
+  for (const s of signups) {
+    items.push({
+      id: `signup-${s.id}`,
+      type: "signup",
+      title: s.business_name,
+      detail: `New business signed up${s.contact_name ? ` — ${s.contact_name}` : ""}`,
+      href: `/clients/${s.id}`,
       urgency: "medium",
     });
   }

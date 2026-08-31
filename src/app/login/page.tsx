@@ -291,6 +291,13 @@ export default function LoginPage() {
                 >
                   Forgot password?
                 </button>
+
+                {audience === "client" && (
+                  <p style={{ fontSize: "0.78rem", color: "var(--text-3)", textAlign: "center", margin: 0 }}>
+                    New to KW Innovations?{" "}
+                    <a href="/signup" style={{ color: "var(--accent)", fontWeight: 700 }}>Sign up your business</a>
+                  </p>
+                )}
               </form>
             )}
 

@@ -21,6 +21,16 @@ export default auth((req) => {
     }
     return;
   }
+  if (path === "/signup" || path === "/sign-up") {
+    if (path === "/sign-up") {
+      return NextResponse.redirect(new URL("/signup", req.nextUrl.origin));
+    }
+    // Logged-in clients already have a portal — send them there
+    if (isLoggedIn && role === "client") {
+      return NextResponse.redirect(new URL("/portal", req.nextUrl.origin));
+    }
+    return;
+  }
   if (path === "/marketing") {
     return NextResponse.redirect(new URL("/portal?section=marketing", req.nextUrl.origin));
   }
