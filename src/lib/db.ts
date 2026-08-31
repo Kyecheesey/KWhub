@@ -28,7 +28,7 @@ export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promis
 let _migrated: Promise<void> | null = null;
 
 // Bump whenever a statement is added/changed below, so existing databases re-run the set.
-const SCHEMA_VERSION = "2026-08-27.1";
+const SCHEMA_VERSION = "2026-08-31.1";
 
 export function migrate(): Promise<void> {
   if (!_migrated) {
@@ -427,6 +427,36 @@ async function runMigrations() {
   `;
   await sql`CREATE INDEX IF NOT EXISTS post_comments_post_idx ON post_comments (post_id)`;
   await sql`ALTER TABLE post_comments ENABLE ROW LEVEL SECURITY`;
+  // Per-service portal content (SEO, Cybersecurity, AI, Systems sections):
+  // headline metrics staff keep current, and a feed of work updates.
+  await sql`
+    CREATE TABLE IF NOT EXISTS service_metrics (
+      id         SERIAL PRIMARY KEY,
+      client_id  INTEGER NOT NULL,
+      service    TEXT NOT NULL,
+      label      TEXT NOT NULL,
+      value      TEXT NOT NULL,
+      trend      TEXT,
+      trend_note TEXT,
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS service_metrics_client_idx ON service_metrics (client_id, service)`;
+  await sql`ALTER TABLE service_metrics ENABLE ROW LEVEL SECURITY`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS service_updates (
+      id         SERIAL PRIMARY KEY,
+      client_id  INTEGER NOT NULL,
+      service    TEXT NOT NULL,
+      title      TEXT NOT NULL,
+      body       TEXT,
+      created_by TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS service_updates_client_idx ON service_updates (client_id, service)`;
+  await sql`ALTER TABLE service_updates ENABLE ROW LEVEL SECURITY`;
   await sql`
     INSERT INTO settings (key, value) VALUES ('schema_version', ${SCHEMA_VERSION})
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()

@@ -7,7 +7,7 @@ import {
   ArrowLeft, Send, KeyRound, UserPlus, Trash2,
   MessageSquare, Building2, Eye, Rocket, Plus,
   ThumbsUp, FolderOpen, Upload, Receipt, ListChecks,
-  Check, Image as ImageIcon, ChevronRight, Briefcase,
+  Check, Image as ImageIcon, ChevronRight, Briefcase, Boxes,
 } from "lucide-react";
 
 interface ClientInfo { id: number; business_name: string; contact_name: string | null; assigned_to: string | null; logo_url: string | null; }
@@ -19,6 +19,15 @@ interface PortalFile { id: number; filename: string; url: string; size_bytes: nu
 interface Invoice { id: number; number: string; amount_cents: number; due_date: string | null; status: string; }
 interface ChecklistItem { id: number; text: string; done: boolean; }
 interface ClientJob { id: number; title: string; status: string; priority: string; assigned_to: string | null; due_date: string | null; visible_to_client?: boolean; }
+interface ServiceMetric { id: number; service: string; label: string; value: string; trend: string | null; trend_note: string | null; }
+interface ServiceUpdate { id: number; service: string; title: string; body: string | null; created_by: string | null; created_at: string; }
+
+const SERVICE_TABS = [
+  { key: "seo", label: "SEO" },
+  { key: "cybersecurity", label: "Cybersecurity" },
+  { key: "ai", label: "AI" },
+  { key: "systems", label: "Systems" },
+];
 
 const STAGES = ["Discovery", "Design", "Build", "Review", "Launch"];
 const JOB_COLUMNS = [
@@ -64,6 +73,11 @@ export default function ClientPortalAdminPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [clientJobs, setClientJobs] = useState<ClientJob[]>([]);
+  const [serviceMetrics, setServiceMetrics] = useState<ServiceMetric[]>([]);
+  const [serviceUpdates, setServiceUpdates] = useState<ServiceUpdate[]>([]);
+  const [svcTab, setSvcTab] = useState("seo");
+  const [newMetric, setNewMetric] = useState({ label: "", value: "", trend: "", trend_note: "" });
+  const [newUpdate, setNewUpdate] = useState({ title: "", body: "" });
   const [loading, setLoading] = useState(true);
 
   const [draft, setDraft] = useState("");
@@ -101,6 +115,10 @@ export default function ClientPortalAdminPage() {
     if (all || keys.includes("invoices")) jobs.push(j(`/api/portal/invoices${q}`, (d: Invoice[]) => setInvoices(Array.isArray(d) ? d : [])));
     if (all || keys.includes("checklist")) jobs.push(j(`/api/portal/checklist${q}`, (d: ChecklistItem[]) => setChecklist(Array.isArray(d) ? d : [])));
     if (all || keys.includes("clientJobs")) jobs.push(j(`/api/client-jobs${q}`, (d: ClientJob[]) => setClientJobs(Array.isArray(d) ? d : [])));
+    if (all || keys.includes("services")) jobs.push(j(`/api/portal/services${q}`, (d: { metrics: ServiceMetric[]; updates: ServiceUpdate[] }) => {
+      setServiceMetrics(Array.isArray(d?.metrics) ? d.metrics : []);
+      setServiceUpdates(Array.isArray(d?.updates) ? d.updates : []);
+    }));
     return Promise.all(jobs);
   }, [q]);
 
@@ -293,6 +311,125 @@ export default function ClientPortalAdminPage() {
                   ))}
                 </div>
               )}
+            </Section>
+
+            {/* Service sections: SEO / Cybersecurity / AI / Systems */}
+            <Section icon={Boxes} title="Service Sections" extra={
+              <span style={{ fontSize: "0.72rem", color: "var(--text-3)", fontWeight: 600 }}>
+                What the client sees in their SEO, Cybersecurity, AI and Systems tabs
+              </span>
+            }>
+              <div>
+                <div style={{ display: "flex", gap: "0.4rem", padding: "0.75rem 1.15rem 0.25rem", flexWrap: "wrap" }}>
+                  {SERVICE_TABS.map((t) => {
+                    const on = svcTab === t.key;
+                    const count = serviceMetrics.filter((m) => m.service === t.key).length + serviceUpdates.filter((u) => u.service === t.key).length;
+                    return (
+                      <button key={t.key} onClick={() => setSvcTab(t.key)} style={{
+                        padding: "0.35rem 0.75rem", borderRadius: 99, cursor: "pointer", fontSize: "0.76rem", fontWeight: 700,
+                        border: `1px solid ${on ? "rgba(79,70,229,0.35)" : "var(--border-2)"}`,
+                        background: on ? "rgba(79,70,229,0.1)" : "transparent",
+                        color: on ? "var(--accent)" : "var(--text-2)",
+                      }}>
+                        {t.label}{count > 0 && <span style={{ marginLeft: "0.3rem", color: "var(--text-4)", fontWeight: 600 }}>{count}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Headline metrics */}
+                <div style={{ padding: "0.6rem 1.15rem 0.2rem", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>Headline metrics</div>
+                {serviceMetrics.filter((m) => m.service === svcTab).map((m) => (
+                  <div key={m.id} style={{ padding: "0.55rem 1.15rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                    <span style={{ fontWeight: 700, fontSize: "0.82rem", flex: 1, minWidth: 120 }}>{m.label}</span>
+                    <input
+                      className="field" defaultValue={m.value} key={`${m.id}-${m.value}`}
+                      style={{ width: 110, minHeight: 0, padding: "0.3rem 0.55rem", fontSize: "0.8rem", fontWeight: 700 }}
+                      onBlur={async (e) => {
+                        const v = e.target.value.trim();
+                        if (!v || v === m.value) return;
+                        const data = await post("/api/portal/services", { kind: "metric", id: m.id, value: v }, "PATCH");
+                        if (data) { ok(`${m.label} updated.`); reload(["services"]); }
+                      }}
+                    />
+                    <select
+                      className="field" value={m.trend ?? ""}
+                      style={{ width: 105, minHeight: 0, padding: "0.3rem 0.4rem", fontSize: "0.76rem" }}
+                      onChange={async (e) => {
+                        const data = await post("/api/portal/services", { kind: "metric", id: m.id, trend: e.target.value || null }, "PATCH");
+                        if (data) reload(["services"]);
+                      }}
+                    >
+                      <option value="">No trend</option>
+                      <option value="up">▲ Up</option>
+                      <option value="down">▼ Down</option>
+                      <option value="flat">— Steady</option>
+                    </select>
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`Delete metric "${m.label}"?`)) return;
+                        await post("/api/portal/services", { kind: "metric", id: m.id }, "DELETE");
+                        reload(["services"]);
+                      }}
+                      className="btn-danger" style={{ minHeight: 0, padding: "0.3rem 0.5rem" }}
+                    ><Trash2 size={12} /></button>
+                  </div>
+                ))}
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!newMetric.label.trim() || !newMetric.value.trim()) return;
+                    const data = await post("/api/portal/services", { kind: "metric", service: svcTab, ...newMetric, trend: newMetric.trend || null });
+                    if (data) { setNewMetric({ label: "", value: "", trend: "", trend_note: "" }); ok("Metric added."); reload(["services"]); }
+                  }}
+                  style={{ display: "grid", gridTemplateColumns: "1.4fr 0.8fr 0.9fr 1.2fr auto", gap: "0.5rem", padding: "0.6rem 1.15rem 0.85rem" }}
+                >
+                  <input className="field" placeholder="Label — e.g. Avg. Google position" value={newMetric.label} onChange={(e) => setNewMetric({ ...newMetric, label: e.target.value })} />
+                  <input className="field" placeholder="Value — e.g. 8.2" value={newMetric.value} onChange={(e) => setNewMetric({ ...newMetric, value: e.target.value })} />
+                  <select className="field" value={newMetric.trend} onChange={(e) => setNewMetric({ ...newMetric, trend: e.target.value })}>
+                    <option value="">No trend</option>
+                    <option value="up">▲ Up</option>
+                    <option value="down">▼ Down</option>
+                    <option value="flat">— Steady</option>
+                  </select>
+                  <input className="field" placeholder="Trend note — e.g. up 3 spots this month" value={newMetric.trend_note} onChange={(e) => setNewMetric({ ...newMetric, trend_note: e.target.value })} />
+                  <button type="submit" className="btn-ghost" disabled={busy || !newMetric.label.trim() || !newMetric.value.trim()}><Plus size={14} /> Add</button>
+                </form>
+
+                {/* Updates feed */}
+                <div style={{ padding: "0.4rem 1.15rem 0.2rem", borderTop: "1px solid var(--border)", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>Updates the client sees</div>
+                {serviceUpdates.filter((u) => u.service === svcTab).map((u) => (
+                  <div key={u.id} style={{ padding: "0.6rem 1.15rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "flex-start", gap: "0.6rem" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: "0.83rem" }}>{u.title}</div>
+                      {u.body && <div style={{ fontSize: "0.75rem", color: "var(--text-3)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{u.body}</div>}
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`Delete update "${u.title}"?`)) return;
+                        await post("/api/portal/services", { kind: "update", id: u.id }, "DELETE");
+                        reload(["services"]);
+                      }}
+                      className="btn-danger" style={{ minHeight: 0, padding: "0.3rem 0.5rem", flexShrink: 0 }}
+                    ><Trash2 size={12} /></button>
+                  </div>
+                ))}
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!newUpdate.title.trim()) return;
+                    const data = await post("/api/portal/services", { kind: "update", service: svcTab, ...newUpdate });
+                    if (data) { setNewUpdate({ title: "", body: "" }); ok("Update posted — the client was notified."); reload(["services"]); }
+                  }}
+                  style={{ display: "grid", gap: "0.5rem", padding: "0.6rem 1.15rem 0.85rem" }}
+                >
+                  <input className="field" placeholder="Update headline — e.g. Blocked 42 intrusion attempts this week" value={newUpdate.title} onChange={(e) => setNewUpdate({ ...newUpdate, title: e.target.value })} />
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <input className="field" placeholder="Optional detail…" value={newUpdate.body} onChange={(e) => setNewUpdate({ ...newUpdate, body: e.target.value })} />
+                    <button type="submit" className="btn-ghost" disabled={busy || !newUpdate.title.trim()}><Send size={13} /> Post</button>
+                  </div>
+                </form>
+              </div>
             </Section>
 
             {/* Approvals */}

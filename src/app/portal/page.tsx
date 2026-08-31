@@ -40,6 +40,8 @@ interface Post {
 }
 interface PostComment { id: number; author: string | null; author_role: string; body: string; created_at: string; }
 interface SupportTicket { id: number; title: string; description: string | null; status: string; priority: string; created_at: string; updated_at: string; }
+interface ServiceMetric { id: number; service: string; label: string; value: string; trend: string | null; trend_note: string | null; updated_at: string; }
+interface ServiceUpdate { id: number; service: string; title: string; body: string | null; created_by: string | null; created_at: string; }
 
 const JOB_STATUS: Record<string, { label: string; color: string }> = {
   todo: { label: "Queued", color: "#60a5fa" },
@@ -122,6 +124,8 @@ export default function PortalPage() {
   const { data: session } = useSession();
   const [client, setClient] = useState<ClientInfo | null>(null);
   const [modules, setModules] = useState<string[]>(["overview"]);
+  const [serviceMetrics, setServiceMetrics] = useState<ServiceMetric[]>([]);
+  const [serviceUpdates, setServiceUpdates] = useState<ServiceUpdate[]>([]);
   // Deep links: /portal?section=support (via /it-support) opens that tab directly
   const [section, setSection] = useState(() =>
     typeof window === "undefined"
@@ -215,7 +219,8 @@ export default function PortalPage() {
       fetch(`/api/portal/modules${qs}`).then((r) => r.json()),
       fetch(`/api/portal/posts${qs}`).then((r) => r.json()),
       fetch(`/api/portal/support${qs}`).then((r) => r.json()),
-    ]).then(([me, msgs, projs, apprs, fls, invs, chk, jbs, mods, psts, tkts]) => {
+      fetch(`/api/portal/services${qs}`).then((r) => r.json()),
+    ]).then(([me, msgs, projs, apprs, fls, invs, chk, jbs, mods, psts, tkts, svcs]) => {
       if (cancelled) return;
       if (!me.error) setClient(me);
       if (Array.isArray(msgs)) setMessages(msgs);
@@ -228,6 +233,8 @@ export default function PortalPage() {
       if (Array.isArray(mods?.enabled)) setModules(mods.enabled);
       if (Array.isArray(psts)) setPosts(psts);
       if (Array.isArray(tkts)) setTickets(tkts);
+      if (Array.isArray(svcs?.metrics)) setServiceMetrics(svcs.metrics);
+      if (Array.isArray(svcs?.updates)) setServiceUpdates(svcs.updates);
       setLoading(false);
     });
     const interval = setInterval(() => { loadMessages(); loadApprovals(); loadPosts(); }, POLL_MS);
@@ -1126,19 +1133,84 @@ export default function PortalPage() {
                 {SERVICE_BLURB[active] && (() => {
                   const s = SECTIONS.find((x) => x.key === active)!;
                   const Icon = s.icon;
-                  return (
-                    <div className="card fade-up" style={{ padding: "2rem 1.5rem", textAlign: "center" }}>
-                      <div style={{ width: 48, height: 48, borderRadius: 14, margin: "0 auto 0.85rem", background: "rgba(79,70,229,0.08)", border: "1px solid rgba(79,70,229,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Icon size={22} color="var(--accent)" />
+                  const metrics = serviceMetrics.filter((m) => m.service === active);
+                  const updates = serviceUpdates.filter((u) => u.service === active);
+                  const TREND: Record<string, { glyph: string; color: string }> = {
+                    up: { glyph: "▲", color: "#059669" },
+                    down: { glyph: "▼", color: "#dc2626" },
+                    flat: { glyph: "—", color: "var(--text-3)" },
+                  };
+                  if (metrics.length === 0 && updates.length === 0) {
+                    return (
+                      <div className="card fade-up" style={{ padding: "2rem 1.5rem", textAlign: "center" }}>
+                        <div style={{ width: 48, height: 48, borderRadius: 14, margin: "0 auto 0.85rem", background: "rgba(79,70,229,0.08)", border: "1px solid rgba(79,70,229,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <Icon size={22} color="var(--accent)" />
+                        </div>
+                        <h2 style={{ fontSize: "1.1rem", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: "0.35rem" }}>{s.label}</h2>
+                        <p style={{ fontSize: "0.85rem", color: "var(--text-2)", lineHeight: 1.6, maxWidth: 420, margin: "0 auto 0.85rem" }}>
+                          {SERVICE_BLURB[active]}
+                        </p>
+                        <p style={{ fontSize: "0.76rem", color: "var(--text-3)" }}>
+                          This service is active on your plan — the team&apos;s first update will appear here shortly.
+                        </p>
                       </div>
-                      <h2 style={{ fontSize: "1.1rem", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: "0.35rem" }}>{s.label}</h2>
-                      <p style={{ fontSize: "0.85rem", color: "var(--text-2)", lineHeight: 1.6, maxWidth: 420, margin: "0 auto 0.85rem" }}>
-                        {SERVICE_BLURB[active]}
-                      </p>
-                      <p style={{ fontSize: "0.76rem", color: "var(--text-3)" }}>
-                        This service is active on your plan — updates and work will appear here, and the team will keep you posted in <button onClick={() => setSection("overview")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--accent)", fontWeight: 700, fontSize: "inherit", padding: 0 }}>Overview</button>.
-                      </p>
-                    </div>
+                    );
+                  }
+                  return (
+                    <>
+                      {/* Section header */}
+                      <div className="fade-up" style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(79,70,229,0.08)", border: "1px solid rgba(79,70,229,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Icon size={19} color="var(--accent)" />
+                        </div>
+                        <div>
+                          <h2 style={{ fontSize: "1.1rem", fontWeight: 900, letterSpacing: "-0.02em", lineHeight: 1.2 }}>{s.label}</h2>
+                          <p style={{ fontSize: "0.76rem", color: "var(--text-3)" }}>{SERVICE_BLURB[active]}</p>
+                        </div>
+                      </div>
+
+                      {/* Headline metrics */}
+                      {metrics.length > 0 && (
+                        <div className="fade-up" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "0.75rem", marginBottom: "1rem" }}>
+                          {metrics.map((m) => {
+                            const t = m.trend ? TREND[m.trend] : null;
+                            return (
+                              <div key={m.id} className="card" style={{ padding: "0.9rem 1rem" }}>
+                                <div style={{ fontSize: "0.64rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)", marginBottom: "0.3rem" }}>{m.label}</div>
+                                <div style={{ fontSize: "1.35rem", fontWeight: 900, letterSpacing: "-0.02em", lineHeight: 1.1 }}>{m.value}</div>
+                                {(t || m.trend_note) && (
+                                  <div style={{ marginTop: "0.35rem", fontSize: "0.7rem", fontWeight: 700, color: t?.color ?? "var(--text-3)", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                                    {t && <span aria-hidden="true">{t.glyph}</span>}
+                                    <span style={{ color: "var(--text-3)", fontWeight: 600 }}>{m.trend_note ?? (m.trend === "up" ? "Trending up" : m.trend === "down" ? "Trending down" : "Steady")}</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Updates feed */}
+                      <div className="card fade-up" style={{ animationDelay: "0.06s" }}>
+                        <div style={{ padding: "1rem 1.15rem 0.6rem", fontWeight: 800, fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <CalendarClock size={15} color="var(--accent)" /> Latest from the team
+                        </div>
+                        {updates.length === 0 ? (
+                          <p style={{ padding: "0 1.15rem 1.15rem", fontSize: "0.8rem", color: "var(--text-3)" }}>
+                            No updates yet — the team&apos;s first {s.label} update will appear here.
+                          </p>
+                        ) : updates.map((u) => (
+                          <div key={u.id} style={{ padding: "0.85rem 1.15rem", borderTop: "1px solid var(--border)" }}>
+                            <div style={{ display: "flex", alignItems: "baseline", gap: "0.6rem", flexWrap: "wrap" }}>
+                              <span style={{ fontWeight: 700, fontSize: "0.86rem", flex: 1, minWidth: 160 }}>{u.title}</span>
+                              <span style={{ fontSize: "0.68rem", color: "var(--text-4)" }}>{msgTime(u.created_at)}</span>
+                            </div>
+                            {u.body && <p style={{ fontSize: "0.8rem", color: "var(--text-2)", lineHeight: 1.55, marginTop: "0.3rem", whiteSpace: "pre-wrap" }}>{u.body}</p>}
+                            {u.created_by && <p style={{ fontSize: "0.66rem", color: "var(--text-4)", marginTop: "0.3rem" }}>— {u.created_by}, KW Innovations</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   );
                 })()}
                 {active === "support" && supportSection}
