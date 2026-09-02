@@ -40,7 +40,7 @@ interface Post {
 }
 interface PostComment { id: number; author: string | null; author_role: string; body: string; created_at: string; }
 interface SupportTicket { id: number; title: string; description: string | null; status: string; priority: string; created_at: string; updated_at: string; }
-interface ServiceMetric { id: number; service: string; label: string; value: string; trend: string | null; trend_note: string | null; updated_at: string; }
+interface ServiceMetric { id: number; service: string; label: string; value: string; trend: string | null; trend_note: string | null; source_key: string | null; updated_at: string; }
 interface ServiceUpdate { id: number; service: string; title: string; body: string | null; created_by: string | null; created_at: string; }
 
 const JOB_STATUS: Record<string, { label: string; color: string }> = {
@@ -74,6 +74,64 @@ const SERVICE_BLURB: Record<string, string> = {
   ai: "AI and automation solutions built around how your business runs.",
   systems: "Your business systems and operations tooling — your ops, one login.",
 };
+
+const METRIC_TREND: Record<string, { glyph: string; color: string }> = {
+  up: { glyph: "▲", color: "#059669" },
+  down: { glyph: "▼", color: "#dc2626" },
+  flat: { glyph: "—", color: "var(--text-3)" },
+};
+
+function MetricTiles({ metrics }: { metrics: ServiceMetric[] }) {
+  if (metrics.length === 0) return null;
+  return (
+    <div className="fade-up" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "0.75rem", marginBottom: "1rem" }}>
+      {metrics.map((m) => {
+        const t = m.trend ? METRIC_TREND[m.trend] : null;
+        return (
+          <div key={m.id} className="card" style={{ padding: "0.9rem 1rem" }}>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "0.4rem", marginBottom: "0.3rem" }}>
+              <span style={{ fontSize: "0.64rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>{m.label}</span>
+              {m.source_key && (
+                <span title={`Live data · updated ${msgTime(m.updated_at)}`} style={{ fontSize: "0.58rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "#059669", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 99, padding: "0.08rem 0.4rem", flexShrink: 0 }}>Live</span>
+              )}
+            </div>
+            <div style={{ fontSize: "1.35rem", fontWeight: 900, letterSpacing: "-0.02em", lineHeight: 1.1 }}>{m.value}</div>
+            {(t || m.trend_note) && (
+              <div style={{ marginTop: "0.35rem", fontSize: "0.7rem", fontWeight: 700, color: t?.color ?? "var(--text-3)", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                {t && <span aria-hidden="true">{t.glyph}</span>}
+                <span style={{ color: "var(--text-3)", fontWeight: 600 }}>{m.trend_note ?? (m.trend === "up" ? "Trending up" : m.trend === "down" ? "Trending down" : "Steady")}</span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function UpdatesLog({ updates, label }: { updates: ServiceUpdate[]; label: string }) {
+  return (
+    <div className="card fade-up" style={{ animationDelay: "0.06s" }}>
+      <div style={{ padding: "1rem 1.15rem 0.6rem", fontWeight: 800, fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <CalendarClock size={15} color="var(--accent)" /> Latest from the team
+      </div>
+      {updates.length === 0 ? (
+        <p style={{ padding: "0 1.15rem 1.15rem", fontSize: "0.8rem", color: "var(--text-3)" }}>
+          No updates yet — the team&apos;s first {label} update will appear here.
+        </p>
+      ) : updates.map((u) => (
+        <div key={u.id} style={{ padding: "0.85rem 1.15rem", borderTop: "1px solid var(--border)" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "0.6rem", flexWrap: "wrap" }}>
+            <span style={{ fontWeight: 700, fontSize: "0.86rem", flex: 1, minWidth: 160 }}>{u.title}</span>
+            <span style={{ fontSize: "0.68rem", color: "var(--text-4)" }}>{msgTime(u.created_at)}</span>
+          </div>
+          {u.body && <p style={{ fontSize: "0.8rem", color: "var(--text-2)", lineHeight: 1.55, marginTop: "0.3rem", whiteSpace: "pre-wrap" }}>{u.body}</p>}
+          {u.created_by && <p style={{ fontSize: "0.66rem", color: "var(--text-4)", marginTop: "0.3rem" }}>— {u.created_by}, KW Innovations</p>}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function msgTime(iso: string) {
   return new Date(iso).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
@@ -1121,8 +1179,12 @@ export default function PortalPage() {
                 {active === "marketing" && marketingSection}
                 {(active === "websites" || active === "apps") && (
                   <>
+                    <MetricTiles metrics={serviceMetrics.filter((m) => m.service === active)} />
                     {jobsCard}
                     {projectsCard}
+                    {serviceUpdates.some((u) => u.service === active) && (
+                      <UpdatesLog updates={serviceUpdates.filter((u) => u.service === active)} label={active === "apps" ? "Apps" : "Websites"} />
+                    )}
                     {!jobsCard && !projectsCard && (
                       <div className="card fade-up" style={{ padding: "1.5rem", textAlign: "center", fontSize: "0.82rem", color: "var(--text-3)" }}>
                         Nothing in flight right now — active {active === "apps" ? "app" : "website"} projects and work will show up here.
@@ -1135,11 +1197,6 @@ export default function PortalPage() {
                   const Icon = s.icon;
                   const metrics = serviceMetrics.filter((m) => m.service === active);
                   const updates = serviceUpdates.filter((u) => u.service === active);
-                  const TREND: Record<string, { glyph: string; color: string }> = {
-                    up: { glyph: "▲", color: "#059669" },
-                    down: { glyph: "▼", color: "#dc2626" },
-                    flat: { glyph: "—", color: "var(--text-3)" },
-                  };
                   if (metrics.length === 0 && updates.length === 0) {
                     return (
                       <div className="card fade-up" style={{ padding: "2rem 1.5rem", textAlign: "center" }}>
@@ -1169,47 +1226,8 @@ export default function PortalPage() {
                         </div>
                       </div>
 
-                      {/* Headline metrics */}
-                      {metrics.length > 0 && (
-                        <div className="fade-up" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "0.75rem", marginBottom: "1rem" }}>
-                          {metrics.map((m) => {
-                            const t = m.trend ? TREND[m.trend] : null;
-                            return (
-                              <div key={m.id} className="card" style={{ padding: "0.9rem 1rem" }}>
-                                <div style={{ fontSize: "0.64rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)", marginBottom: "0.3rem" }}>{m.label}</div>
-                                <div style={{ fontSize: "1.35rem", fontWeight: 900, letterSpacing: "-0.02em", lineHeight: 1.1 }}>{m.value}</div>
-                                {(t || m.trend_note) && (
-                                  <div style={{ marginTop: "0.35rem", fontSize: "0.7rem", fontWeight: 700, color: t?.color ?? "var(--text-3)", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                                    {t && <span aria-hidden="true">{t.glyph}</span>}
-                                    <span style={{ color: "var(--text-3)", fontWeight: 600 }}>{m.trend_note ?? (m.trend === "up" ? "Trending up" : m.trend === "down" ? "Trending down" : "Steady")}</span>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* Updates feed */}
-                      <div className="card fade-up" style={{ animationDelay: "0.06s" }}>
-                        <div style={{ padding: "1rem 1.15rem 0.6rem", fontWeight: 800, fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                          <CalendarClock size={15} color="var(--accent)" /> Latest from the team
-                        </div>
-                        {updates.length === 0 ? (
-                          <p style={{ padding: "0 1.15rem 1.15rem", fontSize: "0.8rem", color: "var(--text-3)" }}>
-                            No updates yet — the team&apos;s first {s.label} update will appear here.
-                          </p>
-                        ) : updates.map((u) => (
-                          <div key={u.id} style={{ padding: "0.85rem 1.15rem", borderTop: "1px solid var(--border)" }}>
-                            <div style={{ display: "flex", alignItems: "baseline", gap: "0.6rem", flexWrap: "wrap" }}>
-                              <span style={{ fontWeight: 700, fontSize: "0.86rem", flex: 1, minWidth: 160 }}>{u.title}</span>
-                              <span style={{ fontSize: "0.68rem", color: "var(--text-4)" }}>{msgTime(u.created_at)}</span>
-                            </div>
-                            {u.body && <p style={{ fontSize: "0.8rem", color: "var(--text-2)", lineHeight: 1.55, marginTop: "0.3rem", whiteSpace: "pre-wrap" }}>{u.body}</p>}
-                            {u.created_by && <p style={{ fontSize: "0.66rem", color: "var(--text-4)", marginTop: "0.3rem" }}>— {u.created_by}, KW Innovations</p>}
-                          </div>
-                        ))}
-                      </div>
+                      <MetricTiles metrics={metrics} />
+                      <UpdatesLog updates={updates} label={s.label} />
                     </>
                   );
                 })()}

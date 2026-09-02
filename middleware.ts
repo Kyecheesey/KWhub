@@ -61,9 +61,12 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/", req.nextUrl.origin));
   }
 
-  if (path.startsWith("/management")) {
+  if (path.startsWith("/management") || path.startsWith("/directions") || path.startsWith("/api/directions")) {
     const name = (req.auth?.user?.name ?? "").toLowerCase();
     if (name !== "kye") {
+      if (path.startsWith("/api/")) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
       return NextResponse.redirect(new URL("/", req.nextUrl.origin));
     }
   }

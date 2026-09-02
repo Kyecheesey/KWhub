@@ -8,9 +8,9 @@ import { notifyClient } from "@/lib/portalNotify";
  * updates. Clients read; staff write.
  */
 
-const SERVICES = ["seo", "cybersecurity", "ai", "systems"] as const;
+const SERVICES = ["websites", "apps", "seo", "cybersecurity", "ai", "systems"] as const;
 const SERVICE_LABEL: Record<string, string> = {
-  seo: "SEO", cybersecurity: "Cybersecurity", ai: "AI", systems: "Systems",
+  websites: "Websites", apps: "Apps", seo: "SEO", cybersecurity: "Cybersecurity", ai: "AI", systems: "Systems",
 };
 const TRENDS = ["up", "down", "flat"];
 
@@ -18,7 +18,7 @@ function validService(s: unknown): s is (typeof SERVICES)[number] {
   return typeof s === "string" && (SERVICES as readonly string[]).includes(s);
 }
 
-// GET → { metrics, updates } for every service at once
+// GET → { metrics, updates } for every service at once (+ source config for staff)
 export async function GET(request: Request) {
   await migrate();
   const r = await resolvePortalScope(request);
@@ -27,7 +27,26 @@ export async function GET(request: Request) {
     sql`SELECT * FROM service_metrics WHERE client_id = ${r.scope.clientId} ORDER BY service, id ASC`,
     sql`SELECT * FROM service_updates WHERE client_id = ${r.scope.clientId} ORDER BY created_at DESC LIMIT 100`,
   ]);
-  return Response.json({ metrics, updates });
+  if (r.scope.role !== "staff") return Response.json({ metrics, updates });
+  const cfg = await sql`SELECT website, gsc_site, vercel_project_id FROM clients WHERE id = ${r.scope.clientId}`;
+  return Response.json({ metrics, updates, config: cfg[0] ?? null });
+}
+
+// PUT {gsc_site?, vercel_project_id?} → save live-metric sources (staff only)
+export async function PUT(request: Request) {
+  await migrate();
+  const body = await request.json();
+  const r = await resolvePortalScope(request, { staffOnly: true, bodyClientId: body.client_id ?? null });
+  if ("error" in r) return r.error;
+  const rows = await sql`
+    UPDATE clients SET
+      gsc_site = ${body.gsc_site?.trim() || null},
+      vercel_project_id = ${body.vercel_project_id?.trim() || null}
+    WHERE id = ${r.scope.clientId}
+    RETURNING gsc_site, vercel_project_id
+  `;
+  if (rows.length === 0) return Response.json({ error: "Client not found" }, { status: 404 });
+  return Response.json(rows[0]);
 }
 
 // POST {kind:'metric', service, label, value, trend?, trend_note?}

@@ -19,10 +19,13 @@ interface PortalFile { id: number; filename: string; url: string; size_bytes: nu
 interface Invoice { id: number; number: string; amount_cents: number; due_date: string | null; status: string; }
 interface ChecklistItem { id: number; text: string; done: boolean; }
 interface ClientJob { id: number; title: string; status: string; priority: string; assigned_to: string | null; due_date: string | null; visible_to_client?: boolean; }
-interface ServiceMetric { id: number; service: string; label: string; value: string; trend: string | null; trend_note: string | null; }
+interface ServiceMetric { id: number; service: string; label: string; value: string; trend: string | null; trend_note: string | null; source_key: string | null; }
 interface ServiceUpdate { id: number; service: string; title: string; body: string | null; created_by: string | null; created_at: string; }
+interface ServiceConfig { website: string | null; gsc_site: string | null; vercel_project_id: string | null; }
 
 const SERVICE_TABS = [
+  { key: "websites", label: "Websites" },
+  { key: "apps", label: "Apps" },
   { key: "seo", label: "SEO" },
   { key: "cybersecurity", label: "Cybersecurity" },
   { key: "ai", label: "AI" },
@@ -78,6 +81,9 @@ export default function ClientPortalAdminPage() {
   const [svcTab, setSvcTab] = useState("seo");
   const [newMetric, setNewMetric] = useState({ label: "", value: "", trend: "", trend_note: "" });
   const [newUpdate, setNewUpdate] = useState({ title: "", body: "" });
+  const [svcConfig, setSvcConfig] = useState({ gsc_site: "", vercel_project_id: "" });
+  const [monitoredSite, setMonitoredSite] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [draft, setDraft] = useState("");
@@ -115,9 +121,13 @@ export default function ClientPortalAdminPage() {
     if (all || keys.includes("invoices")) jobs.push(j(`/api/portal/invoices${q}`, (d: Invoice[]) => setInvoices(Array.isArray(d) ? d : [])));
     if (all || keys.includes("checklist")) jobs.push(j(`/api/portal/checklist${q}`, (d: ChecklistItem[]) => setChecklist(Array.isArray(d) ? d : [])));
     if (all || keys.includes("clientJobs")) jobs.push(j(`/api/client-jobs${q}`, (d: ClientJob[]) => setClientJobs(Array.isArray(d) ? d : [])));
-    if (all || keys.includes("services")) jobs.push(j(`/api/portal/services${q}`, (d: { metrics: ServiceMetric[]; updates: ServiceUpdate[] }) => {
+    if (all || keys.includes("services")) jobs.push(j(`/api/portal/services${q}`, (d: { metrics: ServiceMetric[]; updates: ServiceUpdate[]; config: ServiceConfig | null }) => {
       setServiceMetrics(Array.isArray(d?.metrics) ? d.metrics : []);
       setServiceUpdates(Array.isArray(d?.updates) ? d.updates : []);
+      if (d?.config) {
+        setSvcConfig({ gsc_site: d.config.gsc_site ?? "", vercel_project_id: d.config.vercel_project_id ?? "" });
+        setMonitoredSite(d.config.website);
+      }
     }));
     return Promise.all(jobs);
   }, [q]);
@@ -320,6 +330,39 @@ export default function ClientPortalAdminPage() {
               </span>
             }>
               <div>
+                {/* Live data sources */}
+                <div style={{ padding: "0.85rem 1.15rem", borderBottom: "1px solid var(--border)", display: "grid", gap: "0.5rem" }}>
+                  <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>
+                    Live data sources
+                    <span style={{ fontWeight: 600, textTransform: "none", letterSpacing: 0, marginLeft: "0.5rem" }}>
+                      {monitoredSite ? `Uptime monitors ${monitoredSite}` : "Set the client's website to enable uptime monitoring"}
+                    </span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto auto", gap: "0.5rem" }}>
+                    <input className="field" placeholder="Search Console property — e.g. sc-domain:client.com.au" value={svcConfig.gsc_site} onChange={(e) => setSvcConfig({ ...svcConfig, gsc_site: e.target.value })} />
+                    <input className="field" placeholder="Vercel project ID — e.g. prj_abc123" value={svcConfig.vercel_project_id} onChange={(e) => setSvcConfig({ ...svcConfig, vercel_project_id: e.target.value })} />
+                    <button
+                      className="btn-ghost" disabled={busy}
+                      onClick={async () => {
+                        const data = await post("/api/portal/services", svcConfig, "PUT");
+                        if (data) ok("Live sources saved.");
+                      }}
+                    ><Check size={13} /> Save</button>
+                    <button
+                      className="btn-ghost" disabled={syncing}
+                      onClick={async () => {
+                        setSyncing(true);
+                        const data = await post("/api/portal/services/sync", {});
+                        setSyncing(false);
+                        if (data) {
+                          ok(data.synced?.length ? `Synced: ${data.synced.join(", ")}.` : "Nothing to sync — configure a source first.");
+                          reload(["services"]);
+                        }
+                      }}
+                    >{syncing ? "Syncing…" : "Sync now"}</button>
+                  </div>
+                </div>
+
                 <div style={{ display: "flex", gap: "0.4rem", padding: "0.75rem 1.15rem 0.25rem", flexWrap: "wrap" }}>
                   {SERVICE_TABS.map((t) => {
                     const on = svcTab === t.key;
@@ -339,7 +382,13 @@ export default function ClientPortalAdminPage() {
 
                 {/* Headline metrics */}
                 <div style={{ padding: "0.6rem 1.15rem 0.2rem", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>Headline metrics</div>
-                {serviceMetrics.filter((m) => m.service === svcTab).map((m) => (
+                {serviceMetrics.filter((m) => m.service === svcTab).map((m) => m.source_key ? (
+                  <div key={m.id} style={{ padding: "0.55rem 1.15rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                    <span style={{ fontWeight: 700, fontSize: "0.82rem", flex: 1, minWidth: 120 }}>{m.label}</span>
+                    <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: "0.82rem", fontWeight: 700 }}>{m.value}</span>
+                    <span style={{ fontSize: "0.6rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "#059669", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 99, padding: "0.1rem 0.45rem" }}>Live</span>
+                  </div>
+                ) : (
                   <div key={m.id} style={{ padding: "0.55rem 1.15rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
                     <span style={{ fontWeight: 700, fontSize: "0.82rem", flex: 1, minWidth: 120 }}>{m.label}</span>
                     <input

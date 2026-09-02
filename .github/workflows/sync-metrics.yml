@@ -1,0 +1,24 @@
+# Refreshes live client metrics (uptime pings, Search Console, Vercel
+# analytics) by hitting the hub's cron endpoint. Vercel's Hobby plan only
+# allows daily crons, so the hourly tick runs here instead (the vercel.json
+# daily cron remains as a backstop).
+# Requires a repository secret CRON_SECRET matching Vercel's CRON_SECRET.
+name: Sync live metrics
+
+on:
+  schedule:
+    - cron: "10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call sync-metrics endpoint
+        run: |
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "CRON_SECRET repository secret is not set — skipping." && exit 0
+          fi
+          curl -sS --fail-with-body \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://www.kwinnovationshub.com.au/api/cron/sync-metrics"
