@@ -176,7 +176,7 @@ export default function DirectionsPage() {
           <Sparkles size={16} color="var(--accent)" />
           <div>
             <div style={{ fontWeight: 800, fontSize: "0.92rem" }}>Growth advisor</div>
-            <div style={{ fontSize: "0.7rem", color: "var(--text-3)" }}>Claude, briefed with the live numbers above — ask it how to grow the business.</div>
+            <div style={{ fontSize: "0.7rem", color: "var(--text-3)" }}>Claude via DigitalOcean, briefed with the live numbers above — ask it how to grow the business.</div>
           </div>
         </div>
 

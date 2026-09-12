@@ -1,16 +1,20 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { migrate } from "@/lib/db";
 import { auth } from "../../../../../auth";
 import { xeroSnapshot } from "@/lib/xero";
 import { growthSnapshot } from "@/lib/growth";
 
 /**
- * The Directions AI advisor: Claude with the live Xero + growth snapshot in
- * context, advising on how to grow the business. Kye-only. Requires
- * ANTHROPIC_API_KEY.
+ * The Directions AI advisor: a Claude model served via DigitalOcean Gradient
+ * serverless inference (OpenAI-compatible API), with the live Xero + growth
+ * snapshot in context, advising on how to grow the business. Kye-only.
+ * Requires DIGITALOCEAN_INFERENCE_KEY (a Gradient model access key);
+ * DIGITALOCEAN_INFERENCE_MODEL optionally overrides the model.
  */
 
 export const maxDuration = 60;
+
+const DO_INFERENCE_URL = "https://inference.do-ai.run/v1/chat/completions";
+const DEFAULT_MODEL = "anthropic-claude-opus-4.6";
 
 const SYSTEM = `You are the strategic business advisor inside the KW | Innovations Hub, working directly with Kye, the director.
 
@@ -20,14 +24,16 @@ You are given a live snapshot of the business (Xero financials and hub growth nu
 
 Keep answers tight: a short read of the situation, then numbered actions. Use Australian dollars.`;
 
+type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
+
 export async function POST(request: Request) {
   await migrate();
   const session = await auth();
   if ((session?.user?.name ?? "").toLowerCase() !== "kye") {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return Response.json({ error: "The AI advisor isn't configured yet — add ANTHROPIC_API_KEY to the environment." }, { status: 503 });
+  if (!process.env.DIGITALOCEAN_INFERENCE_KEY) {
+    return Response.json({ error: "The AI advisor isn't configured yet — add DIGITALOCEAN_INFERENCE_KEY to the environment." }, { status: 503 });
   }
 
   const body = await request.json().catch(() => null);
@@ -36,7 +42,7 @@ export async function POST(request: Request) {
   if (question.length > 4000) return Response.json({ error: "That question is a bit long — please shorten it." }, { status: 400 });
 
   // Prior turns from the client, replayed as plain text (capped)
-  const history: Anthropic.MessageParam[] = Array.isArray(body?.history)
+  const history: ChatMessage[] = Array.isArray(body?.history)
     ? (body.history as { role: string; text: string }[])
         .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.text === "string")
         .slice(-10)
@@ -51,31 +57,41 @@ export async function POST(request: Request) {
     `(Amounts from the hub are in cents; Xero amounts are in dollars. If Xero shows configured:false, say the financial picture is limited until Xero is connected.)`;
 
   try {
-    const client = new Anthropic();
-    const response = await client.messages.create({
-      model: "claude-opus-5",
-      max_tokens: 3000,
-      system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
-      messages: [...history, { role: "user", content: `${snapshot}\n\nKye asks: ${question}` }],
+    const res = await fetch(DO_INFERENCE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.DIGITALOCEAN_INFERENCE_KEY}`,
+      },
+      body: JSON.stringify({
+        model: process.env.DIGITALOCEAN_INFERENCE_MODEL ?? DEFAULT_MODEL,
+        max_tokens: 3000,
+        messages: [
+          { role: "system", content: SYSTEM },
+          ...history,
+          { role: "user", content: `${snapshot}\n\nKye asks: ${question}` },
+        ] satisfies ChatMessage[],
+      }),
     });
-    if (response.stop_reason === "refusal") {
-      return Response.json({ error: "The advisor declined to answer that one — try rephrasing." }, { status: 422 });
+
+    if (res.status === 401 || res.status === 403) {
+      return Response.json({ error: "The advisor's API key is invalid — check DIGITALOCEAN_INFERENCE_KEY." }, { status: 503 });
     }
-    const text = response.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("\n");
-    return Response.json({ answer: text });
-  } catch (err) {
-    if (err instanceof Anthropic.RateLimitError) {
+    if (res.status === 429) {
       return Response.json({ error: "The advisor is rate limited — try again in a minute." }, { status: 429 });
     }
-    if (err instanceof Anthropic.AuthenticationError) {
-      return Response.json({ error: "The advisor's API key is invalid — check ANTHROPIC_API_KEY." }, { status: 503 });
+    if (!res.ok) {
+      return Response.json({ error: `Advisor error (${res.status}) — try again shortly.` }, { status: 502 });
     }
-    if (err instanceof Anthropic.APIError) {
-      return Response.json({ error: `Advisor error (${err.status}) — try again shortly.` }, { status: 502 });
+
+    const data = await res.json();
+    const choice = data?.choices?.[0];
+    const text = typeof choice?.message?.content === "string" ? choice.message.content.trim() : "";
+    if (!text || choice?.finish_reason === "content_filter") {
+      return Response.json({ error: "The advisor declined to answer that one — try rephrasing." }, { status: 422 });
     }
+    return Response.json({ answer: text });
+  } catch {
     return Response.json({ error: "The advisor couldn't be reached — try again shortly." }, { status: 502 });
   }
 }
