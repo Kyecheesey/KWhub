@@ -20,8 +20,13 @@ export async function GET(request: Request) {
 
   const [rows, settings] = await Promise.all([
     sql`
-      SELECT id, business_name, contact_name, phone, email, website, assigned_to, logo_url
-      FROM clients WHERE id = ${clientId}
+      SELECT c.id, c.business_name, c.contact_name, c.phone, c.email, c.website, c.assigned_to, c.logo_url,
+        CASE WHEN p.id IS NULL THEN NULL ELSE json_build_object(
+          'name', p.name, 'logo_url', p.logo_url, 'accent_color', p.accent_color
+        ) END AS partner
+      FROM clients c
+      LEFT JOIN partners p ON p.id = c.partner_id
+      WHERE c.id = ${clientId}
     `,
     sql`SELECT value FROM settings WHERE key = 'booking_url'`,
   ]);
