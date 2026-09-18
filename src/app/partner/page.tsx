@@ -45,6 +45,11 @@ interface Todo { id: number; text: string; done: boolean; created_at: string }
 
 const DEFAULT_ACCENT = "#7c3aed";
 
+// Content planner rollout switch: false shows a polished "not ready yet"
+// panel on the Content tab (everything else stays live). Flip to true and
+// redeploy when it's ready for partners to use.
+const CONTENT_READY = false;
+
 const card: React.CSSProperties = {
   background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16,
 };
@@ -170,7 +175,10 @@ export default function PartnerWorkspace() {
     return swrJson<Todo[]>("/api/partner/todos", (data) => setTodos(Array.isArray(data) ? data : []));
   }, []);
 
-  useEffect(() => { load(); loadPosts(); loadJobs(); loadTodos(); }, [load, loadPosts, loadJobs, loadTodos]);
+  useEffect(() => {
+    load(); loadJobs(); loadTodos();
+    if (CONTENT_READY) loadPosts(); // skip a request while the planner is gated
+  }, [load, loadPosts, loadJobs, loadTodos]);
 
   function flash(ok: boolean, text: string) {
     setMsg({ ok, text });
@@ -522,13 +530,17 @@ export default function PartnerWorkspace() {
 
       {/* ── Stats ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0.75rem", marginBottom: "1.25rem" }}>
-        {[
+        {(CONTENT_READY ? [
           { label: "Clients", value: stats.clients, icon: Users, color: accent, bg: `${accent}1a` },
           { label: "Scheduled this week", value: stats.weekAhead, icon: CalendarDays, color: "#0ea5e9", bg: "rgba(14,165,233,0.10)" },
           { label: "Awaiting approval", value: stats.awaiting, icon: Clock, color: "#d97706", bg: "rgba(217,119,6,0.10)" },
           { label: "Approved & ready", value: stats.approved, icon: CheckCircle2, color: "#059669", bg: "rgba(5,150,105,0.10)" },
           { label: "Open jobs", value: stats.openJobs, icon: Briefcase, color: "#4f46e5", bg: "rgba(79,70,229,0.10)" },
-        ].map((s) => (
+        ] : [
+          { label: "Clients", value: stats.clients, icon: Users, color: accent, bg: `${accent}1a` },
+          { label: "Open jobs", value: stats.openJobs, icon: Briefcase, color: "#4f46e5", bg: "rgba(79,70,229,0.10)" },
+          { label: "On my list", value: stats.openTodos, icon: ListTodo, color: "#0ea5e9", bg: "rgba(14,165,233,0.10)" },
+        ]).map((s) => (
           <div key={s.label} style={{ ...card, padding: "1rem 1.05rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <div style={{ width: 38, height: 38, borderRadius: 11, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <s.icon size={17} style={{ color: s.color }} />
@@ -591,6 +603,14 @@ export default function PartnerWorkspace() {
                 transition: "background 0.15s, color 0.15s",
               }}>
               <Icon size={14} /> {label}
+              {key === "content" && !CONTENT_READY && (
+                <span style={{
+                  fontSize: "0.58rem", fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase",
+                  padding: "0.12rem 0.4rem", borderRadius: 999,
+                  background: active ? "rgba(255,255,255,0.25)" : `${accent}1a`,
+                  color: active ? "#fff" : accent,
+                }}>Soon</span>
+              )}
             </button>
           );
         })}
@@ -760,8 +780,29 @@ export default function PartnerWorkspace() {
         </div>
       )}
 
+      {/* ── Content tab: coming-soon gate ── */}
+      {tab === "content" && !CONTENT_READY && (
+        <div style={{ ...card, padding: "3.5rem 1.5rem", textAlign: "center" }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: 18, margin: "0 auto 1.1rem",
+            background: accentGrad, display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: `0 12px 30px ${accent}40`,
+          }}>
+            <Megaphone size={28} style={{ color: "#fff" }} />
+          </div>
+          <div style={{ fontWeight: 900, fontSize: "1.15rem", color: "var(--text-1)", marginBottom: "0.4rem" }}>
+            Content planner — coming soon
+          </div>
+          <p style={{ fontSize: "0.85rem", color: "var(--text-3)", maxWidth: 440, margin: "0 auto", lineHeight: 1.6 }}>
+            Plan posts with the creative attached, send them to your clients for one-click
+            approval in their portal, and track everything on a calendar. It&apos;s getting its
+            final polish — your clients and jobs are ready to use right now.
+          </p>
+        </div>
+      )}
+
       {/* ── Content tab ── */}
-      {tab === "content" && (
+      {tab === "content" && CONTENT_READY && (
         <div style={{ display: "grid", gap: "0.85rem" }}>
           <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", flexWrap: "wrap" }}>
             <select style={{ ...field, width: "auto", minWidth: 190 }} value={String(contentClient)}
