@@ -29,7 +29,7 @@ const STAGES = [
   { key: "lost",        label: "Lost",          color: "#dc2626", bg: "rgba(248,113,113,0.1)", border: "rgba(220,38,38,0.2)" },
 ];
 
-const AGENTS = ["All", "Kye", "Luka", "Aksel"];
+const AGENTS = ["All", "Kye", "Luka", "Aksel", "Anna", "Russel"];
 
 /* ─── Helpers ─── */
 function followUpStatus(p: Potential): "overdue" | "due_today" | "upcoming" | "none" {

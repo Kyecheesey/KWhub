@@ -36,8 +36,9 @@ export async function POST(request: Request) {
   if (email || business) {
     client = (await sql`
       SELECT id, business_name FROM clients
-      WHERE (${email} != '' AND LOWER(email) = ${email.toLowerCase()})
-         OR (${business} != '' AND business_name ILIKE ${business})
+      WHERE partner_id IS NULL
+        AND ((${email} != '' AND LOWER(email) = ${email.toLowerCase()})
+         OR (${business} != '' AND business_name ILIKE ${business}))
       ORDER BY (LOWER(email) = ${email.toLowerCase()}) DESC
       LIMIT 1
     `)[0] as { id: number; business_name: string } | undefined;

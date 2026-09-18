@@ -54,12 +54,13 @@ export async function GET() {
     sql`
       SELECT pm.id, pm.client_id, pm.body, c.business_name
       FROM portal_messages pm JOIN clients c ON c.id = pm.client_id
-      WHERE pm.author_role = 'client' AND pm.created_at > NOW() - INTERVAL '48 hours'
+      WHERE c.partner_id IS NULL
+        AND pm.author_role = 'client' AND pm.created_at > NOW() - INTERVAL '48 hours'
       ORDER BY pm.created_at DESC LIMIT 10
     `,
     sql`
       SELECT id, business_name, contact_name FROM clients
-      WHERE source = 'signup' AND created_at > NOW() - INTERVAL '7 days'
+      WHERE partner_id IS NULL AND source = 'signup' AND created_at > NOW() - INTERVAL '7 days'
       ORDER BY created_at DESC LIMIT 10
     `,
   ]);

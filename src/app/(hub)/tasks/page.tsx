@@ -23,7 +23,7 @@ interface Task {
   created_at: string;
 }
 
-const TEAM = ["Kye", "Luka", "Aksel", "Kaylie"];
+const TEAM = ["Kye", "Luka", "Aksel", "Kaylie", "Anna", "Russel"];
 
 const PRIORITIES = [
   { key: "low",    label: "Low",    color: "#60a5fa", bg: "rgba(96,165,250,0.1)"  },
@@ -42,6 +42,8 @@ const AVATAR_COLORS: Record<string, { bg: string; color: string }> = {
   Kye:   { bg: "rgba(34,211,238,0.15)",  color: "#0891b2"  },
   Luka:  { bg: "rgba(129,140,248,0.15)", color: "#4f46e5"  },
   Aksel: { bg: "rgba(52,211,153,0.15)",  color: "#059669"  },
+  Anna:  { bg: "rgba(244,114,182,0.15)", color: "#db2777"  },
+  Russel:{ bg: "rgba(250,204,21,0.15)",  color: "#ca8a04"  },
 };
 function avatarStyle(name: string) {
   return AVATAR_COLORS[name] ?? { bg: "rgba(251,146,60,0.15)", color: "#ea580c" };

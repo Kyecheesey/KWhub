@@ -3,7 +3,8 @@ import { logEvent } from "@/lib/events";
 
 export async function GET() {
   await migrate();
-  const clients = await sql`SELECT * FROM clients ORDER BY business_name ASC`;
+  // Partner-owned clients (partner_id set) belong to partner workspaces, not the KWI hub
+  const clients = await sql`SELECT * FROM clients WHERE partner_id IS NULL ORDER BY business_name ASC`;
   return Response.json(clients);
 }
 

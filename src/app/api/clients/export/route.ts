@@ -1,7 +1,7 @@
 import { sql } from "@/lib/db";
 
 export async function GET() {
-  const clients = await sql`SELECT * FROM clients ORDER BY business_name ASC`;
+  const clients = await sql`SELECT * FROM clients WHERE partner_id IS NULL ORDER BY business_name ASC`;
   if (clients.length === 0) return new Response("No clients to export", { status: 404 });
   const headers = Object.keys(clients[0]);
   const csv = [

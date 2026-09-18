@@ -15,7 +15,10 @@ export async function GET(req: Request) {
         SELECT j.*,
           (SELECT COUNT(*) FROM job_comments c WHERE c.job_id = j.id)::int AS comment_count,
           COALESCE((SELECT SUM(hours) FROM job_time_entries t WHERE t.job_id = j.id), 0)::real AS hours_logged
-        FROM client_jobs j ORDER BY j.created_at DESC`;
+        FROM client_jobs j
+        LEFT JOIN clients cl ON cl.id = j.client_id
+        WHERE cl.partner_id IS NULL
+        ORDER BY j.created_at DESC`;
   return Response.json(rows);
 }
 

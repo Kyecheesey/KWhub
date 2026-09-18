@@ -51,7 +51,8 @@ export async function POST(request: Request) {
   // staff instead, who can merge from the hub.
   const match = (await sql`
     SELECT id, business_name FROM clients
-    WHERE (LOWER(email) = ${email}) OR (business_name ILIKE ${business})
+    WHERE partner_id IS NULL
+      AND ((LOWER(email) = ${email}) OR (business_name ILIKE ${business}))
     ORDER BY (LOWER(email) = ${email}) DESC
     LIMIT 1
   `)[0] as { id: number; business_name: string } | undefined;
