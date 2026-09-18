@@ -15,6 +15,9 @@ export async function GET(request: Request) {
   const rows = await sql`
     SELECT po.*,
       (SELECT COUNT(*)::int FROM post_comments pcm WHERE pcm.post_id = po.id) AS comment_count,
+      COALESCE((SELECT json_agg(json_build_object(
+        'id', pm.id, 'url', pm.url, 'filename', pm.filename, 'content_type', pm.content_type
+      ) ORDER BY pm.id) FROM post_media pm WHERE pm.post_id = po.id), '[]') AS media,
       c.business_name
     FROM posts po
     JOIN clients c ON c.id = po.client_id

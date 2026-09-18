@@ -6,6 +6,42 @@ import { sendEmail } from "./email";
  * triggering request always succeeds even when email isn't configured.
  */
 
+/**
+ * Welcome email when a portal login is created: username, sign-in link and
+ * (when the creator opts in) the starting password. Sent to the client's
+ * email on file plus the login username when it looks like an email.
+ */
+export async function sendPortalWelcome(opts: {
+  clientId: number;
+  businessName: string;
+  username: string;
+  password?: string;
+  brandName: string;
+}) {
+  try {
+    const rows = await sql`SELECT email FROM clients WHERE id = ${opts.clientId}`;
+    const emails = new Set<string>();
+    const onFile = (rows[0] as { email: string | null } | undefined)?.email;
+    if (onFile) emails.add(onFile.toLowerCase());
+    if (opts.username.includes("@")) emails.add(opts.username.toLowerCase());
+    if (emails.size === 0) return { ok: false, error: "No email on file for this client." };
+    const text =
+      `Hi ${opts.businessName},\n\n` +
+      `Your client portal with ${opts.brandName} is ready. Sign in any time to see your ` +
+      `content for approval, projects and updates.\n\n` +
+      `Sign in: https://kwinnovationshub.com.au/login (choose Client Portal)\n` +
+      `Username: ${opts.username}\n` +
+      (opts.password ? `Temporary password: ${opts.password}\n\nPlease change it after your first sign-in (Forgot password on the login page also works any time).\n` : `Your password: shared with you separately by ${opts.brandName}.\n`) +
+      `\n— ${opts.brandName}`;
+    const results = await Promise.all([...emails].map((to) =>
+      sendEmail({ to, subject: `Your ${opts.brandName} client portal is ready`, text })
+    ));
+    return results.some((r) => r.ok) ? { ok: true } : { ok: false, error: results[0]?.error ?? "Email failed" };
+  } catch {
+    return { ok: false, error: "Email failed" };
+  }
+}
+
 export async function notifyClient(clientId: number, subject: string, text: string) {
   try {
     const rows = await sql`

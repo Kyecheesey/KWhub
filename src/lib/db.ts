@@ -28,7 +28,7 @@ export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promis
 let _migrated: Promise<void> | null = null;
 
 // Bump whenever a statement is added/changed below, so existing databases re-run the set.
-const SCHEMA_VERSION = "2026-09-18.2";
+const SCHEMA_VERSION = "2026-09-18.3";
 
 export function migrate(): Promise<void> {
   if (!_migrated) {
@@ -510,6 +510,23 @@ async function runMigrations() {
     FROM partners p WHERE p.slug = 'gc-media'
     ON CONFLICT (username) DO NOTHING
   `;
+  // White-label branding: partners set a logo + accent that flows through
+  // their workspace and their clients' portals.
+  await sql`ALTER TABLE partners ADD COLUMN IF NOT EXISTS logo_url TEXT`;
+  await sql`ALTER TABLE partners ADD COLUMN IF NOT EXISTS accent_color TEXT`;
+  // Personal to-do list inside the partner workspace (per login)
+  await sql`
+    CREATE TABLE IF NOT EXISTS partner_todos (
+      id         SERIAL PRIMARY KEY,
+      partner_id INTEGER NOT NULL,
+      username   TEXT NOT NULL,
+      text       TEXT NOT NULL,
+      done       BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS partner_todos_user_idx ON partner_todos (partner_id, username)`;
+  await sql`ALTER TABLE partner_todos ENABLE ROW LEVEL SECURITY`;
   await sql`
     INSERT INTO settings (key, value) VALUES ('schema_version', ${SCHEMA_VERSION})
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()

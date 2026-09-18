@@ -23,6 +23,8 @@ interface ClientInfo {
   assigned_to: string | null;
   logo_url: string | null;
   booking_url: string | null;
+  // Set when this client belongs to a partner agency (white-label branding)
+  partner?: { name: string; logo_url: string | null; accent_color: string | null } | null;
 }
 interface Message { id: number; author: string | null; author_role: string; body: string; created_at: string; }
 interface Project { id: number; name: string; stage: number; notes: string | null; updated_at: string; }
@@ -516,11 +518,13 @@ export default function PortalPage() {
             </div>
             <div>
               <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-1)" }}>{client.assigned_to}</div>
-              <div style={{ fontSize: "0.68rem", color: "var(--text-3)" }}>Your contact at KW Innovations</div>
+              <div style={{ fontSize: "0.68rem", color: "var(--text-3)" }}>Your contact at {client.partner?.name ?? "KW Innovations"}</div>
             </div>
-            <a href="mailto:director@kwinnovations.com.au" className="btn-ghost" style={{ marginLeft: "auto", minHeight: 0, padding: "0.4rem 0.75rem", fontSize: "0.78rem" }}>
-              <Mail size={12} /> director@kwinnovations.com.au
-            </a>
+            {!client.partner && (
+              <a href="mailto:director@kwinnovations.com.au" className="btn-ghost" style={{ marginLeft: "auto", minHeight: 0, padding: "0.4rem 0.75rem", fontSize: "0.78rem" }}>
+                <Mail size={12} /> director@kwinnovations.com.au
+              </a>
+            )}
           </div>
         )}
       </div>
@@ -589,7 +593,7 @@ export default function PortalPage() {
                 padding: "0.65rem 0.85rem",
               }}>
                 <div style={{ fontSize: "0.68rem", fontWeight: 700, color: mine ? "var(--accent)" : "#7c85f3", marginBottom: "0.2rem" }}>
-                  {mine ? "You" : `${m.author ?? "KW Innovations"} · KW team`}
+                  {mine ? "You" : `${m.author ?? client?.partner?.name ?? "KW Innovations"} · ${client?.partner ? `${client.partner.name} team` : "KW team"}`}
                 </div>
                 <div style={{ fontSize: "0.85rem", color: "var(--text-1)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{m.body}</div>
                 <div style={{ fontSize: "0.64rem", color: "var(--text-3)", marginTop: "0.25rem" }}>{msgTime(m.created_at)}</div>
@@ -967,15 +971,29 @@ export default function PortalPage() {
         position: "sticky", top: 0, zIndex: 50,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 9,
-            background: "linear-gradient(135deg,#0891b2,#4f46e5)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontWeight: 900, fontSize: "0.75rem", color: "#ffffff",
-            boxShadow: "0 2px 12px rgba(45,212,232,0.35)",
-          }}>KW</div>
+          {client?.partner?.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={client.partner.logo_url} alt={client.partner.name}
+              style={{ width: 32, height: 32, borderRadius: 9, objectFit: "cover" }} />
+          ) : (
+            <div style={{
+              width: 32, height: 32, borderRadius: 9,
+              background: client?.partner
+                ? `linear-gradient(135deg, ${client.partner.accent_color ?? "#7c3aed"}, #4f46e5)`
+                : "linear-gradient(135deg,#0891b2,#4f46e5)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontWeight: 900, fontSize: "0.75rem", color: "#ffffff",
+              boxShadow: "0 2px 12px rgba(45,212,232,0.35)",
+            }}>
+              {client?.partner
+                ? client.partner.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()
+                : "KW"}
+            </div>
+          )}
           <div>
-            <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "var(--text-1)", letterSpacing: "-0.02em", lineHeight: 1.1 }}>KW Innovations</div>
+            <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "var(--text-1)", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+              {client?.partner?.name ?? "KW Innovations"}
+            </div>
             <div style={{ fontSize: "0.6rem", color: "var(--text-3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Client Dashboard</div>
           </div>
         </div>
@@ -1238,7 +1256,7 @@ export default function PortalPage() {
                 <p className="fade-up" style={{ animationDelay: "0.3s", textAlign: "center", fontSize: "0.72rem", color: "var(--text-4)" }}>
                   {isPreview
                     ? `Previewing as ${client?.business_name ?? "client"} · signed in as ${session?.user?.name ?? "staff"}`
-                    : `Signed in as ${session?.user?.email ?? "client"} · KW Innovations Client Dashboard`}
+                    : `Signed in as ${session?.user?.email ?? "client"} · ${client?.partner?.name ?? "KW Innovations"} Client Dashboard${client?.partner ? " · Powered by KW Innovations" : ""}`}
                 </p>
               </div>
             </div>
