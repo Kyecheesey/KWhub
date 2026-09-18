@@ -1,14 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { swrJson } from "@/lib/cache";
+import { registerPush } from "@/components/Notifications";
 import {
   Users, Megaphone, Plus, UserPlus, KeyRound, Trash2, ExternalLink,
   CheckCircle2, AlertCircle, Clock, Send, LogOut, CalendarDays,
   Globe, Mail, Phone, Sparkles, ShieldCheck, ArrowRight, X,
   Briefcase, ListTodo, MessageSquare, Paperclip, ImageIcon, Palette,
-  ChevronLeft, ChevronRight, List, LayoutGrid,
+  ChevronLeft, ChevronRight, List, LayoutGrid, Bell,
 } from "lucide-react";
 
 /**
@@ -484,7 +486,27 @@ export default function PartnerWorkspace() {
               <span>Powered by KW Innovations</span>
             </div>
           </div>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <button
+              onClick={async () => {
+                if (typeof Notification !== "undefined" && Notification.permission === "denied") {
+                  flash(false, "Notifications are blocked for this site — enable them in your browser settings.");
+                  return;
+                }
+                const ok = await registerPush();
+                flash(ok, ok
+                  ? "Alerts on — you'll get a ping when clients message, comment or raise a request"
+                  : "Couldn't enable alerts on this device");
+              }}
+              title="Get notified on this device"
+              style={{
+                background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.35)",
+                borderRadius: 10, padding: "0.5rem 0.8rem", fontSize: "0.78rem", fontWeight: 700,
+                color: "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "0.4rem",
+                backdropFilter: "blur(6px)",
+              }}>
+              <Bell size={13} /> Alerts
+            </button>
             <button onClick={() => setShowBranding((v) => !v)} title="Branding"
               style={{
                 background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.35)",
@@ -681,9 +703,11 @@ export default function PartnerWorkspace() {
                     {initials(c.business_name)}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--text-1)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {c.business_name}
-                    </div>
+                    <Link href={`/partner/clients/${c.id}`} style={{ textDecoration: "none" }}>
+                      <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--text-1)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {c.business_name}
+                      </div>
+                    </Link>
                     <div style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>{c.contact_name || "No contact set"}</div>
                   </div>
                   <button onClick={() => removeClient(c)} title="Remove client"
@@ -720,12 +744,16 @@ export default function PartnerWorkspace() {
                 </div>
 
                 <div style={{ display: "flex", gap: "0.45rem", marginTop: "auto" }}>
+                  <Link href={`/partner/clients/${c.id}`}
+                    style={{ ...btnGhost, flex: 1, justifyContent: "center", textDecoration: "none", color: accent, borderColor: `${accent}66`, fontWeight: 700 }}>
+                    Open <ArrowRight size={11} />
+                  </Link>
                   <button onClick={() => toggleClient(c.id)} style={{ ...btnGhost, flex: 1, justifyContent: "center" }}>
                     <KeyRound size={12} /> {openClient === c.id ? "Close access" : "Manage access"}
                   </button>
                   <a href={`/portal?client=${c.id}`} target="_blank" rel="noreferrer"
-                    style={{ ...btnGhost, flex: 1, justifyContent: "center", textDecoration: "none", color: accent, borderColor: `${accent}66` }}>
-                    Preview portal <ExternalLink size={11} />
+                    style={{ ...btnGhost, flex: 1, justifyContent: "center", textDecoration: "none" }}>
+                    Portal <ExternalLink size={11} />
                   </a>
                 </div>
 

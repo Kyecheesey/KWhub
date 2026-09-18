@@ -12,10 +12,15 @@ export async function GET(request: Request) {
     if (!session.user.clientId) return Response.json({ error: "No linked client" }, { status: 403 });
     clientId = session.user.clientId;
   } else {
-    // Staff preview: which client's portal to render
+    // Staff/partner preview: which client's portal to render
     const param = new URL(request.url).searchParams.get("client_id");
     if (!param) return Response.json({ error: "client_id is required for staff preview" }, { status: 400 });
     clientId = parseInt(param, 10);
+    if (session.user.role === "partner") {
+      // Partners may only preview their own clients' portals
+      const owned = await sql`SELECT 1 FROM clients WHERE id = ${clientId} AND partner_id = ${session.user.partnerId ?? -1}`;
+      if (owned.length === 0) return Response.json({ error: "Not one of your clients" }, { status: 403 });
+    }
   }
 
   const [rows, settings] = await Promise.all([

@@ -1,6 +1,24 @@
 import { sql, migrate } from "@/lib/db";
 import { requirePartner, partnerOwnsClient } from "@/lib/partnerAuth";
 
+// GET → one of this partner's clients, with counts for the detail page
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  await migrate();
+  const r = await requirePartner();
+  if ("error" in r) return r.error;
+  const id = parseInt((await params).id, 10);
+  const rows = await sql`
+    SELECT c.*,
+      (SELECT COUNT(*)::int FROM users u WHERE u.role = 'client' AND u.client_id = c.id) AS portal_logins,
+      (SELECT COUNT(*)::int FROM posts po WHERE po.client_id = c.id) AS post_count,
+      (SELECT COUNT(*)::int FROM client_jobs j WHERE j.client_id = c.id AND j.status != 'done') AS open_jobs
+    FROM clients c
+    WHERE c.id = ${id} AND c.partner_id = ${r.scope.partnerId}
+  `;
+  if (rows.length === 0) return Response.json({ error: "Not one of your clients" }, { status: 403 });
+  return Response.json(rows[0]);
+}
+
 // PATCH → update one of this partner's clients
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   await migrate();
