@@ -79,6 +79,9 @@ function PasswordReset() {
           <option value="kye">Kye</option>
           <option value="luka">Luka</option>
           <option value="aksel">Aksel</option>
+          <option value="kaylie">Kaylie</option>
+          <option value="anna">Anna</option>
+          <option value="russel">Russel</option>
         </select>
         <input
           className="field"
@@ -280,7 +283,7 @@ function AuditLog() {
   );
 }
 
-const TEAM = ["Kye", "Luka", "Aksel", "Kaylie"];
+const TEAM = ["Kye", "Luka", "Aksel", "Kaylie", "Anna", "Russel"];
 const STAGES = ["new","contacted","qualified","proposal","won","lost"];
 const STAGE_LABEL: Record<string,string> = {
   new:"New", contacted:"Contacted", qualified:"Qualified",
@@ -435,7 +438,7 @@ export default function ManagementPage() {
         {TEAM.map(name => {
           const s = teamStats(name);
           const initials = name.slice(0, 2).toUpperCase();
-          const gradients: Record<string,string> = { Kye: "#0891b2,#0ea5e9", Luka: "#4f46e5,#6366f1", Aksel: "#059669,#059669" };
+          const gradients: Record<string,string> = { Kye: "#0891b2,#0ea5e9", Luka: "#4f46e5,#6366f1", Aksel: "#059669,#059669", Anna: "#db2777,#f472b6", Russel: "#ca8a04,#facc15" };
           const grad = gradients[name] || "#4f46e5,#6366f1";
           return (
             <div key={name} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: "1.1rem 1.15rem" }}>
