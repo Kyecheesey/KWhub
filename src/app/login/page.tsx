@@ -18,7 +18,7 @@ type Mode = "signin" | "forgot" | "reset" | "reset-done";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<Mode>("signin");
-  const [audience, setAudience] = useState<"staff" | "client">("staff");
+  const [audience, setAudience] = useState<"staff" | "client" | "partner">("staff");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -164,7 +164,9 @@ export default function LoginPage() {
               Welcome back
             </h1>
             <p style={{ color: "var(--text-3)", fontSize: "0.85rem", margin: 0 }}>
-              {audience === "staff" ? "Sign in to the KW Innovations hub" : "Sign in to your client portal"}
+              {audience === "staff" ? "Sign in to the KW Innovations hub"
+                : audience === "partner" ? "Sign in to your partner workspace"
+                : "Sign in to your client portal"}
             </p>
           </div>
 
@@ -174,7 +176,7 @@ export default function LoginPage() {
             display: "flex", background: "var(--surface)", border: "1px solid var(--border-2)",
             borderRadius: 12, padding: 4, marginBottom: "1rem",
           }}>
-            {([["staff", "Staff"], ["client", "Client Portal"]] as const).map(([key, label]) => {
+            {([["staff", "Staff"], ["client", "Client Portal"], ["partner", "Partner"]] as const).map(([key, label]) => {
               const active = audience === key;
               return (
                 <button
@@ -232,7 +234,7 @@ export default function LoginPage() {
                       id="username"
                       className="field"
                       style={{ paddingLeft: "2.25rem" }}
-                      placeholder={audience === "staff" ? "Your username" : "Your portal username"}
+                      placeholder={audience === "staff" ? "Your username" : audience === "partner" ? "Your partner username" : "Your portal username"}
                       value={username}
                       onChange={(e) => setUsername(e.target.value.toLowerCase().trim())}
                       autoComplete="username"
@@ -400,7 +402,7 @@ export default function LoginPage() {
           </div>
 
           <p className="login-fade-up" style={{ animationDelay: "0.16s", textAlign: "center", marginTop: "1.5rem", fontSize: "0.75rem", color: "var(--text-3)" }}>
-            Internal use only · KW Innovations
+            {audience === "partner" ? "Partner access · Powered by KW Innovations" : "Internal use only · KW Innovations"}
           </p>
         </div>
       </div>
