@@ -28,7 +28,7 @@ export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promis
 let _migrated: Promise<void> | null = null;
 
 // Bump whenever a statement is added/changed below, so existing databases re-run the set.
-const SCHEMA_VERSION = "2026-09-18.1";
+const SCHEMA_VERSION = "2026-09-18.2";
 
 export function migrate(): Promise<void> {
   if (!_migrated) {
@@ -477,6 +477,39 @@ async function runMigrations() {
   `;
   await sql`CREATE INDEX IF NOT EXISTS uptime_checks_client_idx ON uptime_checks (client_id, checked_at)`;
   await sql`ALTER TABLE uptime_checks ENABLE ROW LEVEL SECURITY`;
+  // ── Partnerships ──
+  // Partner organisations (e.g. GC Media Group) run their own workspace at
+  // /partner. Their clients live in the same clients table but carry a
+  // partner_id; KWI rows keep partner_id NULL, and every KWI-facing list
+  // filters on that so the two businesses never see each other's data.
+  await sql`
+    CREATE TABLE IF NOT EXISTS partners (
+      id           SERIAL PRIMARY KEY,
+      name         TEXT NOT NULL,
+      slug         TEXT NOT NULL UNIQUE,
+      contact_name TEXT,
+      email        TEXT,
+      phone        TEXT,
+      notes        TEXT,
+      created_at   TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS partner_id INTEGER`;
+  await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS partner_id INTEGER`;
+  await sql`CREATE INDEX IF NOT EXISTS clients_partner_idx ON clients (partner_id)`;
+  await sql`
+    INSERT INTO partners (name, slug, contact_name)
+    SELECT 'GC Media Group', 'gc-media', 'Jed'
+    WHERE NOT EXISTS (SELECT 1 FROM partners WHERE slug = 'gc-media')
+  `;
+  // Jed's login starts locked (no valid password); Kye sets it from the
+  // Partnerships page, so no working credential is ever committed.
+  await sql`
+    INSERT INTO users (name, username, password_hash, role, partner_id)
+    SELECT 'Jed', 'jed', 'locked', 'partner', p.id
+    FROM partners p WHERE p.slug = 'gc-media'
+    ON CONFLICT (username) DO NOTHING
+  `;
   await sql`
     INSERT INTO settings (key, value) VALUES ('schema_version', ${SCHEMA_VERSION})
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()

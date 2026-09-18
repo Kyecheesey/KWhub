@@ -42,6 +42,33 @@ export default auth((req) => {
     return NextResponse.redirect(login);
   }
   if (isLoggedIn && isLoginPage) {
+    const home = role === "client" ? "/portal" : role === "partner" ? "/partner" : "/";
+    return NextResponse.redirect(new URL(home, req.nextUrl.origin));
+  }
+
+  if (isLoggedIn && role === "partner") {
+    // Partners (e.g. GC Media Group) live in their own workspace. They get
+    // /partner and its APIs, plus portal preview — resolvePortalScope locks
+    // portal APIs to clients belonging to their own partner org. Everything
+    // else in the KWI hub is off limits.
+    const allowed =
+      path.startsWith("/partner") || path.startsWith("/api/partner") ||
+      path.startsWith("/portal") || path.startsWith("/api/portal") ||
+      path.startsWith("/api/account"); // change their own password
+    if (!allowed) {
+      if (path.startsWith("/api/")) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      return NextResponse.redirect(new URL("/partner", req.nextUrl.origin));
+    }
+  }
+
+  if (isLoggedIn && role !== "partner" && (path.startsWith("/partner") || path.startsWith("/api/partner"))) {
+    // KWI staff and clients never enter the partner workspace — the two
+    // businesses stay fully separated.
+    if (path.startsWith("/api/")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     return NextResponse.redirect(new URL(role === "client" ? "/portal" : "/", req.nextUrl.origin));
   }
 
@@ -57,11 +84,12 @@ export default auth((req) => {
   }
 
   if (isLoggedIn && role !== "client" && path === "/portal" && !req.nextUrl.searchParams.has("client")) {
-    // Staff only enter the portal in preview mode (?client=<id>); manage from /clients/[id]/portal
-    return NextResponse.redirect(new URL("/", req.nextUrl.origin));
+    // Staff/partners only enter the portal in preview mode (?client=<id>)
+    return NextResponse.redirect(new URL(role === "partner" ? "/partner" : "/", req.nextUrl.origin));
   }
 
-  if (path.startsWith("/management") || path.startsWith("/directions") || path.startsWith("/api/directions")) {
+  if (path.startsWith("/management") || path.startsWith("/directions") || path.startsWith("/api/directions")
+      || path.startsWith("/partnerships") || path.startsWith("/api/partnerships")) {
     const name = (req.auth?.user?.name ?? "").toLowerCase();
     if (name !== "kye") {
       if (path.startsWith("/api/")) {

@@ -39,7 +39,11 @@ export async function POST(request: Request) {
   const subject = `New IT support request: ${body.title.trim()}`;
   const text = `${r.scope.name ?? "A client"} raised a support request${priority === "high" ? " (HIGH priority)" : ""}:\n\n${body.title.trim()}${body.description ? `\n\n${body.description.trim()}` : ""}\n\nIt's on the Client Jobs board.`;
   await notifyStaff(r.scope.clientId, subject, text);
-  // The director always hears about support requests directly
-  await sendEmail({ to: SUPPORT_EMAIL, subject, text });
+  // The director always hears about KWI support requests directly; partner
+  // clients' requests stay with their partner org (notifyStaff routes them).
+  const owner = await sql`SELECT partner_id FROM clients WHERE id = ${r.scope.clientId}`;
+  if (!(owner[0] as { partner_id: number | null } | undefined)?.partner_id) {
+    await sendEmail({ to: SUPPORT_EMAIL, subject, text });
+  }
   return Response.json(rows[0], { status: 201 });
 }

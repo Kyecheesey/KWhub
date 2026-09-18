@@ -29,7 +29,8 @@ export async function GET(request: Request) {
       c.business_name
     FROM posts po
     LEFT JOIN clients c ON c.id = po.client_id
-    WHERE (${clientId}::int IS NULL OR po.client_id = ${clientId})
+    WHERE (c.partner_id IS NULL)
+      AND (${clientId}::int IS NULL OR po.client_id = ${clientId})
       AND (${from}::timestamptz IS NULL OR po.scheduled_at >= ${from} OR po.scheduled_at IS NULL)
       AND (${to}::timestamptz IS NULL OR po.scheduled_at < ${to} OR po.scheduled_at IS NULL)
     ORDER BY po.scheduled_at NULLS LAST, po.created_at DESC

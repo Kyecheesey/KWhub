@@ -10,8 +10,9 @@ export async function GET(request: Request) {
     sql`
       SELECT id, business_name, contact_name, phone, email
       FROM clients
-      WHERE business_name ILIKE ${like} OR contact_name ILIKE ${like}
-         OR phone ILIKE ${like} OR email ILIKE ${like}
+      WHERE partner_id IS NULL
+        AND (business_name ILIKE ${like} OR contact_name ILIKE ${like}
+         OR phone ILIKE ${like} OR email ILIKE ${like})
       ORDER BY business_name ASC LIMIT 6
     `,
     sql`
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
     sql`
       SELECT j.id, j.title, j.status, j.assigned_to, c.business_name
       FROM client_jobs j LEFT JOIN clients c ON c.id = j.client_id
-      WHERE j.title ILIKE ${like} OR j.description ILIKE ${like}
+      WHERE c.partner_id IS NULL AND (j.title ILIKE ${like} OR j.description ILIKE ${like})
       ORDER BY j.updated_at DESC LIMIT 6
     `,
     sql`

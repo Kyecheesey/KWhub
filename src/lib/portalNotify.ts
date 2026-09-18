@@ -27,8 +27,21 @@ export async function notifyClient(clientId: number, subject: string, text: stri
 
 export async function notifyStaff(clientId: number, subject: string, text: string) {
   try {
-    const clientRows = await sql`SELECT assigned_to FROM clients WHERE id = ${clientId}`;
-    const assigned = (clientRows[0] as { assigned_to: string | null } | undefined)?.assigned_to ?? null;
+    const clientRows = await sql`SELECT assigned_to, partner_id FROM clients WHERE id = ${clientId}`;
+    const clientRow = clientRows[0] as { assigned_to: string | null; partner_id: number | null } | undefined;
+    const assigned = clientRow?.assigned_to ?? null;
+
+    // Partner-owned clients notify their partner org (e.g. GC Media Group),
+    // never KWI staff — the two businesses stay separate.
+    if (clientRow?.partner_id) {
+      const partnerUsers = await sql`
+        SELECT email FROM users
+        WHERE role = 'partner' AND partner_id = ${clientRow.partner_id} AND email IS NOT NULL
+      `;
+      const emails = new Set((partnerUsers as { email: string }[]).map((r) => r.email.toLowerCase()));
+      await Promise.all([...emails].map((to) => sendEmail({ to, subject, text })));
+      return;
+    }
 
     let staff = assigned
       ? await sql`SELECT email FROM users WHERE role = 'staff' AND email IS NOT NULL AND LOWER(name) = ${assigned.toLowerCase()}`

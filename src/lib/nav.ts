@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, Target, PhoneCall,
   FileText, Zap, Kanban, ClipboardList, CalendarDays, Briefcase, Megaphone,
-  UsersRound, Settings, Bell, TrendingUp, UserRound, Compass,
+  UsersRound, Settings, Bell, TrendingUp, UserRound, Compass, Handshake,
 } from "lucide-react";
 
 export interface NavItem {
@@ -39,6 +39,7 @@ export const navGroups: NavGroup[] = [
       { href: "/activities", label: "Activities", icon: Kanban, keywords: "kanban board" },
       { href: "/tasks", label: "Tasks", icon: ClipboardList, keywords: "todo assignments" },
       { href: "/roster", label: "Roster", icon: CalendarDays, keywords: "schedule shifts calendar" },
+      { href: "/partnerships", label: "Partnerships", icon: Handshake, kyeOnly: true, keywords: "partners gc media white label agencies" },
       { href: "/management", label: "Management", icon: Settings, kyeOnly: true, keywords: "admin settings" },
       { href: "/directions", label: "Directions", icon: Compass, kyeOnly: true, keywords: "strategy xero financials growth ai advisor business model" },
     ],

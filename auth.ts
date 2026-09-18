@@ -19,7 +19,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         `;
         const user = rows[0] as {
           id: number; name: string; username: string; password_hash: string;
-          role: string | null; client_id: number | null;
+          role: string | null; client_id: number | null; partner_id: number | null;
         } | undefined;
         if (!user) return null;
         const valid = await bcrypt.compare(credentials.password as string, user.password_hash);
@@ -30,6 +30,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.username,
           role: user.role ?? "staff",
           clientId: user.client_id,
+          partnerId: user.partner_id,
         };
       },
     }),
@@ -39,13 +40,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.role = (user as { role?: string }).role ?? "staff";
         token.clientId = (user as { clientId?: number | null }).clientId ?? null;
+        token.partnerId = (user as { partnerId?: number | null }).partnerId ?? null;
       }
       return token;
     },
     session({ session, token }) {
       if (session.user) {
-        session.user.role = token.role === "client" ? "client" : "staff";
+        session.user.role =
+          token.role === "client" ? "client" : token.role === "partner" ? "partner" : "staff";
         session.user.clientId = (token.clientId as number | null) ?? null;
+        session.user.partnerId = (token.partnerId as number | null) ?? null;
       }
       return session;
     },
