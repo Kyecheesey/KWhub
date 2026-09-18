@@ -54,7 +54,8 @@ export default auth((req) => {
     const allowed =
       path.startsWith("/partner") || path.startsWith("/api/partner") ||
       path.startsWith("/portal") || path.startsWith("/api/portal") ||
-      path.startsWith("/api/account"); // change their own password
+      path.startsWith("/api/account") || // change their own password
+      path.startsWith("/api/push"); // push notifications on their devices
     if (!allowed) {
       if (path.startsWith("/api/")) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });

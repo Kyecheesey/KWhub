@@ -1,5 +1,6 @@
 import { sql } from "./db";
 import { sendEmail } from "./email";
+import { sendPush } from "./push";
 
 /**
  * Best-effort portal notifications — failures are swallowed so the
@@ -71,11 +72,16 @@ export async function notifyStaff(clientId: number, subject: string, text: strin
     // never KWI staff — the two businesses stay separate.
     if (clientRow?.partner_id) {
       const partnerUsers = await sql`
-        SELECT email FROM users
-        WHERE role = 'partner' AND partner_id = ${clientRow.partner_id} AND email IS NOT NULL
+        SELECT username, email FROM users
+        WHERE role = 'partner' AND partner_id = ${clientRow.partner_id}
       `;
-      const emails = new Set((partnerUsers as { email: string }[]).map((r) => r.email.toLowerCase()));
-      await Promise.all([...emails].map((to) => sendEmail({ to, subject, text })));
+      const rows = partnerUsers as { username: string; email: string | null }[];
+      const emails = new Set(rows.map((r) => r.email?.toLowerCase()).filter(Boolean) as string[]);
+      await Promise.all([
+        ...[...emails].map((to) => sendEmail({ to, subject, text })),
+        // Ping their phones too — partners live on push
+        ...rows.map((r) => sendPush(r.username, { title: subject, body: text.slice(0, 180), url: "/partner" })),
+      ]);
       return;
     }
 

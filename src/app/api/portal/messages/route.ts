@@ -13,7 +13,13 @@ async function resolveClientId(request: Request) {
   const url = new URL(request.url);
   const param = url.searchParams.get("client_id");
   if (!param) return { error: Response.json({ error: "client_id is required" }, { status: 400 }) };
-  return { session, clientId: parseInt(param, 10), role };
+  const clientId = parseInt(param, 10);
+  if (role === "partner") {
+    // Partners may only read their own clients' threads
+    const owned = await sql`SELECT 1 FROM clients WHERE id = ${clientId} AND partner_id = ${session.user.partnerId ?? -1}`;
+    if (owned.length === 0) return { error: Response.json({ error: "Not one of your clients" }, { status: 403 }) };
+  }
+  return { session, clientId, role };
 }
 
 export async function GET(request: Request) {
@@ -41,6 +47,10 @@ export async function POST(request: Request) {
   } else {
     if (!client_id) return Response.json({ error: "client_id is required" }, { status: 400 });
     clientId = client_id;
+    if (role === "partner") {
+      const owned = await sql`SELECT 1 FROM clients WHERE id = ${clientId} AND partner_id = ${session.user.partnerId ?? -1}`;
+      if (owned.length === 0) return Response.json({ error: "Not one of your clients" }, { status: 403 });
+    }
   }
 
   const rows = await sql`
