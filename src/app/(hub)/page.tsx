@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   Users, Target, TrendingUp, ArrowRight, Megaphone, LifeBuoy,
-  Bell, ClipboardList, PhoneCall, Kanban, CalendarDays, Briefcase,
+  Bell, ClipboardList, PhoneCall, Kanban, FileSignature, Briefcase,
   ThumbsUp, PencilLine, AlertTriangle, CircleDot, Activity, Plus,
   DollarSign, Receipt, ChevronRight,
 } from "lucide-react";
@@ -60,6 +60,7 @@ function shortTime(iso: string) {
 
 export default function Home() {
   const { data: session } = useSession();
+  const isKye = (session?.user?.name ?? "").toLowerCase() === "kye";
   const [data, setData] = useState<DashboardData | null>(() =>
     typeof window === "undefined" ? null : getCached<DashboardData>("/api/dashboard")
   );
@@ -148,10 +149,10 @@ export default function Home() {
     { label: "Content", icon: Megaphone, href: "/content" },
     { label: "Jobs", icon: Briefcase, href: "/client-jobs" },
     { label: "Potentials", icon: Target, href: "/potentials" },
-    { label: "Activities", icon: Kanban, href: "/activities" },
-    { label: "Tasks", icon: ClipboardList, href: "/tasks" },
-    { label: "Roster", icon: CalendarDays, href: "/roster" },
-    { label: "Calls", icon: PhoneCall, href: "/call-list" },
+    { label: "My Tasks", icon: Kanban, href: "/activities" },
+    { label: "Team Tasks", icon: ClipboardList, href: "/tasks" },
+    { label: "Contracts", icon: FileSignature, href: "/contracts" },
+    { label: "Cold Calls", icon: PhoneCall, href: "/call-list" },
   ];
 
   return (
@@ -294,7 +295,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Business snapshot */}
+          {/* Business snapshot — director only */}
+          {isKye && (
           <div className="card" style={{ overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.9rem 1.1rem", borderBottom: "1px solid var(--border)" }}>
               <DollarSign size={15} color="#059669" />
@@ -317,6 +319,7 @@ export default function Home() {
               ))}
             </div>
           </div>
+          )}
         </div>
 
         {/* ══ Right column ══ */}
@@ -354,7 +357,8 @@ export default function Home() {
             )}
           </div>
 
-          {/* Recent activity */}
+          {/* Recent activity — director only */}
+          {isKye && (
           <div className="card" style={{ overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.9rem 1.1rem", borderBottom: "1px solid var(--border)" }}>
               <Activity size={15} color="var(--accent-3)" />
@@ -381,6 +385,7 @@ export default function Home() {
               </div>
             )}
           </div>
+          )}
 
           {/* Shortcuts */}
           <div className="card" style={{ padding: "0.9rem 1rem" }}>

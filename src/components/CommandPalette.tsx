@@ -40,10 +40,12 @@ export default function CommandPalette({
   open,
   onClose,
   isKye,
+  sections,
 }: {
   open: boolean;
   onClose: () => void;
   isKye: boolean;
+  sections: string[] | null;
 }) {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -61,7 +63,7 @@ export default function CommandPalette({
     }
   }
 
-  const navItems = useMemo(() => flatNavItems(isKye), [isKye]);
+  const navItems = useMemo(() => flatNavItems(isKye, sections), [isKye, sections]);
 
   // Debounced record search
   useEffect(() => {

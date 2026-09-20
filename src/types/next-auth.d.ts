@@ -6,6 +6,8 @@ declare module "next-auth" {
       role: "staff" | "client" | "partner";
       clientId: number | null;
       partnerId: number | null;
+      /** Hub sections this staff user may open; null = all sections */
+      sections: string[] | null;
     } & DefaultSession["user"];
   }
 
@@ -13,6 +15,7 @@ declare module "next-auth" {
     role?: string;
     clientId?: number | null;
     partnerId?: number | null;
+    sections?: string[] | null;
   }
 }
 
@@ -21,5 +24,6 @@ declare module "next-auth/jwt" {
     role?: string;
     clientId?: number | null;
     partnerId?: number | null;
+    sections?: string[] | null;
   }
 }

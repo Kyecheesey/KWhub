@@ -72,10 +72,13 @@ export async function GET() {
     ORDER BY due_date NULLS LAST, priority = 'high' DESC
     LIMIT 6
   `;
-  const events = await sql`
-    SELECT id, entity_type, entity_name, actor, action, detail, created_at
-    FROM events ORDER BY created_at DESC LIMIT 10
-  `;
+  // Recent activity is director-only on the dashboard
+  const events = (session.user.name ?? "").toLowerCase() === "kye"
+    ? await sql`
+        SELECT id, entity_type, entity_name, actor, action, detail, created_at
+        FROM events ORDER BY created_at DESC LIMIT 10
+      `
+    : [];
 
   return Response.json({
     stats,
