@@ -1,10 +1,130 @@
+import { sql } from "./db";
+
 /**
- * Xero integration via a "Custom Connection" (OAuth2 client credentials,
- * single organisation). Needs XERO_CLIENT_ID + XERO_CLIENT_SECRET from a
- * custom-connection app on developer.xero.com with the
- * accounting.reports.read and accounting.transactions.read scopes.
- * Everything degrades gracefully when unconfigured or unreachable.
+ * Xero integration via the standard OAuth 2.0 web flow (no paid Custom
+ * Connection). Kye connects once from Directions (/api/xero/connect →
+ * consent → /api/xero/callback); tokens live in the settings table and the
+ * server refreshes them automatically. Access tokens last 30 minutes and
+ * refresh tokens rotate on every refresh, so the stored set is replaced
+ * each time. Needs XERO_CLIENT_ID + XERO_CLIENT_SECRET (web app on
+ * developer.xero.com) and the app's redirect URI registered exactly.
  */
+
+export const XERO_SCOPES =
+  "offline_access accounting.reports.read accounting.transactions.read accounting.settings.read";
+
+const SETTINGS_KEY = "xero_tokens";
+
+export interface XeroTokens {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number; // epoch ms
+  tenant_id: string;
+  tenant_name?: string;
+}
+
+export function xeroRedirectUri(origin?: string): string {
+  return (
+    process.env.XERO_REDIRECT_URI ??
+    `${(origin ?? "https://kwinnovationshub.com.au").replace(/\/$/, "")}/api/xero/callback`
+  );
+}
+
+export async function saveXeroTokens(tokens: XeroTokens): Promise<void> {
+  await sql`
+    INSERT INTO settings (key, value) VALUES (${SETTINGS_KEY}, ${JSON.stringify(tokens)})
+    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+  `;
+}
+
+async function loadXeroTokens(): Promise<XeroTokens | null> {
+  try {
+    const rows = await sql`SELECT value FROM settings WHERE key = ${SETTINGS_KEY}`;
+    const raw = (rows[0] as { value: string | null } | undefined)?.value;
+    return raw ? (JSON.parse(raw) as XeroTokens) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function clearXeroTokens(): Promise<void> {
+  await sql`DELETE FROM settings WHERE key = ${SETTINGS_KEY}`;
+}
+
+function basicAuth(): string | null {
+  const id = process.env.XERO_CLIENT_ID;
+  const secret = process.env.XERO_CLIENT_SECRET;
+  if (!id || !secret) return null;
+  return `Basic ${Buffer.from(`${id}:${secret}`).toString("base64")}`;
+}
+
+/** Exchange an authorization code (callback route) for tokens. */
+export async function exchangeXeroCode(code: string, redirectUri: string): Promise<
+  { ok: true; access_token: string; refresh_token: string; expires_in: number } | { ok: false; error: string }
+> {
+  const auth = basicAuth();
+  if (!auth) return { ok: false, error: "XERO_CLIENT_ID / XERO_CLIENT_SECRET aren't set." };
+  const res = await fetch("https://identity.xero.com/connect/token", {
+    method: "POST",
+    headers: { Authorization: auth, "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: redirectUri }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  const data = (await res.json().catch(() => ({}))) as {
+    access_token?: string; refresh_token?: string; expires_in?: number; error?: string;
+  };
+  if (!res.ok || !data.access_token || !data.refresh_token) {
+    return { ok: false, error: data.error ?? `Token exchange failed (${res.status})` };
+  }
+  return { ok: true, access_token: data.access_token, refresh_token: data.refresh_token, expires_in: data.expires_in ?? 1800 };
+}
+
+/** The organisations this token can access (to pick the tenant id). */
+export async function xeroConnections(accessToken: string): Promise<{ tenantId: string; tenantName?: string }[]> {
+  const res = await fetch("https://api.xero.com/connections", {
+    headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) return [];
+  const data = (await res.json()) as { tenantId: string; tenantName?: string }[];
+  return Array.isArray(data) ? data : [];
+}
+
+/**
+ * A valid access token + tenant, refreshing (and persisting the rotated
+ * refresh token) when the stored one is stale.
+ */
+async function xeroAccess(): Promise<{ token: string; tenantId: string } | { error: string } | null> {
+  const stored = await loadXeroTokens();
+  if (!stored) return null; // not connected
+  if (stored.expires_at > Date.now() + 60_000) {
+    return { token: stored.access_token, tenantId: stored.tenant_id };
+  }
+  const auth = basicAuth();
+  if (!auth) return { error: "XERO_CLIENT_ID / XERO_CLIENT_SECRET aren't set." };
+  const res = await fetch("https://identity.xero.com/connect/token", {
+    method: "POST",
+    headers: { Authorization: auth, "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: stored.refresh_token }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  const data = (await res.json().catch(() => ({}))) as {
+    access_token?: string; refresh_token?: string; expires_in?: number;
+  };
+  if (!res.ok || !data.access_token || !data.refresh_token) {
+    // Refresh token expired or revoked — needs a fresh Connect Xero
+    return { error: "Xero session expired — reconnect from the Directions page." };
+  }
+  const next: XeroTokens = {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token, // rotated — must replace the old one
+    expires_at: Date.now() + (data.expires_in ?? 1800) * 1000,
+    tenant_id: stored.tenant_id,
+    tenant_name: stored.tenant_name,
+  };
+  await saveXeroTokens(next);
+  return { token: next.access_token, tenantId: next.tenant_id };
+}
 
 export interface XeroSnapshot {
   configured: boolean;
@@ -17,35 +137,13 @@ export interface XeroSnapshot {
   overdue_invoice_count?: number;
 }
 
-let cachedToken: { token: string; expires: number } | null = null;
-
-async function xeroToken(): Promise<string | null> {
-  const id = process.env.XERO_CLIENT_ID;
-  const secret = process.env.XERO_CLIENT_SECRET;
-  if (!id || !secret) return null;
-  if (cachedToken && cachedToken.expires > Date.now() + 60_000) return cachedToken.token;
-  const res = await fetch("https://identity.xero.com/connect/token", {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${id}:${secret}`).toString("base64")}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      grant_type: "client_credentials",
-      scope: "accounting.reports.read accounting.transactions.read accounting.settings.read",
-    }),
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (!res.ok) return null;
-  const data = (await res.json()) as { access_token?: string; expires_in?: number };
-  if (!data.access_token) return null;
-  cachedToken = { token: data.access_token, expires: Date.now() + (data.expires_in ?? 1800) * 1000 };
-  return data.access_token;
-}
-
-async function xeroGet<T>(token: string, path: string): Promise<T | null> {
+async function xeroGet<T>(token: string, tenantId: string, path: string): Promise<T | null> {
   const res = await fetch(`https://api.xero.com/api.xro/2.0/${path}`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Xero-Tenant-Id": tenantId,
+      Accept: "application/json",
+    },
     signal: AbortSignal.timeout(20_000),
   });
   if (!res.ok) return null;
@@ -82,22 +180,21 @@ function fyStart(): string {
 }
 
 export async function xeroSnapshot(): Promise<XeroSnapshot> {
-  const token = await xeroToken().catch(() => null);
-  if (!token) {
-    return {
-      configured: false,
-      error: process.env.XERO_CLIENT_ID
-        ? "Couldn't reach Xero — check the custom connection credentials."
-        : "Xero isn't connected yet. Add XERO_CLIENT_ID and XERO_CLIENT_SECRET from a custom connection app.",
-    };
+  const access = await xeroAccess().catch(() => null);
+  if (!access) {
+    return { configured: false, error: "Xero isn't connected yet." };
+  }
+  if ("error" in access) {
+    return { configured: false, error: access.error };
   }
   try {
     const today = new Date().toISOString().slice(0, 10);
+    const { token, tenantId } = access;
     const [org, pl, invoices] = await Promise.all([
-      xeroGet<{ Organisations?: { Name?: string }[] }>(token, "Organisation"),
-      xeroGet<ReportResponse>(token, `Reports/ProfitAndLoss?fromDate=${fyStart()}&toDate=${today}`),
+      xeroGet<{ Organisations?: { Name?: string }[] }>(token, tenantId, "Organisation"),
+      xeroGet<ReportResponse>(token, tenantId, `Reports/ProfitAndLoss?fromDate=${fyStart()}&toDate=${today}`),
       xeroGet<{ Invoices?: { AmountDue?: number; DueDateString?: string }[] }>(
-        token,
+        token, tenantId,
         `Invoices?where=${encodeURIComponent('Type=="ACCREC" AND Status=="AUTHORISED"')}&summaryOnly=true&page=1`,
       ),
     ]);
