@@ -29,7 +29,7 @@ export const navGroups: NavGroup[] = [
       { href: "/contracts", label: "Contracts", icon: FileSignature, keywords: "sign it signit esign signature envelope agreements proposals" },
       { href: "/potentials", label: "Potentials", icon: Target, keywords: "pipeline crm leads deals" },
       { href: "/follow-ups", label: "Follow-ups", icon: Bell, keywords: "reminders" },
-      { href: "/call-list", label: "Call List", icon: PhoneCall, keywords: "calls phone" },
+      { href: "/call-list", label: "Cold Calls", icon: PhoneCall, keywords: "calls phone cold calling tracker receptionist" },
       { href: "/insights", label: "Insights", icon: TrendingUp, keywords: "analytics stats charts pipeline reports" },
     ],
   },
