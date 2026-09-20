@@ -28,7 +28,7 @@ export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promis
 let _migrated: Promise<void> | null = null;
 
 // Bump whenever a statement is added/changed below, so existing databases re-run the set.
-const SCHEMA_VERSION = "2026-09-19.1";
+const SCHEMA_VERSION = "2026-09-20.1";
 
 export function migrate(): Promise<void> {
   if (!_migrated) {
@@ -547,6 +547,13 @@ async function runMigrations() {
   `;
   await sql`CREATE INDEX IF NOT EXISTS contracts_client_idx ON contracts (client_id)`;
   await sql`ALTER TABLE contracts ENABLE ROW LEVEL SECURITY`;
+  // Cold Call Tracker: what the caller learns on each dial, synced back to
+  // the underlying potential/client on save.
+  await sql`ALTER TABLE call_list ADD COLUMN IF NOT EXISTS receptionist_name TEXT`;
+  await sql`ALTER TABLE call_list ADD COLUMN IF NOT EXISTS emails TEXT`;
+  await sql`ALTER TABLE call_list ADD COLUMN IF NOT EXISTS phones TEXT`;
+  await sql`ALTER TABLE call_list ADD COLUMN IF NOT EXISTS interested TEXT`;
+  await sql`ALTER TABLE call_list ADD COLUMN IF NOT EXISTS call_notes TEXT`;
   await sql`
     INSERT INTO settings (key, value) VALUES ('schema_version', ${SCHEMA_VERSION})
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
