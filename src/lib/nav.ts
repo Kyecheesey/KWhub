@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, Target, PhoneCall,
   FileText, Zap, Kanban, ClipboardList, CalendarDays, Briefcase, Megaphone,
-  UsersRound, Settings, Bell, TrendingUp, UserRound, Compass, Handshake,
+  UsersRound, Settings, Bell, TrendingUp, UserRound, Compass, Handshake, FileSignature,
 } from "lucide-react";
 
 export interface NavItem {
@@ -26,6 +26,7 @@ export const navGroups: NavGroup[] = [
       { href: "/clients", label: "Clients", icon: Users, keywords: "customers accounts" },
       { href: "/client-jobs", label: "Client Jobs", icon: Briefcase, keywords: "kanban board jobs work per client support" },
       { href: "/content", label: "Content", icon: Megaphone, keywords: "social media posts calendar planner scheduler marketing approvals" },
+      { href: "/contracts", label: "Contracts", icon: FileSignature, keywords: "sign it signit esign signature envelope agreements proposals" },
       { href: "/potentials", label: "Potentials", icon: Target, keywords: "pipeline crm leads deals" },
       { href: "/follow-ups", label: "Follow-ups", icon: Bell, keywords: "reminders" },
       { href: "/call-list", label: "Call List", icon: PhoneCall, keywords: "calls phone" },

@@ -28,7 +28,7 @@ export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promis
 let _migrated: Promise<void> | null = null;
 
 // Bump whenever a statement is added/changed below, so existing databases re-run the set.
-const SCHEMA_VERSION = "2026-09-18.3";
+const SCHEMA_VERSION = "2026-09-19.1";
 
 export function migrate(): Promise<void> {
   if (!_migrated) {
@@ -527,6 +527,27 @@ async function runMigrations() {
   `;
   await sql`CREATE INDEX IF NOT EXISTS partner_todos_user_idx ON partner_todos (partner_id, username)`;
   await sql`ALTER TABLE partner_todos ENABLE ROW LEVEL SECURITY`;
+  // Contracts — tracked in the hub, signed through Sign IT Digital
+  // (signit_envelope_id links to the envelope; status mirrors Sign IT's)
+  await sql`
+    CREATE TABLE IF NOT EXISTS contracts (
+      id                 SERIAL PRIMARY KEY,
+      client_id          INTEGER,
+      counterparty_name  TEXT,
+      counterparty_email TEXT,
+      title              TEXT NOT NULL,
+      status             TEXT DEFAULT 'draft',
+      signit_envelope_id TEXT,
+      notes              TEXT,
+      created_by         TEXT,
+      sent_at            TIMESTAMPTZ,
+      completed_at       TIMESTAMPTZ,
+      created_at         TIMESTAMPTZ DEFAULT NOW(),
+      updated_at         TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS contracts_client_idx ON contracts (client_id)`;
+  await sql`ALTER TABLE contracts ENABLE ROW LEVEL SECURITY`;
   await sql`
     INSERT INTO settings (key, value) VALUES ('schema_version', ${SCHEMA_VERSION})
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()

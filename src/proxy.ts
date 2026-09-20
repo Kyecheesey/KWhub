@@ -90,7 +90,8 @@ export default auth((req) => {
   }
 
   if (path.startsWith("/management") || path.startsWith("/directions") || path.startsWith("/api/directions")
-      || path.startsWith("/partnerships") || path.startsWith("/api/partnerships")) {
+      || path.startsWith("/partnerships") || path.startsWith("/api/partnerships")
+      || path.startsWith("/api/xero")) {
     const name = (req.auth?.user?.name ?? "").toLowerCase();
     if (name !== "kye") {
       if (path.startsWith("/api/")) {

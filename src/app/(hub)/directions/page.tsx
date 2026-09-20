@@ -134,11 +134,17 @@ export default function DirectionsPage() {
       {loading && !xero ? (
         <div className="card" style={{ padding: "1.25rem", fontSize: "0.82rem", color: "var(--text-3)" }}>Loading…</div>
       ) : xero && !xero.configured ? (
-        <div className="card" style={{ padding: "1.1rem 1.25rem", fontSize: "0.82rem", color: "var(--text-2)", lineHeight: 1.6 }}>
-          <strong>Xero isn&apos;t connected yet.</strong> Create a custom connection at developer.xero.com
-          (scopes: accounting.reports.read, accounting.transactions.read, accounting.settings.read) and add
-          <code style={{ margin: "0 0.25rem" }}>XERO_CLIENT_ID</code> and <code style={{ marginRight: "0.25rem" }}>XERO_CLIENT_SECRET</code>
-          to the Vercel environment. Growth numbers and the advisor work in the meantime.
+        <div className="card" style={{ padding: "1.25rem 1.35rem", fontSize: "0.85rem", color: "var(--text-2)", lineHeight: 1.6 }}>
+          <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--text-1)", marginBottom: "0.3rem" }}>
+            Xero isn&apos;t connected yet
+          </div>
+          <p style={{ margin: "0 0 0.9rem", maxWidth: 480 }}>
+            Connect KW | Innovations to display live financial data and business insights.
+            {xero.error && xero.error !== "Xero isn't connected yet." ? ` (${xero.error})` : ""}
+          </p>
+          <a href="/api/xero/connect" className="btn-primary" style={{ fontSize: "0.82rem", textDecoration: "none" }}>
+            Connect Xero
+          </a>
         </div>
       ) : xero?.error ? (
         <div className="card" style={{ padding: "1.1rem 1.25rem", fontSize: "0.82rem", color: "#d97706" }}>{xero.error}</div>
