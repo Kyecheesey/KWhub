@@ -20,6 +20,7 @@ interface XeroSnapshot {
   receivables_outstanding?: number;
   receivables_overdue?: number;
   overdue_invoice_count?: number;
+  redirect_uri?: string;
 }
 interface GrowthSnapshot {
   clients_total: number;
@@ -145,6 +146,13 @@ export default function DirectionsPage() {
           <a href="/api/xero/connect" className="btn-primary" style={{ fontSize: "0.82rem", textDecoration: "none" }}>
             Connect Xero
           </a>
+          {xero.redirect_uri && (
+            <p style={{ margin: "0.9rem 0 0", fontSize: "0.72rem", color: "var(--text-3)" }}>
+              If Xero says &ldquo;Invalid redirect_uri&rdquo;, add this exact URI to the app&apos;s
+              OAuth 2.0 redirect URIs at developer.xero.com:
+              <code style={{ display: "block", marginTop: "0.3rem", userSelect: "all" }}>{xero.redirect_uri}</code>
+            </p>
+          )}
         </div>
       ) : xero?.error ? (
         <div className="card" style={{ padding: "1.1rem 1.25rem", fontSize: "0.82rem", color: "#d97706" }}>{xero.error}</div>
