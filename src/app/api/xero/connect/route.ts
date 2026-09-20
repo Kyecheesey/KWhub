@@ -20,6 +20,18 @@ export async function GET(request: Request) {
   authorize.searchParams.set("scope", XERO_SCOPES);
   authorize.searchParams.set("state", state);
 
+  // ?debug=1 → show exactly what would be sent, for matching against the
+  // Xero app config when the consent screen rejects the request.
+  if (new URL(request.url).searchParams.get("debug") === "1") {
+    return NextResponse.json({
+      client_id: process.env.XERO_CLIENT_ID,
+      redirect_uri: xeroRedirectUri(origin),
+      scopes: XERO_SCOPES,
+      authorize_url: authorize.toString(),
+      note: "client_id must be the NEW web app's Client ID, and redirect_uri must appear character-for-character in that app's OAuth 2.0 redirect URIs.",
+    });
+  }
+
   const res = NextResponse.redirect(authorize);
   res.cookies.set("xero_oauth_state", state, {
     httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 600,
