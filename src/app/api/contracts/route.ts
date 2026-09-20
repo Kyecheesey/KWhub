@@ -45,7 +45,7 @@ export async function GET(request: Request) {
   return Response.json({
     contracts: rows,
     signit_connected: signitConfigured(),
-    signit_url: (process.env.SIGNIT_APP_URL ?? "https://signitdigital.com").replace(/\/$/, ""),
+    signit_url: (process.env.SIGNIT_APP_URL ?? "https://www.signitdigital.com").replace(/\/$/, ""),
   });
 }
 

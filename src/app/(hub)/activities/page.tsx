@@ -33,7 +33,7 @@ const PRIORITIES = [
   { key: "high",   label: "High",   color: "#dc2626" },
 ];
 
-const TEAM = ["Kye", "Luka", "Aksel", "Kaylie", "Anna", "Russel"];
+const TEAM = ["Kye", "Luka", "Aksel", "Anna", "Russel"];
 
 type Form = {
   title: string; description: string; status: string;

@@ -25,6 +25,8 @@ interface Job {
   id: number; title: string; description: string | null; status: string; priority: string;
   due_date: string | null; kind: string; visible_to_client: boolean;
 }
+interface PortalModule { key: string; label: string; description: string; always?: boolean }
+interface Modules { enabled: string[]; all: PortalModule[] }
 
 const DEFAULT_ACCENT = "#7c3aed";
 const card: React.CSSProperties = {
@@ -46,6 +48,7 @@ export default function PartnerClientPage({ params }: { params: Promise<{ id: st
   const [messages, setMessages] = useState<Message[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [logins, setLogins] = useState<PortalLogin[]>([]);
+  const [modules, setModules] = useState<Modules | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const [newMessage, setNewMessage] = useState("");
@@ -95,6 +98,7 @@ export default function PartnerClientPage({ params }: { params: Promise<{ id: st
       swrJson<Message[]>(`/api/partner/messages?client_id=${clientId}`, (d) => setMessages(Array.isArray(d) ? d : [])),
       swrJson<Job[]>(`/api/partner/jobs?client_id=${clientId}`, (d) => setJobs(Array.isArray(d) ? d : [])),
       swrJson<PortalLogin[]>(`/api/partner/accounts?client_id=${clientId}`, (d) => setLogins(Array.isArray(d) ? d : [])),
+      swrJson<Modules>(`/api/portal/modules?client_id=${clientId}`, (d) => { if (d && "enabled" in d) setModules(d); }),
     ]);
   }, [clientId]);
   useEffect(() => { load(); }, [load]);
@@ -158,6 +162,15 @@ export default function PartnerClientPage({ params }: { params: Promise<{ id: st
     if (await api("/api/partner/accounts", "PATCH", { username, new_password: pw })) {
       flash(true, `Password updated for ${username}`);
     }
+  }
+  async function toggleModule(key: string) {
+    if (!modules) return;
+    const enabled = modules.enabled.includes(key)
+      ? modules.enabled.filter((k) => k !== key)
+      : [...modules.enabled, key];
+    setModules({ ...modules, enabled }); // optimistic — their portal updates instantly
+    const res = await api("/api/portal/modules", "PATCH", { client_id: clientId, modules: enabled });
+    if (res && "enabled" in (res as Modules)) setModules((m) => (m ? { ...m, enabled: (res as Modules).enabled } : m));
   }
 
   if (notFound) {
@@ -379,6 +392,44 @@ export default function PartnerClientPage({ params }: { params: Promise<{ id: st
                 </label>
               )}
             </form>
+          </div>
+
+          {/* ── Portal services ── */}
+          <div style={{ ...card, padding: "1.1rem 1.2rem" }}>
+            <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--text-1)", marginBottom: "0.2rem" }}>
+              Portal services
+            </div>
+            <div style={{ fontSize: "0.72rem", color: "var(--text-3)", marginBottom: "0.8rem" }}>
+              What {client?.business_name ?? "this client"} sees — their portal sidebar updates instantly.
+            </div>
+            {!modules && <div style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>Loading…</div>}
+            {modules?.all.map((m) => {
+              const on = modules.enabled.includes(m.key);
+              return (
+                <div key={m.key} style={{ display: "flex", alignItems: "center", gap: "0.7rem", padding: "0.5rem 0", borderTop: "1px solid var(--border)" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: "0.84rem", fontWeight: 700, color: "var(--text-1)" }}>{m.label}</div>
+                    <div style={{ fontSize: "0.7rem", color: "var(--text-3)" }}>{m.description}</div>
+                  </div>
+                  <button
+                    onClick={() => !m.always && toggleModule(m.key)}
+                    disabled={m.always}
+                    aria-label={`${m.label} ${on ? "on" : "off"}`}
+                    style={{
+                      width: 40, height: 22, borderRadius: 999, border: "none", flexShrink: 0,
+                      cursor: m.always ? "default" : "pointer", position: "relative",
+                      background: on ? accent : "var(--border)",
+                      opacity: m.always ? 0.55 : 1, transition: "background 0.15s",
+                    }}>
+                    <span style={{
+                      position: "absolute", top: 3, left: on ? 21 : 3, width: 16, height: 16,
+                      borderRadius: "50%", background: "#fff", transition: "left 0.15s",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+                    }} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
