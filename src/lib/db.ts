@@ -63,7 +63,6 @@ async function runMigrations() {
       ('Kye',   'kye',   '$2b$12$TnpKR02s9ccbpccZl.pTTe.7arxp2d7il62Hu/977YM1RfK4OMKHm'),
       ('Luka',  'luka',  '$2b$12$9JBWUvk1qxzyEga97FnPLen6BDthAmyPr/QSx8JSPZImok.9jUnpS'),
       ('Aksel', 'aksel', '$2b$12$CZlj6jJ4PJzqhtsqtejYH.Htm9VuASa3l/4adS/PAd2P6j1Z9Mdo2'),
-      ('Kaylie', 'kaylie', '$2b$12$x.lBrw1rX2Wnoz2e0IIBzuKF5xqxEg/x.R0PSAdKZHOnHdAeKjAqS'),
       ('Anna',   'anna',   'locked'),
       ('Russel', 'russel', 'locked')
     ON CONFLICT (username) DO NOTHING
@@ -182,7 +181,7 @@ async function runMigrations() {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT`;
   await sql`
     UPDATE users SET email = username || '@kwinnovations.com.au'
-    WHERE email IS NULL AND username IN ('kye', 'luka', 'aksel', 'kaylie', 'anna', 'russel')
+    WHERE email IS NULL AND username IN ('kye', 'luka', 'aksel', 'anna', 'russel')
   `;
   await sql`
     CREATE TABLE IF NOT EXISTS password_resets (

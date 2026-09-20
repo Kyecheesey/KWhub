@@ -7,7 +7,7 @@
  */
 
 function appUrl(): string {
-  return (process.env.SIGNIT_APP_URL ?? "https://signitdigital.com").replace(/\/$/, "");
+  return (process.env.SIGNIT_APP_URL ?? "https://www.signitdigital.com").replace(/\/$/, "");
 }
 
 export function signitConfigured(): boolean {

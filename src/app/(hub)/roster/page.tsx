@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 
-// Kaylie is the only person on the roster. Kye adds/removes her shifts;
-// hours are masked server-side for everyone except the rostered person and Kye.
+// The rostered team. Kye adds/removes shifts; hours are masked server-side
+// for everyone except the rostered person and Kye.
 type Shift = { id: number; day: string; time: string; person: string; hours: number | null; focus: string | null };
 
 const ROSTER_PEOPLE = [
-  { name: "Kaylie", colour: "#4f46e5", gradient: "linear-gradient(135deg, #6366f1 0%, #0ea5e9 100%)" },
+  { name: "Anna",   colour: "#db2777", gradient: "linear-gradient(135deg, #f472b6 0%, #7c3aed 100%)" },
+  { name: "Russel", colour: "#ca8a04", gradient: "linear-gradient(135deg, #facc15 0%, #ea580c 100%)" },
 ];
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 const today = new Date().toLocaleDateString("en-AU", { weekday: "long" });
@@ -353,8 +354,8 @@ export default function RosterPage() {
               <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-1)" }}>Fresh roster</div>
               <div style={{ fontSize: "0.8rem", color: "var(--text-3)", marginTop: 2 }}>
                 {canManage
-                  ? "Use “+ Add Shift” above to roster Kaylie's first shift."
-                  : "Kaylie's shifts will appear here once they're added."}
+                  ? "Use “+ Add Shift” above to roster the first shift."
+                  : "Shifts will appear here once they're added."}
               </div>
             </div>
           </>

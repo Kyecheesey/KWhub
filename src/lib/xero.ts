@@ -182,6 +182,90 @@ function fyStart(): string {
   return `${year}-07-01`;
 }
 
+// ── Full P&L (embedded statement + monthly trend) ──
+
+export interface PnlRow { label: string; values: number[] }
+export interface PnlSection { title: string; rows: PnlRow[]; summary?: PnlRow }
+export interface PnlStatement { columns: string[]; sections: PnlSection[] }
+export interface PnlMonthly { months: string[]; income: number[]; expenses: number[]; net: number[] }
+
+function cellNum(v: string | undefined): number {
+  const n = v != null ? Number(v) : NaN;
+  return Number.isNaN(n) ? 0 : n;
+}
+
+function parseStatement(report: ReportResponse | null): PnlStatement | undefined {
+  const root = report?.Reports?.[0];
+  if (!root?.Rows) return undefined;
+  const columns: string[] = [];
+  const sections: PnlSection[] = [];
+  for (const row of root.Rows) {
+    if (row.RowType === "Header") {
+      for (const c of row.Cells?.slice(1) ?? []) columns.push(c.Value ?? "");
+    } else if (row.RowType === "Section") {
+      const section: PnlSection = { title: row.Title ?? "", rows: [] };
+      for (const r of row.Rows ?? []) {
+        const label = r.Cells?.[0]?.Value ?? "";
+        const values = (r.Cells?.slice(1) ?? []).map((c) => cellNum(c.Value));
+        if (!label) continue;
+        if (r.RowType === "SummaryRow") section.summary = { label, values };
+        else section.rows.push({ label, values });
+      }
+      if (section.rows.length > 0 || section.summary) sections.push(section);
+    }
+  }
+  return sections.length > 0 ? { columns, sections } : undefined;
+}
+
+/** Find a row anywhere in the report whose first cell matches, return its numeric cells. */
+function rowValues(report: ReportResponse | null, rowLabel: RegExp): number[] | undefined {
+  const walk = (rows: ReportRow[] | undefined): number[] | undefined => {
+    for (const row of rows ?? []) {
+      const first = row.Cells?.[0]?.Value;
+      if (first && rowLabel.test(first)) return (row.Cells?.slice(1) ?? []).map((c) => cellNum(c.Value));
+      const nested = walk(row.Rows);
+      if (nested) return nested;
+    }
+    return undefined;
+  };
+  return walk(report?.Reports?.[0]?.Rows);
+}
+
+export async function xeroPnl(): Promise<{ statement?: PnlStatement; monthly?: PnlMonthly }> {
+  const access = await xeroAccess().catch(() => null);
+  if (!access || "error" in access) return {};
+  const { token, tenantId } = access;
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const [fytd, monthlyReport] = await Promise.all([
+      xeroGet<ReportResponse>(token, tenantId, `Reports/ProfitAndLoss?fromDate=${fyStart()}&toDate=${today}`),
+      xeroGet<ReportResponse>(token, tenantId, `Reports/ProfitAndLoss?toDate=${today}&periods=10&timeframe=MONTH`),
+    ]);
+    const statement = parseStatement(fytd);
+
+    let monthly: PnlMonthly | undefined;
+    const header = monthlyReport?.Reports?.[0]?.Rows?.find((r) => r.RowType === "Header");
+    const months = (header?.Cells?.slice(1) ?? []).map((c) => c.Value ?? "");
+    if (months.length > 1) {
+      const income = rowValues(monthlyReport, /^Total (Income|Revenue|Trading Income)/i) ?? [];
+      const cos = rowValues(monthlyReport, /^Total Cost of Sales/i);
+      const opex = rowValues(monthlyReport, /^Total Operating Expenses/i);
+      const net = rowValues(monthlyReport, /^Net Profit/i) ?? [];
+      const expenses = months.map((_, i) => (cos?.[i] ?? 0) + (opex?.[i] ?? 0));
+      // Xero lists monthly columns newest-first — flip to oldest-first for the chart
+      monthly = {
+        months: [...months].reverse(),
+        income: [...income].reverse(),
+        expenses: [...expenses].reverse(),
+        net: [...net].reverse(),
+      };
+    }
+    return { statement, monthly };
+  } catch {
+    return {};
+  }
+}
+
 export async function xeroSnapshot(): Promise<XeroSnapshot> {
   const access = await xeroAccess().catch(() => null);
   if (!access) {

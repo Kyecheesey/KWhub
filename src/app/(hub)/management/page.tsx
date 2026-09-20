@@ -79,7 +79,6 @@ function PasswordReset() {
           <option value="kye">Kye</option>
           <option value="luka">Luka</option>
           <option value="aksel">Aksel</option>
-          <option value="kaylie">Kaylie</option>
           <option value="anna">Anna</option>
           <option value="russel">Russel</option>
         </select>
@@ -283,7 +282,7 @@ function AuditLog() {
   );
 }
 
-const TEAM = ["Kye", "Luka", "Aksel", "Kaylie", "Anna", "Russel"];
+const TEAM = ["Kye", "Luka", "Aksel", "Anna", "Russel"];
 const STAGES = ["new","contacted","qualified","proposal","won","lost"];
 const STAGE_LABEL: Record<string,string> = {
   new:"New", contacted:"Contacted", qualified:"Qualified",

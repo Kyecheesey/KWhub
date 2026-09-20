@@ -23,7 +23,7 @@ interface Task {
   created_at: string;
 }
 
-const TEAM = ["Kye", "Luka", "Aksel", "Kaylie", "Anna", "Russel"];
+const TEAM = ["Kye", "Luka", "Aksel", "Anna", "Russel"];
 
 const PRIORITIES = [
   { key: "low",    label: "Low",    color: "#60a5fa", bg: "rgba(96,165,250,0.1)"  },
