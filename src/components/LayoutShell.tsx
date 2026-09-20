@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { Menu, X, LogOut, Search, Keyboard, KeyRound } from "lucide-react";
 import ChangePassword from "@/components/ChangePassword";
-import { navGroups, bottomTabs, type NavGroup } from "@/lib/nav";
+import { navGroups, bottomTabs, sectionAllowed, type NavGroup } from "@/lib/nav";
 import CommandPalette from "@/components/CommandPalette";
 import { useNotifications, NotificationsBell, NotificationsPanel } from "@/components/Notifications";
 
@@ -14,7 +14,7 @@ import { useNotifications, NotificationsBell, NotificationsPanel } from "@/compo
 const G_ROUTES: Record<string, string> = {
   d: "/", c: "/clients", p: "/potentials", f: "/follow-ups",
   l: "/call-list", i: "/insights", a: "/activities", t: "/tasks",
-  r: "/roster", m: "/management",
+  m: "/management",
 };
 
 const SHORTCUTS: [string, string][] = [
@@ -27,8 +27,7 @@ const SHORTCUTS: [string, string][] = [
   ["g l", "Call List"],
   ["g i", "Insights"],
   ["g a", "Activities"],
-  ["g t", "Tasks"],
-  ["g r", "Roster"],
+  ["g t", "Team Tasks"],
   ["?", "Show this help"],
 ];
 
@@ -219,7 +218,8 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   const { data: session } = useSession();
   const userName = session?.user?.name ?? "";
   const isKye = userName.toLowerCase() === "kye";
-  const notifications = useNotifications();
+  const sections = session?.user?.sections ?? null;
+  const { items: notifications, dismiss: dismissNotif, clearAll: clearNotifs } = useNotifications();
 
   if (path !== prevPath) {
     setPrevPath(path);
@@ -279,10 +279,12 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [path, isKye, router]);
 
-  /* Filter groups for this user */
+  /* Filter groups for this user: Kye-only items plus per-user section access */
   const groups = navGroups.map(g => ({
     ...g,
-    items: g.items.filter(item => !item.kyeOnly || isKye),
+    items: g.items
+      .filter(item => !item.kyeOnly || isKye)
+      .filter(item => isKye || sectionAllowed(item.href, sections)),
   })).filter(g => g.items.length > 0);
 
   return (
@@ -365,8 +367,9 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         })}
       </nav>
 
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} isKye={isKye} />
-      <NotificationsPanel items={notifications} open={notifOpen} onClose={() => setNotifOpen(false)} />
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} isKye={isKye} sections={sections} />
+      <NotificationsPanel items={notifications} open={notifOpen} onClose={() => setNotifOpen(false)}
+        onDismiss={dismissNotif} onClearAll={clearNotifs} />
       <ChangePassword open={pwOpen} onClose={() => setPwOpen(false)} />
 
       {/* ── Keyboard shortcuts help ── */}

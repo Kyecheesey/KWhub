@@ -28,7 +28,7 @@ export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promis
 let _migrated: Promise<void> | null = null;
 
 // Bump whenever a statement is added/changed below, so existing databases re-run the set.
-const SCHEMA_VERSION = "2026-09-20.1";
+const SCHEMA_VERSION = "2026-09-20.2";
 
 export function migrate(): Promise<void> {
   if (!_migrated) {
@@ -554,6 +554,8 @@ async function runMigrations() {
   await sql`ALTER TABLE call_list ADD COLUMN IF NOT EXISTS phones TEXT`;
   await sql`ALTER TABLE call_list ADD COLUMN IF NOT EXISTS interested TEXT`;
   await sql`ALTER TABLE call_list ADD COLUMN IF NOT EXISTS call_notes TEXT`;
+  // Per-user hub section access (JSON array of nav hrefs; NULL = all sections)
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS allowed_sections TEXT`;
   await sql`
     INSERT INTO settings (key, value) VALUES ('schema_version', ${SCHEMA_VERSION})
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()

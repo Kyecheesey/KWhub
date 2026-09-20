@@ -89,9 +89,24 @@ export default auth((req) => {
     return NextResponse.redirect(new URL(role === "partner" ? "/partner" : "/", req.nextUrl.origin));
   }
 
+  // Per-user section access — Kye assigns sections from Management → Users &
+  // access; users with a restricted list are bounced off pages outside it.
+  // (Changes take effect at that user's next sign-in.)
+  if (isLoggedIn && role === "staff" && (req.auth?.user?.name ?? "").toLowerCase() !== "kye") {
+    const sections = (req.auth?.user as { sections?: string[] | null } | undefined)?.sections;
+    if (Array.isArray(sections)) {
+      const gated = ["/clients", "/client-jobs", "/content", "/contracts", "/potentials",
+        "/follow-ups", "/call-list", "/insights", "/my-work", "/activities", "/tasks"];
+      const hit = gated.find((p) => path === p || path.startsWith(p + "/"));
+      if (hit && !sections.includes(hit)) {
+        return NextResponse.redirect(new URL("/", req.nextUrl.origin));
+      }
+    }
+  }
+
   if (path.startsWith("/management") || path.startsWith("/directions") || path.startsWith("/api/directions")
       || path.startsWith("/partnerships") || path.startsWith("/api/partnerships")
-      || path.startsWith("/api/xero")) {
+      || path.startsWith("/api/xero") || path.startsWith("/api/staff-users")) {
     const name = (req.auth?.user?.name ?? "").toLowerCase();
     if (name !== "kye") {
       if (path.startsWith("/api/")) {

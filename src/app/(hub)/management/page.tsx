@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Trash2, Plus, Check, RefreshCw, PhoneCall, ClipboardList, TrendingUp, AlertCircle, ScrollText, KeyRound } from "lucide-react";
+import { Trash2, Plus, Check, RefreshCw, PhoneCall, ClipboardList, TrendingUp, AlertCircle, ScrollText, KeyRound, UserPlus, ShieldCheck, Pencil } from "lucide-react";
+import { swrJson } from "@/lib/cache";
 
 /* ─── types ─── */
 interface Task   { id: number; title: string; status: string; priority: string; assigned_to: string; due_date?: string; }
@@ -26,6 +27,178 @@ function auditTime(iso: string) {
 }
 
 /* ─── Team password reset (admin) ─── */
+interface StaffUser {
+  id: number; name: string; username: string; email: string | null;
+  allowed_sections: string[] | null; locked: boolean;
+}
+
+/** Kye creates staff logins and picks exactly which hub sections each can open. */
+function UsersAccess() {
+  const [users, setUsers] = useState<StaffUser[]>([]);
+  const [sections, setSections] = useState<{ href: string; label: string }[]>([]);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [draft, setDraft] = useState<string[] | null>(null); // null = all sections
+  const [showAdd, setShowAdd] = useState(false);
+  const [add, setAdd] = useState({ name: "", username: "", password: "" });
+  const [addSections, setAddSections] = useState<string[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+  const load = () =>
+    swrJson<{ users: StaffUser[]; sections: { href: string; label: string }[] }>("/api/staff-users", (d) => {
+      if (d && "users" in d) { setUsers(d.users); setSections(d.sections); }
+    });
+  useEffect(() => { load(); }, []);
+
+  function flash(ok: boolean, text: string) {
+    setMsg({ ok, text });
+    setTimeout(() => setMsg(null), 4500);
+  }
+  const toggleIn = (list: string[] | null, href: string): string[] =>
+    (list ?? sections.map((s) => s.href)).includes(href)
+      ? (list ?? sections.map((s) => s.href)).filter((h) => h !== href)
+      : [...(list ?? sections.map((s) => s.href)), href];
+
+  async function saveAccess(u: StaffUser) {
+    setBusy(true);
+    const res = await fetch("/api/staff-users", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: u.id, sections: draft }),
+    });
+    setBusy(false);
+    if (res.ok) {
+      flash(true, `${u.name}'s access saved — applies at their next sign-in`);
+      setEditing(null);
+      load();
+    } else flash(false, "Couldn't save access");
+  }
+
+  async function createUser(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const res = await fetch("/api/staff-users", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...add, sections: addSections }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) { flash(false, data.error ?? "Couldn't create user"); return; }
+    flash(true, `${add.name} added — they can sign in now`);
+    setAdd({ name: "", username: "", password: "" });
+    setAddSections(null);
+    setShowAdd(false);
+    load();
+  }
+
+  async function removeUser(u: StaffUser) {
+    if (!window.confirm(`Delete ${u.name}'s login? This can't be undone.`)) return;
+    const res = await fetch("/api/staff-users", {
+      method: "DELETE", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: u.id }),
+    });
+    if (res.ok) { flash(true, `${u.name} removed`); load(); }
+  }
+
+  const sectionPicker = (list: string[] | null, setList: (v: string[] | null) => void) => (
+    <div style={{ display: "grid", gap: "0.3rem", marginTop: "0.5rem" }}>
+      <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.78rem", fontWeight: 700, color: "var(--text-1)" }}>
+        <input type="checkbox" checked={list === null} onChange={(e) => setList(e.target.checked ? null : sections.map((s) => s.href))} />
+        All sections
+      </label>
+      {list !== null && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.25rem", paddingLeft: "1.3rem" }}>
+          {sections.map((s) => (
+            <label key={s.href} style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", color: "var(--text-2)" }}>
+              <input type="checkbox" checked={list.includes(s.href)} onChange={() => setList(toggleIn(list, s.href))} />
+              {s.label}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden", marginBottom: "1rem" }}>
+      <div style={{ padding: "1rem 1.15rem 0.75rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 800, fontSize: "0.95rem", color: "var(--text-1)" }}>
+            <ShieldCheck size={15} /> Users &amp; access
+          </div>
+          <div style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>Add team logins and choose which sections each person can open</div>
+        </div>
+        <button onClick={() => setShowAdd((v) => !v)} className="btn-primary" style={{ minHeight: 0, padding: "0.4rem 0.75rem", fontSize: "0.75rem" }}>
+          <UserPlus size={13} /> Add user
+        </button>
+      </div>
+
+      <div style={{ padding: "0.85rem 1.15rem", display: "grid", gap: "0.6rem" }}>
+        {msg && (
+          <div style={{ fontSize: "0.78rem", fontWeight: 600, color: msg.ok ? "#059669" : "#dc2626" }}>{msg.text}</div>
+        )}
+
+        {showAdd && (
+          <form onSubmit={createUser} style={{ border: "1px dashed var(--border-2)", borderRadius: 10, padding: "0.8rem", display: "grid", gap: "0.5rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+              <input className="field" placeholder="Name" value={add.name} onChange={(e) => setAdd((a) => ({ ...a, name: e.target.value }))} />
+              <input className="field" placeholder="Username" autoComplete="off" value={add.username} onChange={(e) => setAdd((a) => ({ ...a, username: e.target.value }))} />
+            </div>
+            <input className="field" type="text" placeholder="Password (min 8 characters)" autoComplete="off" value={add.password} onChange={(e) => setAdd((a) => ({ ...a, password: e.target.value }))} />
+            {sectionPicker(addSections, setAddSections)}
+            <button type="submit" className="btn-primary" disabled={busy || !add.name.trim() || !add.username.trim() || add.password.length < 8}
+              style={{ justifySelf: "start", fontSize: "0.78rem" }}>
+              {busy ? "Creating…" : "Create user"}
+            </button>
+          </form>
+        )}
+
+        {users.map((u) => {
+          const isKyeRow = u.username.toLowerCase() === "kye";
+          const isEditing = editing === u.id;
+          return (
+            <div key={u.id} style={{ borderTop: "1px solid var(--border)", paddingTop: "0.55rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--text-1)" }}>{u.name}</span>
+                  <span style={{ fontSize: "0.72rem", color: "var(--text-3)", marginLeft: 6 }}>({u.username})</span>
+                  {u.locked && <span style={{ fontSize: "0.64rem", fontWeight: 700, color: "#d97706", marginLeft: 6 }}>no password set</span>}
+                </div>
+                <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-3)" }}>
+                  {isKyeRow ? "Director — everything" : u.allowed_sections === null ? "All sections" : `${u.allowed_sections.length} section${u.allowed_sections.length === 1 ? "" : "s"}`}
+                </span>
+                {!isKyeRow && (
+                  <>
+                    <button onClick={() => { setEditing(isEditing ? null : u.id); setDraft(u.allowed_sections); }}
+                      className="btn-ghost" style={{ minHeight: 0, padding: "0.25rem 0.55rem", fontSize: "0.68rem" }}>
+                      <Pencil size={11} /> {isEditing ? "Close" : "Access"}
+                    </button>
+                    <button onClick={() => removeUser(u)} title="Delete user"
+                      style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", padding: "0.15rem" }}>
+                      <Trash2 size={13} />
+                    </button>
+                  </>
+                )}
+              </div>
+              {isEditing && (
+                <div style={{ padding: "0.4rem 0 0.6rem" }}>
+                  {sectionPicker(draft, setDraft)}
+                  <button onClick={() => saveAccess(u)} className="btn-primary" disabled={busy}
+                    style={{ marginTop: "0.55rem", fontSize: "0.75rem", minHeight: 0, padding: "0.4rem 0.8rem" }}>
+                    {busy ? "Saving…" : "Save access"}
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        <p style={{ fontSize: "0.68rem", color: "var(--text-3)", margin: "0.2rem 0 0" }}>
+          The dashboard is always available. Access changes apply the next time that person signs in.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function PasswordReset() {
   const [user, setUser] = useState("luka");
   const [pw, setPw] = useState("");
@@ -645,6 +818,7 @@ export default function ManagementPage() {
 
         {/* Team password reset + portal settings */}
         <div>
+          <UsersAccess />
           <PasswordReset />
           <PortalSettings />
         </div>

@@ -60,9 +60,31 @@ export async function registerPush(): Promise<boolean> {
   }
 }
 
+// Cleared notifications are remembered per device; ids no longer being
+// served are pruned so a lead that goes overdue again re-notifies.
+const DISMISS_KEY = "kw:dismissed-notifications";
+function loadDismissed(): string[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(DISMISS_KEY) ?? "[]");
+    return Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+function saveDismissed(ids: string[]) {
+  try { localStorage.setItem(DISMISS_KEY, JSON.stringify(ids)); } catch { /* private mode etc. */ }
+}
+
 /** Single source of truth for notifications — call once in LayoutShell. */
-export function useNotifications() {
+export function useNotifications(): {
+  items: NotificationItem[];
+  dismiss: (id: string) => void;
+  clearAll: () => void;
+} {
   const [items, setItems] = useState<NotificationItem[]>([]);
+  const [dismissed, setDismissed] = useState<string[]>(() =>
+    typeof window === "undefined" ? [] : loadDismissed()
+  );
   const alertedIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -74,10 +96,18 @@ export function useNotifications() {
         .then((data: NotificationItem[]) => {
           if (cancelled || !Array.isArray(data)) return;
           setItems(data);
+          // Prune dismissals for notifications that no longer exist
+          setDismissed((prev) => {
+            const live = new Set(data.map((i) => i.id));
+            const next = prev.filter((id) => live.has(id));
+            if (next.length !== prev.length) saveDismissed(next);
+            return next;
+          });
           // Best-effort browser alerts for new high-urgency items while the app is open
           if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+            const cleared = new Set(loadDismissed());
             for (const item of data) {
-              if (item.urgency !== "high" || alertedIds.current.has(item.id)) continue;
+              if (item.urgency !== "high" || alertedIds.current.has(item.id) || cleared.has(item.id)) continue;
               alertedIds.current.add(item.id);
               try {
                 new Notification(`KW | Innovations Hub — ${item.detail}`, { body: item.title, tag: item.id });
@@ -99,7 +129,22 @@ export function useNotifications() {
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
-  return items;
+  const visible = items.filter((i) => !dismissed.includes(i.id));
+  const dismiss = (id: string) => {
+    setDismissed((prev) => {
+      const next = [...new Set([...prev, id])];
+      saveDismissed(next);
+      return next;
+    });
+  };
+  const clearAll = () => {
+    setDismissed(() => {
+      const next = items.map((i) => i.id);
+      saveDismissed(next);
+      return next;
+    });
+  };
+  return { items: visible, dismiss, clearAll };
 }
 
 export function NotificationsBell({ count, onClick }: { count: number; onClick: () => void }) {
@@ -131,9 +176,10 @@ export function NotificationsBell({ count, onClick }: { count: number; onClick: 
 }
 
 export function NotificationsPanel({
-  items, open, onClose,
+  items, open, onClose, onDismiss, onClearAll,
 }: {
   items: NotificationItem[]; open: boolean; onClose: () => void;
+  onDismiss: (id: string) => void; onClearAll: () => void;
 }) {
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
 
@@ -159,6 +205,18 @@ export function NotificationsPanel({
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.85rem 1rem", borderBottom: "1px solid var(--border)" }}>
           <span style={{ fontWeight: 800, fontSize: "0.9rem", color: "var(--text-1)" }}>Notifications</span>
           <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            {items.length > 0 && (
+              <button
+                onClick={onClearAll}
+                style={{
+                  fontSize: "0.7rem", fontWeight: 700, color: "var(--text-3)",
+                  background: "none", border: "1px solid var(--border)",
+                  borderRadius: 7, padding: "0.25rem 0.55rem", cursor: "pointer",
+                }}
+              >
+                Clear all
+              </button>
+            )}
             {permission === "default" && (
               <button
                 onClick={() =>
@@ -217,6 +275,16 @@ export function NotificationsPanel({
                   </div>
                   <div style={{ fontSize: "0.73rem", color }}>{item.detail}</div>
                 </div>
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDismiss(item.id); }}
+                  title="Clear this notification"
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "var(--text-3)", padding: "0.2rem", display: "flex", flexShrink: 0, marginTop: 2,
+                  }}
+                >
+                  <X size={13} />
+                </button>
               </Link>
             );
           })}

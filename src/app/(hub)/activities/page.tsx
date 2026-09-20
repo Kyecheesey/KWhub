@@ -150,7 +150,7 @@ export default function ActivitiesPage() {
       <div className="page-header">
         <div>
           <p style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#4f46e5", marginBottom: "0.35rem" }}>KW | Innovations</p>
-          <h1 style={{ fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>Activities</h1>
+          <h1 style={{ fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>My Tasks</h1>
           <p style={{ color: "var(--text-2)", fontSize: "0.875rem", marginTop: "0.3rem" }}>
             {loading ? "Loading…" : `${activities.length} activities · ${totalDone} done${totalOverdue ? ` · ${totalOverdue} overdue` : ""}`}
           </p>
