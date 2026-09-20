@@ -10,8 +10,11 @@ import { sql } from "./db";
  * developer.xero.com) and the app's redirect URI registered exactly.
  */
 
+// Granular scopes (new-style Xero apps): org settings for the name, the
+// P&L report, and invoices for receivables. offline_access gives the
+// refresh token.
 export const XERO_SCOPES =
-  "offline_access accounting.reports.read accounting.transactions.read accounting.settings.read";
+  "offline_access accounting.settings.read accounting.reports.profitandloss.read accounting.invoices.read";
 
 const SETTINGS_KEY = "xero_tokens";
 
