@@ -65,6 +65,9 @@ export async function PATCH(request: Request) {
   if (!isKye(session)) return Response.json({ error: "Only Kye can manage users" }, { status: 403 });
   const b = await request.json();
   if (!b.id) return Response.json({ error: "id is required" }, { status: 400 });
+  const prev = await sql`SELECT name FROM users WHERE id = ${b.id} AND role = 'staff'`;
+  if (prev.length === 0) return Response.json({ error: "User not found" }, { status: 404 });
+  const oldName = (prev[0] as { name: string }).name;
   const rows = await sql`
     UPDATE users SET
       allowed_sections = ${b.sections !== undefined ? cleanSections(b.sections) : sql`allowed_sections`},
@@ -73,7 +76,17 @@ export async function PATCH(request: Request) {
     WHERE id = ${b.id} AND role = 'staff'
     RETURNING id, name, username, allowed_sections
   `;
-  if (rows.length === 0) return Response.json({ error: "User not found" }, { status: 404 });
+  const newName = (rows[0] as { name: string }).name;
+  if (newName !== oldName) {
+    // Carry the rename through to everything assigned by name
+    await Promise.all([
+      sql`UPDATE potentials  SET assigned_to = ${newName} WHERE LOWER(BTRIM(assigned_to)) = LOWER(${oldName})`,
+      sql`UPDATE tasks       SET assigned_to = ${newName} WHERE LOWER(BTRIM(assigned_to)) = LOWER(${oldName})`,
+      sql`UPDATE activities  SET assigned_to = ${newName} WHERE LOWER(BTRIM(assigned_to)) = LOWER(${oldName})`,
+      sql`UPDATE client_jobs SET assigned_to = ${newName} WHERE LOWER(BTRIM(assigned_to)) = LOWER(${oldName})`,
+      sql`UPDATE clients     SET assigned_to = ${newName} WHERE LOWER(BTRIM(assigned_to)) = LOWER(${oldName})`,
+    ]);
+  }
   return Response.json(rows[0]);
 }
 

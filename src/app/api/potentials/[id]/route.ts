@@ -15,11 +15,11 @@ export async function PUT(
   const prev = await sql`SELECT status, assigned_to FROM potentials WHERE id=${id}`;
   const rows = await sql`
     UPDATE potentials
-    SET business_name=${business_name}, contact_name=${contact_name ?? null},
-        phone=${phone ?? null}, email=${email ?? null}, notes=${notes ?? null},
-        status=${status ?? "new"}, assigned_to=${assigned_to ?? null},
-        contact_method=${contact_method ?? null},
-        follow_up_date=${follow_up_date ?? null},
+    SET business_name=${business_name}, contact_name=${contact_name || null},
+        phone=${phone || null}, email=${email || null}, notes=${notes || null},
+        status=${status || "new"}, assigned_to=${assigned_to?.trim() || null},
+        contact_method=${contact_method || null},
+        follow_up_date=${follow_up_date || null},
         value_cents=${value_cents ?? null},
         updated_at=NOW()
     WHERE id=${id}

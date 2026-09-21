@@ -38,6 +38,7 @@ function UsersAccess() {
   const [sections, setSections] = useState<{ href: string; label: string }[]>([]);
   const [editing, setEditing] = useState<number | null>(null);
   const [draft, setDraft] = useState<string[] | null>(null); // null = all sections
+  const [draftName, setDraftName] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [add, setAdd] = useState({ name: "", username: "", password: "" });
   const [addSections, setAddSections] = useState<string[] | null>(null);
@@ -61,16 +62,19 @@ function UsersAccess() {
 
   async function saveAccess(u: StaffUser) {
     setBusy(true);
+    const renamed = draftName.trim() && draftName.trim() !== u.name;
     const res = await fetch("/api/staff-users", {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: u.id, sections: draft }),
+      body: JSON.stringify({ id: u.id, sections: draft, ...(renamed ? { name: draftName.trim() } : {}) }),
     });
     setBusy(false);
     if (res.ok) {
-      flash(true, `${u.name}'s access saved — applies at their next sign-in`);
+      flash(true, renamed
+        ? `Saved — ${u.name} is now ${draftName.trim()} everywhere (their login username stays "${u.username}")`
+        : `${u.name}'s access saved — applies at their next sign-in`);
       setEditing(null);
       load();
-    } else flash(false, "Couldn't save access");
+    } else flash(false, "Couldn't save");
   }
 
   async function createUser(e: React.FormEvent) {
@@ -168,9 +172,9 @@ function UsersAccess() {
                 </span>
                 {!isKyeRow && (
                   <>
-                    <button onClick={() => { setEditing(isEditing ? null : u.id); setDraft(u.allowed_sections); }}
+                    <button onClick={() => { setEditing(isEditing ? null : u.id); setDraft(u.allowed_sections); setDraftName(u.name); }}
                       className="btn-ghost" style={{ minHeight: 0, padding: "0.25rem 0.55rem", fontSize: "0.68rem" }}>
-                      <Pencil size={11} /> {isEditing ? "Close" : "Access"}
+                      <Pencil size={11} /> {isEditing ? "Close" : "Edit"}
                     </button>
                     <button onClick={() => removeUser(u)} title="Delete user"
                       style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", padding: "0.15rem" }}>
@@ -181,10 +185,17 @@ function UsersAccess() {
               </div>
               {isEditing && (
                 <div style={{ padding: "0.4rem 0 0.6rem" }}>
+                  <label style={{ display: "grid", gap: "0.25rem", fontSize: "0.72rem", fontWeight: 700, color: "var(--text-2)", maxWidth: 280 }}>
+                    Name
+                    <input className="field" value={draftName} onChange={(e) => setDraftName(e.target.value)} />
+                  </label>
+                  <p style={{ fontSize: "0.66rem", color: "var(--text-3)", margin: "0.25rem 0 0" }}>
+                    Renaming also updates everything assigned to them — potentials, tasks, jobs and clients.
+                  </p>
                   {sectionPicker(draft, setDraft)}
-                  <button onClick={() => saveAccess(u)} className="btn-primary" disabled={busy}
+                  <button onClick={() => saveAccess(u)} className="btn-primary" disabled={busy || !draftName.trim()}
                     style={{ marginTop: "0.55rem", fontSize: "0.75rem", minHeight: 0, padding: "0.4rem 0.8rem" }}>
-                    {busy ? "Saving…" : "Save access"}
+                    {busy ? "Saving…" : "Save"}
                   </button>
                 </div>
               )}

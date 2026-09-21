@@ -157,7 +157,11 @@ export default function PotentialsPage() {
   async function save() {
     if (!form.business_name.trim()) return;
     const url = editId ? `/api/potentials/${editId}` : "/api/potentials";
-    await fetch(url, { method: editId ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, value_cents: form.value ? Math.round(parseFloat(form.value) * 100) : null }) });
+    const res = await fetch(url, { method: editId ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, value_cents: form.value ? Math.round(parseFloat(form.value) * 100) : null }) });
+    if (!res.ok) {
+      alert("Couldn't save this potential — please try again.");
+      return; // keep the form open so nothing is lost
+    }
     setShowForm(false); load();
   }
 
