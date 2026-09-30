@@ -13,6 +13,7 @@ export interface ProposalRow {
   id: number;
   external_id: string;
   kind: string;
+  name: string | null;
   title: string;
   number: string | null;
   client_name: string | null;

@@ -28,7 +28,7 @@ export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promis
 let _migrated: Promise<void> | null = null;
 
 // Bump whenever a statement is added/changed below, so existing databases re-run the set.
-const SCHEMA_VERSION = "2026-09-30.1";
+const SCHEMA_VERSION = "2026-09-30.2";
 
 export function migrate(): Promise<void> {
   if (!_migrated) {
@@ -586,6 +586,8 @@ async function runMigrations() {
   await sql`CREATE INDEX IF NOT EXISTS proposals_potential_idx ON proposals (potential_id)`;
   await sql`CREATE INDEX IF NOT EXISTS proposals_client_idx ON proposals (client_id)`;
   await sql`ALTER TABLE proposals ENABLE ROW LEVEL SECURITY`;
+  // Team-only name set in ProposalMe (the title is the client-facing headline)
+  await sql`ALTER TABLE proposals ADD COLUMN IF NOT EXISTS name TEXT`;
   // Per-user hub section access (JSON array of nav hrefs; NULL = all sections)
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS allowed_sections TEXT`;
   await sql`

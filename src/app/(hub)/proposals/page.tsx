@@ -16,7 +16,7 @@ import {
  */
 
 interface Proposal {
-  id: number; external_id: string; kind: string; title: string; number: string | null;
+  id: number; external_id: string; kind: string; name: string | null; title: string; number: string | null;
   client_name: string | null; client_email: string | null; url: string | null; stage: string;
   views: number; answers: number; last_answer: string | null; package: string | null; last_note: string | null;
   potential_id: number | null; client_id: number | null;
@@ -127,7 +127,7 @@ export default function ProposalsPage() {
 
   const shown = proposals.filter((p) =>
     (filter === "all" || p.stage === filter) &&
-    (!query || `${p.title} ${p.client_name ?? ""} ${p.package ?? ""} ${p.potential_name ?? ""} ${p.client_business ?? ""}`.toLowerCase().includes(query.toLowerCase())),
+    (!query || `${p.name ?? ""} ${p.title} ${p.client_name ?? ""} ${p.package ?? ""} ${p.potential_name ?? ""} ${p.client_business ?? ""}`.toLowerCase().includes(query.toLowerCase())),
   );
 
   const opened = proposals.filter((p) => p.views > 0).length;
@@ -249,9 +249,17 @@ export default function ProposalsPage() {
             <div key={p.id} style={{ ...card, padding: "1rem 1.15rem", borderLeft: `3px solid ${st.color}` }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: "0.6rem", flexWrap: "wrap" }}>
                 <div style={{ flex: 1, minWidth: 240 }}>
-                  <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "var(--text-1)" }}>
-                    {p.number ? <span style={{ color: "var(--text-3)", fontWeight: 600 }}>{p.number} · </span> : null}{p.title}
+                  <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "var(--text-1)", display: "flex", alignItems: "center", gap: "0.45rem", flexWrap: "wrap" }}>
+                    <span>{p.name || p.title}</span>
+                    {p.kind === "unpublished" && (
+                      <span style={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--text-3)", border: "1px solid var(--border)", borderRadius: 5, padding: "0.05rem 0.35rem" }}>Unpublished</span>
+                    )}
                   </div>
+                  {p.name && p.name !== p.title && (
+                    <div style={{ fontSize: "0.75rem", color: "var(--text-2)", marginTop: "0.1rem" }}>
+                      {p.number ? `${p.number} · ` : ""}&ldquo;{p.title}&rdquo;
+                    </div>
+                  )}
                   <div style={{ fontSize: "0.73rem", color: "var(--text-3)", marginTop: "0.15rem" }}>{meta}</div>
                   {p.last_answer && (
                     <div style={{ fontSize: "0.78rem", color: "var(--text-2)", marginTop: "0.4rem" }}>
@@ -298,7 +306,7 @@ export default function ProposalsPage() {
                 }}>
                   <st.icon size={11} /> {st.label}
                 </span>
-                {p.url && (
+                {p.url && p.kind !== "unpublished" && (
                   <a href={`${p.url}?preview`} target="_blank" rel="noreferrer"
                     style={{ ...btnGhost, color: ACCENT, borderColor: "rgba(79,70,229,0.4)" }}>
                     Open <ExternalLink size={11} />

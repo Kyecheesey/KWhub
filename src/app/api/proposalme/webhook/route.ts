@@ -2,7 +2,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { sql, migrate } from "@/lib/db";
 import { logEvent } from "@/lib/events";
 import { sendPush } from "@/lib/push";
-import { ACCEPTED_ANSWER, linkedRecord, matchRecord, nextStage, type ProposalRow, type Stage } from "@/lib/proposals";
+import { ACCEPTED_ANSWER, STAGES, linkedRecord, matchRecord, nextStage, type ProposalRow, type Stage } from "@/lib/proposals";
 
 /**
  * ProposalMe webhook receiver. ProposalMe (kwi-proposals.vercel.app) posts
@@ -13,9 +13,15 @@ import { ACCEPTED_ANSWER, linkedRecord, matchRecord, nextStage, type ProposalRow
  */
 
 interface Payload {
-  type: "proposal.published" | "proposal.opened" | "proposal.answered" | "proposal.stage";
+  type: "proposal.published" | "proposal.updated" | "proposal.opened" | "proposal.answered" | "proposal.stage"
+    | "proposal.renamed" | "proposal.sync" | "proposal.unpublished";
   at: string;
-  proposal: { id: string; kind?: string; title?: string; number?: string; client?: string; clientEmail?: string; url?: string };
+  proposal: { id: string; kind?: string; name?: string; title?: string; number?: string; client?: string; clientEmail?: string; url?: string };
+  /** ProposalMe's full current state for this proposal; mirrored as-is when present. */
+  summary?: {
+    stage?: string; views?: number; responses?: number; answer?: string; package?: string; lastNote?: string;
+    publishedAt?: string | null; firstViewedAt?: string | null; lastViewedAt?: string | null; respondedAt?: string | null;
+  };
   event: { at?: string; first?: boolean; page?: string; status?: string; package?: string; notes?: string; name?: string; email?: string; stage?: string };
 }
 
@@ -63,11 +69,13 @@ export async function POST(request: Request) {
   const at = ev.at ?? body.at;
 
   // Upsert the mirror row; published_at is only set when the row is created.
+  const kind = body.type === "proposal.unpublished" ? "unpublished" : p.kind ?? "published";
   const upserted = await sql`
-    INSERT INTO proposals (external_id, kind, title, number, client_name, client_email, url, published_at)
-    VALUES (${ext}, ${p.kind ?? "published"}, ${p.title || "Untitled proposal"}, ${p.number || null},
-            ${p.client || null}, ${p.clientEmail || null}, ${p.url || null}, ${at})
+    INSERT INTO proposals (external_id, kind, name, title, number, client_name, client_email, url, published_at)
+    VALUES (${ext}, ${kind}, ${p.name || null}, ${p.title || "Untitled proposal"}, ${p.number || null},
+            ${p.client || null}, ${p.clientEmail || null}, ${p.url || null}, ${body.summary?.publishedAt ?? at})
     ON CONFLICT (external_id) DO UPDATE SET
+      kind = EXCLUDED.kind, name = COALESCE(EXCLUDED.name, proposals.name),
       title = EXCLUDED.title, number = EXCLUDED.number, client_name = EXCLUDED.client_name,
       client_email = COALESCE(EXCLUDED.client_email, proposals.client_email),
       url = EXCLUDED.url, updated_at = NOW()
@@ -88,7 +96,19 @@ export async function POST(request: Request) {
   }
 
   const stage = nextStage(row.stage, body.type, ev);
-  if (body.type === "proposal.opened") {
+  const sum = body.summary;
+  if (sum && STAGES.includes(sum.stage as Stage)) {
+    // Mirror ProposalMe's own numbers, so the hub matches even if an event was missed.
+    const res = await sql`
+      UPDATE proposals SET stage = ${sum.stage as Stage}, views = ${sum.views ?? 0}, answers = ${sum.responses ?? 0},
+        last_answer = ${sum.answer || null}, package = ${sum.package || null},
+        last_note = ${sum.lastNote ?? (body.type === "proposal.answered" ? ev.notes || null : row.last_note)},
+        first_viewed_at = ${sum.firstViewedAt ?? null}, last_viewed_at = ${sum.lastViewedAt ?? null},
+        responded_at = ${sum.respondedAt ?? null}, updated_at = NOW()
+      WHERE id = ${row.id} RETURNING *
+    `;
+    row = res[0] as unknown as ProposalRow;
+  } else if (body.type === "proposal.opened") {
     const res = await sql`
       UPDATE proposals SET views = views + 1, stage = ${stage},
         first_viewed_at = COALESCE(first_viewed_at, ${at}), last_viewed_at = ${at}, updated_at = NOW()
@@ -125,12 +145,15 @@ export async function POST(request: Request) {
       const detail = [`${ev.status}${ev.package ? ` · ${ev.package}` : ""}`, ev.notes ? `"${ev.notes}"` : ""].filter(Boolean).join(" — ");
       await logEvent({ ...base, action: "proposal_answered", detail });
       if (record.type === "potential") await sql`UPDATE potentials SET updated_at = NOW() WHERE id = ${record.id}`;
+    } else if (body.type === "proposal.unpublished") {
+      await logEvent({ ...base, action: "proposal_unpublished", detail: row.name || row.title });
     } else if (body.type === "proposal.stage") {
-      await logEvent({ ...base, action: "proposal_stage", detail: STAGE_LABEL[stage] });
+      await logEvent({ ...base, action: "proposal_stage", detail: STAGE_LABEL[row.stage] ?? row.stage });
       // Closing the deal in ProposalMe closes the potential too.
-      if (record.type === "potential" && (stage === "won" || stage === "lost") && record.status !== stage) {
-        await sql`UPDATE potentials SET status = ${stage}, updated_at = NOW() WHERE id = ${record.id}`;
-        await logEvent({ ...base, action: "stage_changed", detail: `${record.status} → ${stage}` });
+      const closed = row.stage;
+      if (record.type === "potential" && (closed === "won" || closed === "lost") && record.status !== closed) {
+        await sql`UPDATE potentials SET status = ${closed}, updated_at = NOW() WHERE id = ${record.id}`;
+        await logEvent({ ...base, action: "stage_changed", detail: `${record.status} → ${closed}` });
       }
     }
   }
