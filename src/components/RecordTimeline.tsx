@@ -29,6 +29,7 @@ const ACTION_META: Record<string, { label: string; icon: React.FC<{ size?: numbe
   proposal_stage:    { label: "Proposal stage",    icon: ArrowRightLeft,        color: "#7c85f3" },
   proposal_linked:   { label: "Proposal linked",   icon: Link2,                 color: "#8b95c0" },
   proposal_unpublished: { label: "Proposal unpublished", icon: ScrollText,    color: "#8b95c0" },
+  proposal_emailed:  { label: "Proposal emailed",  icon: ScrollText,            color: "#4f46e5" },
 };
 
 function timeAgo(iso: string) {

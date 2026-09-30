@@ -14,7 +14,7 @@ import { ACCEPTED_ANSWER, STAGES, linkedRecord, matchRecord, nextStage, type Pro
 
 interface Payload {
   type: "proposal.published" | "proposal.updated" | "proposal.opened" | "proposal.answered" | "proposal.stage"
-    | "proposal.renamed" | "proposal.sync" | "proposal.unpublished";
+    | "proposal.renamed" | "proposal.sync" | "proposal.unpublished" | "proposal.emailed";
   at: string;
   proposal: { id: string; kind?: string; name?: string; title?: string; number?: string; client?: string; clientEmail?: string; url?: string };
   /** ProposalMe's full current state for this proposal; mirrored as-is when present. */
@@ -22,7 +22,7 @@ interface Payload {
     stage?: string; views?: number; responses?: number; answer?: string; package?: string; lastNote?: string;
     publishedAt?: string | null; firstViewedAt?: string | null; lastViewedAt?: string | null; respondedAt?: string | null;
   };
-  event: { at?: string; first?: boolean; page?: string; status?: string; package?: string; notes?: string; name?: string; email?: string; stage?: string };
+  event: { at?: string; first?: boolean; page?: string; status?: string; package?: string; notes?: string; name?: string; email?: string; stage?: string; to?: string; kind?: string; by?: string };
 }
 
 const MAX_SKEW_MS = 15 * 60 * 1000;
@@ -145,6 +145,9 @@ export async function POST(request: Request) {
       const detail = [`${ev.status}${ev.package ? ` · ${ev.package}` : ""}`, ev.notes ? `"${ev.notes}"` : ""].filter(Boolean).join(" — ");
       await logEvent({ ...base, action: "proposal_answered", detail });
       if (record.type === "potential") await sql`UPDATE potentials SET updated_at = NOW() WHERE id = ${record.id}`;
+    } else if (body.type === "proposal.emailed") {
+      const to = ev.to ?? "";
+      await logEvent({ ...base, action: "proposal_emailed", detail: `${ev.kind === "followup" ? "Follow-up" : row.title}${to ? ` → ${to}` : ""}${ev.by ? ` (by ${ev.by})` : ""}` });
     } else if (body.type === "proposal.unpublished") {
       await logEvent({ ...base, action: "proposal_unpublished", detail: row.name || row.title });
     } else if (body.type === "proposal.stage") {
