@@ -8,7 +8,7 @@ export default auth((req) => {
   const role = req.auth?.user?.role ?? "staff";
 
   // Public support intake + signed webhooks — no login required
-  if (path.startsWith("/api/public") || path === "/api/signit/webhook" || path === "/api/proposalme/webhook") {
+  if (path.startsWith("/api/public") || path === "/api/signit/webhook" || path === "/api/proposalme/webhook" || path === "/api/proposalme/login") {
     return;
   }
   if (path === "/support") {
