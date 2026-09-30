@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, CalendarClock, ClipboardList, Hourglass, BellRing, X, MessageSquare, Rocket } from "lucide-react";
+import { Bell, CalendarClock, ClipboardList, Hourglass, BellRing, X, MessageSquare, Rocket, ScrollText } from "lucide-react";
 
 export interface NotificationItem {
   id: string;
-  type: "follow_up" | "task" | "stale" | "portal" | "signup";
+  type: "follow_up" | "task" | "stale" | "portal" | "signup" | "proposal";
   title: string;
   detail: string;
   href: string;
@@ -19,6 +19,7 @@ const TYPE_ICON: Record<NotificationItem["type"], React.FC<{ size?: number }>> =
   stale: Hourglass,
   portal: MessageSquare,
   signup: Rocket,
+  proposal: ScrollText,
 };
 const URGENCY_COLOR: Record<NotificationItem["urgency"], string> = {
   high: "#dc2626",

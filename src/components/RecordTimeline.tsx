@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Phone, Mail, MessageSquare, History,
   Plus, Pencil, Trash2, ArrowRightLeft, UserCircle2, PhoneOutgoing,
+  ScrollText, Eye, MessageCircleQuestion, Link2,
 } from "lucide-react";
 
 interface EventRow {
@@ -22,6 +23,11 @@ const ACTION_META: Record<string, { label: string; icon: React.FC<{ size?: numbe
   status_changed: { label: "Status",      icon: ArrowRightLeft, color: "#7c85f3" },
   reassigned:     { label: "Reassigned",  icon: UserCircle2,    color: "#d97706" },
   contacted:      { label: "Contacted",   icon: PhoneOutgoing,  color: "#0891b2" },
+  proposal_sent:     { label: "Proposal sent",     icon: ScrollText,            color: "#4f46e5" },
+  proposal_opened:   { label: "Proposal opened",   icon: Eye,                   color: "#2563eb" },
+  proposal_answered: { label: "Proposal answered", icon: MessageCircleQuestion, color: "#059669" },
+  proposal_stage:    { label: "Proposal stage",    icon: ArrowRightLeft,        color: "#7c85f3" },
+  proposal_linked:   { label: "Proposal linked",   icon: Link2,                 color: "#8b95c0" },
 };
 
 function timeAgo(iso: string) {

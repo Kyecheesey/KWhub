@@ -12,7 +12,7 @@ interface Task {
 
 export interface Notification {
   id: string;
-  type: "follow_up" | "task" | "stale" | "portal" | "signup";
+  type: "follow_up" | "task" | "stale" | "portal" | "signup" | "proposal";
   title: string;
   detail: string;
   href: string;
@@ -48,7 +48,7 @@ export async function GET() {
   const session = await auth();
   const me = (session?.user?.name ?? "").toLowerCase();
 
-  const [potRows, taskRows, portalRows, signupRows] = await Promise.all([
+  const [potRows, taskRows, portalRows, signupRows, proposalRows] = await Promise.all([
     sql`SELECT id, business_name, status, assigned_to, follow_up_date, updated_at FROM potentials`,
     sql`SELECT id, title, status, assigned_to, due_date FROM tasks WHERE status != 'done'`,
     sql`
@@ -63,11 +63,24 @@ export async function GET() {
       WHERE partner_id IS NULL AND source = 'signup' AND created_at > NOW() - INTERVAL '7 days'
       ORDER BY created_at DESC LIMIT 10
     `,
+    // ProposalMe: fresh answers, and first opens still waiting on an answer
+    sql`
+      SELECT id, title, client_name, stage, last_answer, package, responded_at, first_viewed_at
+      FROM proposals
+      WHERE stage NOT IN ('won', 'lost')
+        AND (responded_at > NOW() - INTERVAL '48 hours'
+             OR (answers = 0 AND first_viewed_at > NOW() - INTERVAL '24 hours'))
+      ORDER BY COALESCE(responded_at, first_viewed_at) DESC LIMIT 10
+    `,
   ]);
   const pots = potRows as unknown as Pot[];
   const tasks = taskRows as unknown as Task[];
   const portalMsgs = portalRows as unknown as { id: number; client_id: number; body: string; business_name: string }[];
   const signups = signupRows as unknown as { id: number; business_name: string; contact_name: string | null }[];
+  const proposals = proposalRows as unknown as {
+    id: number; title: string; client_name: string | null; stage: string;
+    last_answer: string | null; package: string | null; responded_at: string | null; first_viewed_at: string | null;
+  }[];
 
   const items: Notification[] = [];
 
@@ -132,6 +145,20 @@ export async function GET() {
       detail: `New business signed up${s.contact_name ? ` — ${s.contact_name}` : ""}`,
       href: `/clients/${s.id}`,
       urgency: "medium",
+    });
+  }
+
+  for (const p of proposals) {
+    const answered = !!p.responded_at && Date.now() - new Date(p.responded_at).getTime() < 2 * DAY;
+    items.push({
+      id: answered ? `proposal-answer-${p.id}-${p.responded_at}` : `proposal-open-${p.id}`,
+      type: "proposal",
+      title: p.client_name || p.title,
+      detail: answered
+        ? `Answered your proposal: ${p.last_answer}${p.package ? ` (${p.package})` : ""}`
+        : "Opened your proposal",
+      href: "/proposals",
+      urgency: answered && p.stage === "accepted" ? "high" : answered ? "medium" : "low",
     });
   }
 

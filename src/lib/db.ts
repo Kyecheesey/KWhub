@@ -28,7 +28,7 @@ export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promis
 let _migrated: Promise<void> | null = null;
 
 // Bump whenever a statement is added/changed below, so existing databases re-run the set.
-const SCHEMA_VERSION = "2026-09-20.2";
+const SCHEMA_VERSION = "2026-09-30.1";
 
 export function migrate(): Promise<void> {
   if (!_migrated) {
@@ -554,6 +554,38 @@ async function runMigrations() {
   await sql`ALTER TABLE call_list ADD COLUMN IF NOT EXISTS phones TEXT`;
   await sql`ALTER TABLE call_list ADD COLUMN IF NOT EXISTS interested TEXT`;
   await sql`ALTER TABLE call_list ADD COLUMN IF NOT EXISTS call_notes TEXT`;
+  // Proposals — mirrored from ProposalMe (kwi-proposals.vercel.app) by its
+  // signed webhook; external_id is ProposalMe's id. potential_id/client_id
+  // link it to a hub record (matched automatically, or set on /proposals).
+  await sql`
+    CREATE TABLE IF NOT EXISTS proposals (
+      id              SERIAL PRIMARY KEY,
+      external_id     TEXT NOT NULL UNIQUE,
+      kind            TEXT DEFAULT 'published',
+      title           TEXT NOT NULL,
+      number          TEXT,
+      client_name     TEXT,
+      client_email    TEXT,
+      url             TEXT,
+      stage           TEXT DEFAULT 'sent',
+      views           INTEGER DEFAULT 0,
+      answers         INTEGER DEFAULT 0,
+      last_answer     TEXT,
+      package         TEXT,
+      last_note       TEXT,
+      potential_id    INTEGER,
+      client_id       INTEGER,
+      published_at    TIMESTAMPTZ,
+      first_viewed_at TIMESTAMPTZ,
+      last_viewed_at  TIMESTAMPTZ,
+      responded_at    TIMESTAMPTZ,
+      created_at      TIMESTAMPTZ DEFAULT NOW(),
+      updated_at      TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS proposals_potential_idx ON proposals (potential_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS proposals_client_idx ON proposals (client_id)`;
+  await sql`ALTER TABLE proposals ENABLE ROW LEVEL SECURITY`;
   // Per-user hub section access (JSON array of nav hrefs; NULL = all sections)
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS allowed_sections TEXT`;
   await sql`

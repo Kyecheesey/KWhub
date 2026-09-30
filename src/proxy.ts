@@ -8,7 +8,7 @@ export default auth((req) => {
   const role = req.auth?.user?.role ?? "staff";
 
   // Public support intake + signed webhooks — no login required
-  if (path.startsWith("/api/public") || path === "/api/signit/webhook") {
+  if (path.startsWith("/api/public") || path === "/api/signit/webhook" || path === "/api/proposalme/webhook") {
     return;
   }
   if (path === "/support") {
@@ -95,7 +95,7 @@ export default auth((req) => {
   if (isLoggedIn && role === "staff" && (req.auth?.user?.name ?? "").toLowerCase() !== "kye") {
     const sections = (req.auth?.user as { sections?: string[] | null } | undefined)?.sections;
     if (Array.isArray(sections)) {
-      const gated = ["/clients", "/client-jobs", "/content", "/contracts", "/potentials",
+      const gated = ["/clients", "/client-jobs", "/content", "/contracts", "/potentials", "/proposals",
         "/follow-ups", "/call-list", "/insights", "/my-work", "/activities", "/tasks"];
       const hit = gated.find((p) => path === p || path.startsWith(p + "/"));
       if (hit && !sections.includes(hit)) {
