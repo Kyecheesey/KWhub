@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { sql, migrate } from "@/lib/db";
 import { logEvent } from "@/lib/events";
 import { sendPush } from "@/lib/push";
@@ -34,12 +34,13 @@ const STAGE_LABEL: Record<Stage, string> = {
 };
 
 export async function POST(request: Request) {
-  const secret = process.env.PROPOSALME_WEBHOOK_SECRET;
+  const secret = process.env.PROPOSALME_WEBHOOK_SECRET?.trim();
   if (!secret) return Response.json({ error: "PROPOSALME_WEBHOOK_SECRET isn't set" }, { status: 503 });
 
   const rawBody = await request.text();
   if (!verify(rawBody, request.headers.get("x-proposalme-signature"), secret)) {
-    return Response.json({ error: "Bad signature" }, { status: 401 });
+    // key: first 8 hex of sha256(secret), so a mismatch can be spotted without revealing either secret.
+    return Response.json({ error: "Bad signature", key: createHash("sha256").update(secret).digest("hex").slice(0, 8) }, { status: 401 });
   }
 
   let body: Payload;
