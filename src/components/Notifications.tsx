@@ -111,7 +111,7 @@ export function useNotifications(): {
               if (item.urgency !== "high" || alertedIds.current.has(item.id) || cleared.has(item.id)) continue;
               alertedIds.current.add(item.id);
               try {
-                new Notification(`KW | Innovations Hub — ${item.detail}`, { body: item.title, tag: item.id });
+                new Notification(`KWI ONE — ${item.detail}`, { body: item.title, tag: item.id });
               } catch {
                 // Notification constructor can throw on some mobile browsers; ignore.
               }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { LogoMark } from "@/components/Logo";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import {
@@ -975,20 +976,18 @@ export default function PortalPage() {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={client.partner.logo_url} alt={client.partner.name}
               style={{ width: 32, height: 32, borderRadius: 9, objectFit: "cover" }} />
-          ) : (
+          ) : client?.partner ? (
             <div style={{
               width: 32, height: 32, borderRadius: 9,
-              background: client?.partner
-                ? `linear-gradient(135deg, ${client.partner.accent_color ?? "#7c3aed"}, #4f46e5)`
-                : "linear-gradient(135deg,#0891b2,#4f46e5)",
+              background: `linear-gradient(135deg, ${client.partner.accent_color ?? "#7c3aed"}, #4f46e5)`,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontWeight: 900, fontSize: "0.75rem", color: "#ffffff",
               boxShadow: "0 2px 12px rgba(45,212,232,0.35)",
             }}>
-              {client?.partner
-                ? client.partner.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()
-                : "KW"}
+              {client.partner.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
             </div>
+          ) : (
+            <LogoMark size={32} style={{ borderRadius: 9, boxShadow: "0 2px 12px rgba(79,70,229,0.3)" }} />
           )}
           <div>
             <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "var(--text-1)", letterSpacing: "-0.02em", lineHeight: 1.1 }}>

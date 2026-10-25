@@ -1,18 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
   Lock, User, LogIn, AlertCircle, Eye, EyeOff,
-  Users, Target, CalendarDays, CheckCircle2,
+  Users, Target, CalendarDays, CheckCircle2, Sparkles, ArrowRight,
 } from "lucide-react";
+import { Logo, LogoMark, SplashScreen, SPLASH_HANDOFF_KEY } from "@/components/Logo";
 
 const highlights = [
-  { icon: Users, label: "Clients & pipeline in one place" },
-  { icon: Target, label: "Track every potential from lead to won" },
-  { icon: CalendarDays, label: "Roster, tasks and team activity" },
+  { icon: Users, label: "Clients & pipeline in one place", sub: "Every account, job and approval" },
+  { icon: Target, label: "Track every potential from lead to won", sub: "Follow-ups, calls and proposals" },
+  { icon: CalendarDays, label: "Roster, tasks and team activity", sub: "Know what everyone's working on" },
 ];
+
+const AUDIENCES = [["staff", "Staff"], ["client", "Client Portal"], ["partner", "Partner"]] as const;
 
 type Mode = "signin" | "forgot" | "reset" | "reset-done";
 
@@ -27,7 +30,18 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
+  // Loading screen: "intro" on first paint, "entering" after a successful sign-in
+  const [splash, setSplash] = useState<"intro" | "intro-leaving" | "entering" | null>("intro");
+  const [splashMsg, setSplashMsg] = useState("Starting KWI ONE…");
   const router = useRouter();
+
+  useEffect(() => {
+    const fast = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const t1 = setTimeout(() => setSplash((v) => (v === "intro" ? "intro-leaving" : v)), fast ? 350 : 1100);
+    const t2 = setTimeout(() => setSplash((v) => (v === "intro-leaving" ? null : v)), fast ? 500 : 1550);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
 
   function switchMode(next: Mode) {
     setMode(next);
@@ -44,13 +58,22 @@ export default function LoginPage() {
       password,
       redirect: false,
     });
-    setLoading(false);
     if (res?.error) {
+      setLoading(false);
       setError("Incorrect username or password.");
+      setShakeKey((k) => k + 1);
     } else {
       const next = new URLSearchParams(window.location.search).get("next");
-      router.push(next && next.startsWith("/") ? next : "/");
-      router.refresh();
+      const dest = next && next.startsWith("/") ? next : "/";
+      setSplashMsg("Signing you in…");
+      setSplash("entering");
+      router.prefetch(dest);
+      try { sessionStorage.setItem(SPLASH_HANDOFF_KEY, "1"); } catch {}
+      setTimeout(() => setSplashMsg("Loading your workspace…"), 650);
+      setTimeout(() => {
+        router.push(dest);
+        router.refresh();
+      }, 1200);
     }
   }
 
@@ -92,123 +115,95 @@ export default function LoginPage() {
     weekday: "long", day: "numeric", month: "long",
   });
 
+  const audienceIdx = AUDIENCES.findIndex(([k]) => k === audience);
+
   return (
     <div className="login-shell">
+      {splash && (
+        <div onClick={() => splash.startsWith("intro") && setSplash(null)}>
+          <SplashScreen message={splashMsg} leaving={splash === "intro-leaving"} />
+        </div>
+      )}
+
       {/* ── Brand panel (desktop only) ── */}
       <aside className="login-brand">
-        <div className="login-blob" style={{ width: 340, height: 340, top: -80, right: -80, background: "rgba(79,70,229,0.14)" }} />
-        <div className="login-blob" style={{ width: 300, height: 300, bottom: -100, left: -60, background: "rgba(2,132,199,0.10)" }} />
+        <div className="login-grid" />
+        <div className="login-orbit"><span className="login-orbit-dot" /></div>
+        <div className="login-blob" style={{ width: 360, height: 360, top: -120, left: -80, background: "rgba(99,102,241,0.30)" }} />
+        <div className="login-blob" style={{ width: 300, height: 300, bottom: -120, right: 40, background: "rgba(34,211,238,0.18)", animationDelay: "-6s" }} />
 
         <div style={{ position: "relative" }}>
-          <div style={{
-            width: 46, height: 46, borderRadius: 13,
-            background: "linear-gradient(135deg,#0891b2,#4f46e5)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontWeight: 900, fontSize: "1rem", color: "#ffffff",
-            boxShadow: "0 8px 28px rgba(79,70,229,0.28)",
-          }}>KW</div>
+          <Logo size={42} sub="by KW Innovations" dark />
         </div>
 
-        <div style={{ position: "relative" }}>
-          <p style={{ fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-3)", marginBottom: "0.6rem" }}>
+        <div style={{ position: "relative", maxWidth: 480 }}>
+          <p style={{ fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.5)", marginBottom: "0.85rem", display: "flex", alignItems: "center", gap: "0.45rem" }}>
+            <span className="pulse-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "#22d3ee", display: "inline-block" }} />
             {today}
           </p>
-          <h1 style={{ fontSize: "2.4rem", fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.08, marginBottom: "0.9rem", maxWidth: 460 }}>
-            The internal hub for <span className="grad-text">KW Innovations</span>
+          <h1 style={{ fontSize: "clamp(2.2rem, 3.4vw, 3rem)", fontWeight: 900, letterSpacing: "-0.035em", lineHeight: 1.04, marginBottom: "1rem" }}>
+            One place for<br />everything <span className="grad-text-brand">KWI.</span>
           </h1>
-          <p style={{ color: "var(--text-2)", fontSize: "0.95rem", lineHeight: 1.65, maxWidth: 400, marginBottom: "2rem" }}>
-            One workspace for clients, pipeline and the team — built for how we actually work.
+          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: "0.98rem", lineHeight: 1.65, maxWidth: 410, marginBottom: "2rem" }}>
+            Clients, pipeline, content and the team — one workspace, built for how we actually work.
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-            {highlights.map(({ icon: Icon, label }) => (
-              <div key={label} style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", maxWidth: 400 }}>
+            {highlights.map(({ icon: Icon, label, sub }, i) => (
+              <div key={label} className="login-feature login-fade-up" style={{ animationDelay: `${0.15 + i * 0.07}s` }}>
                 <div style={{
-                  width: 30, height: 30, borderRadius: 9, flexShrink: 0,
-                  background: "var(--surface-2)", border: "1px solid var(--border-2)",
+                  width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                  background: "linear-gradient(135deg, rgba(99,102,241,0.35), rgba(34,211,238,0.2))",
+                  border: "1px solid rgba(255,255,255,0.12)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  <Icon size={14} color="var(--accent)" />
+                  <Icon size={15} color="#ffffff" />
                 </div>
-                <span style={{ fontSize: "0.85rem", color: "var(--text-2)" }}>{label}</span>
+                <div>
+                  <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff" }}>{label}</div>
+                  <div style={{ fontSize: "0.74rem", color: "rgba(255,255,255,0.5)", marginTop: 2 }}>{sub}</div>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        <p style={{ position: "relative", fontSize: "0.75rem", color: "var(--text-4)" }}>
-          Internal use only · KW Innovations
+        <p style={{ position: "relative", fontSize: "0.75rem", color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+          <Sparkles size={12} /> Built by KW Innovations
         </p>
       </aside>
 
       {/* ── Form panel ── */}
       <div className="login-form-col">
-        <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none",
-          background: "radial-gradient(ellipse 60% 50% at 50% 40%, rgba(79,70,229,0.05) 0%, transparent 70%)",
-        }} />
-
-        <div style={{ width: "100%", maxWidth: 380, position: "relative" }}>
-          {/* Logo — mobile only */}
-          <div className="login-fade-up" style={{ textAlign: "center", marginBottom: "2rem" }}>
-            <div style={{
-              width: 52, height: 52, borderRadius: 14,
-              background: "linear-gradient(135deg, #0891b2, #4f46e5)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontWeight: 900, fontSize: "1.1rem", color: "#ffffff",
-              margin: "0 auto 1rem",
-              boxShadow: "0 8px 32px rgba(79,70,229,0.25)",
-            }}>
-              KW
+        <div style={{ width: "100%", maxWidth: 390, position: "relative" }}>
+          <div className="login-fade-up" style={{ marginBottom: "1.6rem" }}>
+            <div className="login-mobile-logo">
+              <LogoMark size={56} style={{ borderRadius: 15, boxShadow: "0 12px 36px rgba(79,70,229,0.35)", margin: "0 auto 1.4rem" }} />
             </div>
-            <h1 style={{ fontSize: "1.4rem", fontWeight: 900, margin: "0 0 0.25rem", letterSpacing: "-0.02em" }}>
-              Welcome back
+            <h1 style={{ fontSize: "1.65rem", fontWeight: 900, margin: "0 0 0.3rem", letterSpacing: "-0.03em", textAlign: "center" }}>
+              {mode === "signin" ? "Welcome back" : mode === "reset-done" ? "You're all set" : "Reset your password"}
             </h1>
-            <p style={{ color: "var(--text-3)", fontSize: "0.85rem", margin: 0 }}>
-              {audience === "staff" ? "Sign in to the KW Innovations hub"
+            <p style={{ color: "var(--text-3)", fontSize: "0.87rem", margin: 0, textAlign: "center" }}>
+              {mode !== "signin" ? "We'll get you back into KWI ONE in a minute."
+                : audience === "staff" ? "Sign in to KWI ONE"
                 : audience === "partner" ? "Sign in to your partner workspace"
                 : "Sign in to your client portal"}
             </p>
           </div>
 
-          {/* Staff / Client toggle */}
-          <div className="login-fade-up" style={{
-            animationDelay: "0.04s",
-            display: "flex", background: "var(--surface)", border: "1px solid var(--border-2)",
-            borderRadius: 12, padding: 4, marginBottom: "1rem",
-          }}>
-            {([["staff", "Staff"], ["client", "Client Portal"], ["partner", "Partner"]] as const).map(([key, label]) => {
-              const active = audience === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setAudience(key)}
-                  style={{
-                    flex: 1, padding: "0.5rem 0.75rem", borderRadius: 9, border: "none",
-                    cursor: "pointer", fontSize: "0.82rem", fontWeight: active ? 700 : 500,
-                    background: active ? "var(--surface-3)" : "transparent",
-                    color: active ? "var(--text-1)" : "var(--text-3)",
-                    transition: "background 0.15s, color 0.15s",
-                  }}
-                >
+          {/* Staff / Client / Partner toggle */}
+          {mode === "signin" && (
+            <div className="seg login-fade-up" style={{ animationDelay: "0.04s", marginBottom: "1rem" }}>
+              <span className="seg-thumb" style={{ left: 4, width: `calc((100% - 8px) / ${AUDIENCES.length})`, transform: `translateX(${audienceIdx * 100}%)` }} />
+              {AUDIENCES.map(([key, label]) => (
+                <button key={key} type="button" aria-pressed={audience === key} onClick={() => setAudience(key)}>
                   {label}
                 </button>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Card */}
-          <div
-            className="login-fade-up"
-            style={{
-              animationDelay: "0.08s",
-              background: "var(--surface)",
-              border: "1px solid var(--border-2)",
-              borderRadius: 20,
-              padding: "2rem",
-              boxShadow: "0 24px 64px rgba(23,42,94,0.18)",
-            }}
-          >
+          <div key={shakeKey} className={`login-card ${shakeKey ? "shake" : "login-fade-up"}`} style={{ animationDelay: shakeKey ? "0s" : "0.08s" }}>
             {(error || info) && (
               <div style={{
                 display: "flex", alignItems: "center", gap: "0.5rem",
@@ -280,10 +275,11 @@ export default function LoginPage() {
                   type="submit"
                   className="btn-primary"
                   disabled={loading}
-                  style={{ width: "100%", justifyContent: "center", padding: "0.7rem", marginTop: "0.25rem" }}
+                  style={{ width: "100%", justifyContent: "center", padding: "0.75rem", marginTop: "0.25rem", fontSize: "0.9rem" }}
                 >
-                  <LogIn size={15} />
-                  {loading ? "Signing in…" : "Sign In"}
+                  {loading ? <span className="btn-spinner" /> : <LogIn size={15} />}
+                  {loading ? "Signing in…" : "Sign in"}
+                  {!loading && <ArrowRight size={15} style={{ marginLeft: "auto" }} />}
                 </button>
 
                 <button
@@ -402,7 +398,7 @@ export default function LoginPage() {
           </div>
 
           <p className="login-fade-up" style={{ animationDelay: "0.16s", textAlign: "center", marginTop: "1.5rem", fontSize: "0.75rem", color: "var(--text-3)" }}>
-            {audience === "partner" ? "Partner access · Powered by KW Innovations" : "Internal use only · KW Innovations"}
+            {audience === "partner" ? "Partner access · Powered by KWI ONE" : "KWI ONE · Internal use only · KW Innovations"}
           </p>
         </div>
       </div>

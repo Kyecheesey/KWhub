@@ -2,15 +2,17 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "KW | Innovations Hub",
-    short_name: "KW Hub",
-    description: "The internal hub for KW Innovations — clients, pipeline, boards and team.",
+    name: "KWI ONE",
+    short_name: "KWI ONE",
+    description: "KWI ONE — the internal hub for KW Innovations: clients, pipeline, boards and team.",
     start_url: "/",
     display: "standalone",
-    background_color: "#f5f7fb",
-    theme_color: "#4f46e5",
+    background_color: "#0a0f2a",
+    theme_color: "#0a0f2a",
     icons: [
-      { src: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+      { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
     ],
   };

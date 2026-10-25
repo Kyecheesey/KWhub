@@ -1,9 +1,9 @@
-/* KW | Innovations Hub service worker: push notifications + PWA install */
+/* KWI ONE service worker: push notifications + PWA install */
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
 
 self.addEventListener("push", (event) => {
-  let data = { title: "KW | Innovations Hub", body: "", url: "/" };
+  let data = { title: "KWI ONE", body: "", url: "/" };
   try {
     data = { ...data, ...event.data.json() };
   } catch {
@@ -12,8 +12,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: "/apple-icon.png",
-      badge: "/apple-icon.png",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
       data: { url: data.url },
     })
   );

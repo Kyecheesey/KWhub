@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LogoMark } from "@/components/Logo";
 import Link from "next/link";
 import { Rocket, Send, CheckCircle2, Mail, LogIn, Eye, EyeOff } from "lucide-react";
 
@@ -49,7 +50,7 @@ export default function PublicSignupPage() {
       {/* Header */}
       <header className="glass" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.85rem 1.25rem", borderBottom: "1px solid var(--border)", position: "relative", zIndex: 2 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(135deg,#0891b2,#4f46e5)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "0.75rem", color: "#fff", boxShadow: "0 2px 12px rgba(45,212,232,0.35)" }}>KW</div>
+          <LogoMark size={32} style={{ borderRadius: 9, boxShadow: "0 2px 12px rgba(79,70,229,0.3)" }} />
           <div>
             <div style={{ fontWeight: 800, fontSize: "0.88rem", letterSpacing: "-0.02em", lineHeight: 1.1 }}>KW Innovations</div>
             <div style={{ fontSize: "0.6rem", color: "var(--text-3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Client Sign-Up</div>

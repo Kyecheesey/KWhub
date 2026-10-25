@@ -71,7 +71,7 @@ export default function MyWorkPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <p style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--accent)", marginBottom: "0.35rem" }}>KW | Innovations</p>
+          <p style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--accent)", marginBottom: "0.35rem" }}>KWI ONE</p>
           <h1 style={{ fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>My Work</h1>
           <p style={{ color: "var(--text-2)", fontSize: "0.875rem", marginTop: "0.3rem" }}>
             {loading ? "Loading…" : `${total} open item${total !== 1 ? "s" : ""}${overdue ? ` · ${overdue} overdue` : ""} · signed in as ${me}`}

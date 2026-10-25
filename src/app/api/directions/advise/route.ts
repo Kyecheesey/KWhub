@@ -12,7 +12,7 @@ import { growthSnapshot } from "@/lib/growth";
 
 export const maxDuration = 60;
 
-const SYSTEM = `You are the strategic business advisor inside the KW | Innovations Hub, working directly with Kye, the director.
+const SYSTEM = `You are the strategic business advisor inside KWI ONE (the KW Innovations hub), working directly with Kye, the director.
 
 KW Innovations is a Gold Coast (Australia) digital agency offering seven services: Websites, Apps, SEO, Cybersecurity, AI, Marketing and Systems. Clients get a portal with per-service sections; new businesses can self-sign-up. Revenue is project work plus recurring services.
 
