@@ -103,6 +103,20 @@ const METRIC_TREND: Record<string, { glyph: string; color: string }> = {
   flat: { glyph: "—", color: "var(--text-3)" },
 };
 
+/** Plain text with any https:// addresses turned into links that open in a new tab. */
+function LinkedText({ text }: { text: string }) {
+  const parts = text.split(/(https?:\/\/[^\s<>"')]+)/g);
+  return (
+    <>
+      {parts.map((part, i) => /^https?:\/\//.test(part) ? (
+        <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", fontWeight: 700, wordBreak: "break-word" }}>
+          {part.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+        </a>
+      ) : part)}
+    </>
+  );
+}
+
 function MetricTiles({ metrics }: { metrics: ServiceMetric[] }) {
   if (metrics.length === 0) return null;
   return (
@@ -526,7 +540,7 @@ export default function PortalPage() {
         {pendingApprovals.map((a) => (
           <div key={a.id} style={{ padding: "1rem 1.25rem", borderBottom: "1px solid var(--border)" }}>
             <div style={{ fontWeight: 600, fontSize: "0.92rem", marginBottom: "0.2rem" }}>{a.title}</div>
-            {a.description && <p style={{ fontSize: "0.82rem", color: "var(--text-2)", lineHeight: 1.55, margin: "0 0 0.35rem" }}>{a.description}</p>}
+            {a.description && <p style={{ fontSize: "0.82rem", color: "var(--text-2)", lineHeight: 1.55, margin: "0 0 0.35rem", whiteSpace: "pre-line" }}><LinkedText text={a.description} /></p>}
             <div style={{ fontSize: "0.7rem", color: "var(--text-3)", marginBottom: "0.75rem" }}>
               Requested by {a.created_by ?? "KW team"} · {shortDate(a.created_at)}
             </div>
@@ -771,7 +785,7 @@ export default function PortalPage() {
                   }}>{s}</span>
                 ))}
               </div>
-              {p.notes && <p style={{ fontSize: "0.78rem", color: "var(--text-3)", margin: "0.65rem 0 0", lineHeight: 1.5 }}>{p.notes}</p>}
+              {p.notes && <p style={{ fontSize: "0.78rem", color: "var(--text-3)", margin: "0.65rem 0 0", lineHeight: 1.5, whiteSpace: "pre-line" }}><LinkedText text={p.notes} /></p>}
             </div>
           );
         })}
