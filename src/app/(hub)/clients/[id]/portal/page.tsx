@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Send, KeyRound, UserPlus, Trash2,
-  MessageSquare, Building2, Eye, Rocket, Plus,
+  MessageSquare, Eye, Rocket, Plus, X, Wallet, CreditCard,
   ThumbsUp, FolderOpen, Upload, Receipt, ListChecks,
   Check, Image as ImageIcon, ChevronRight, Briefcase, Boxes, Compass, RotateCcw,
 } from "lucide-react";
@@ -39,6 +39,13 @@ const SERVICE_TABS = [
 ];
 
 const STAGES = ["Discovery", "Design", "Build", "Review", "Launch"];
+const TABS: { key: string; label: string; icon: React.FC<{ size?: number }> }[] = [
+  { key: "overview", label: "Overview", icon: MessageSquare },
+  { key: "work", label: "Work", icon: Briefcase },
+  { key: "billing", label: "Billing", icon: Receipt },
+  { key: "files", label: "Files", icon: FolderOpen },
+  { key: "access", label: "Access & setup", icon: KeyRound },
+];
 const JOB_COLUMNS = [
   { key: "todo", label: "To Do", color: "#60a5fa" },
   { key: "in_progress", label: "In Progress", color: "#d97706" },
@@ -53,19 +60,24 @@ function money(cents: number) {
   return new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(cents / 100);
 }
 
-function Section({ icon: Icon, title, children, extra }: {
-  icon: React.FC<{ size?: number; color?: string }>; title: string;
-  children: React.ReactNode; extra?: React.ReactNode;
+function Panel({ icon: Icon, title, hint, action, children }: {
+  icon: React.FC<{ size?: number; color?: string }>; title: string; hint?: string;
+  action?: React.ReactNode; children: React.ReactNode;
 }) {
   return (
-    <div className="card" style={{ overflow: "hidden" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.9rem 1.15rem", borderBottom: "1px solid var(--border)" }}>
-        <Icon size={15} color="var(--accent)" />
-        <span style={{ fontWeight: 800, fontSize: "0.9rem" }}>{title}</span>
-        {extra && <span style={{ marginLeft: "auto" }}>{extra}</span>}
-      </div>
+    <section className="card" style={{ overflow: "hidden" }}>
+      <header style={{ display: "flex", alignItems: "center", gap: "0.7rem", padding: "1rem 1.25rem", borderBottom: "1px solid var(--border)" }}>
+        <span style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(79,70,229,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon size={15} color="var(--accent)" />
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 750, fontSize: "0.92rem", letterSpacing: "-0.01em" }}>{title}</div>
+          {hint && <div style={{ fontSize: "0.74rem", color: "var(--text-3)", marginTop: "0.05rem" }}>{hint}</div>}
+        </div>
+        {action}
+      </header>
       {children}
-    </div>
+    </section>
   );
 }
 
@@ -112,6 +124,8 @@ export default function ClientPortalAdminPage() {
   const [uploading, setUploading] = useState(false);
   const [flash, setFlash] = useState<{ text: string; ok: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState("overview");
+  const [adding, setAdding] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
 
@@ -164,6 +178,20 @@ export default function ClientPortalAdminPage() {
     return () => { cancelled = true; };
   }, [clientId, reload]);
 
+  // ?tab= keeps the open tab across reloads and makes it linkable
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t && TABS.some((x) => x.key === t)) Promise.resolve().then(() => setTab(t));
+  }, []);
+
+  function switchTab(key: string) {
+    setTab(key);
+    setAdding(null);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", key);
+    window.history.replaceState(null, "", url);
+  }
+
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
   }, [messages]);
@@ -204,6 +232,7 @@ export default function ClientPortalAdminPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+
   const pill = (text: string, color: string) => (
     <span style={{
       fontSize: "0.64rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em",
@@ -211,40 +240,56 @@ export default function ClientPortalAdminPage() {
     }}>{text}</span>
   );
 
+  // "+ Add" toggles keep each panel's add form tucked away until it's needed
+  const addToggle = (key: string, label = "Add") => (
+    <button onClick={() => setAdding(adding === key ? null : key)} className="btn-ghost" style={{ minHeight: 0, padding: "0.35rem 0.75rem", fontSize: "0.76rem" }}>
+      {adding === key ? <><X size={13} /> Cancel</> : <><Plus size={13} /> {label}</>}
+    </button>
+  );
+  const empty = (text: string) => (
+    <p style={{ padding: "1.1rem 1.25rem", fontSize: "0.82rem", color: "var(--text-3)" }}>{text}</p>
+  );
+
+  const pendingApprovals = approvals.filter((a) => a.status === "pending").length;
+  const unpaidInvoices = invoices.filter((i) => !["paid", "draft"].includes(i.status)).length;
+  const openJobs = clientJobs.filter((jb) => jb.status !== "done").length;
+  const tabCount: Record<string, number> = { overview: pendingApprovals, work: openJobs, billing: unpaidInvoices, files: files.length, access: accounts.length };
+
+  const orientationStatus = orientation?.current
+    ? { label: "Orientation complete", color: "#10b981" }
+    : orientation?.completed_at ? { label: "Policies need re-accepting", color: "#d97706" }
+    : { label: "Orientation not done", color: "#8b95c0" };
+  const planStatus = planForm.plan_name && planForm.amount
+    ? { label: `${planForm.plan_name} · ${money(Math.round(Number(planForm.amount) * 100))}/${planForm.interval}`, color: "#4f46e5" }
+    : { label: "No plan set", color: "#8b95c0" };
+  const stripeStatus = !stripeLink?.configured ? { label: "Stripe not connected", color: "#8b95c0" }
+    : stripeLink.subscription ? { label: `Stripe subscription ${stripeLink.subscription.status}`, color: stripeLink.subscription.status === "active" ? "#10b981" : "#d97706" }
+    : stripeLink.customer_id ? { label: "Stripe customer linked", color: "#4f46e5" }
+    : { label: "Not in Stripe yet", color: "#8b95c0" };
+  const loginStatus = { label: accounts.length ? `${accounts.length} portal login${accounts.length === 1 ? "" : "s"}` : "No portal login", color: accounts.length ? "#10b981" : "#dc2626" };
+
   return (
-    <div className="page" style={{ maxWidth: 1000 }}>
+    <div className="page" style={{ maxWidth: 1120 }}>
       <Link href="/clients" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "var(--text-3)", textDecoration: "none", marginBottom: "1rem" }}>
-        <ArrowLeft size={14} /> Back to Clients
+        <ArrowLeft size={14} /> Clients
       </Link>
 
-      <div className="page-header">
-        <div>
-          <p style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--accent)", marginBottom: "0.35rem" }}>Client Portal</p>
-          <h1 style={{ fontSize: "1.6rem", fontWeight: 900, letterSpacing: "-0.02em", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Building2 size={22} style={{ color: "var(--accent)" }} />
-            {loading ? "Loading…" : client?.business_name ?? "Unknown client"}
-          </h1>
-          <p style={{ color: "var(--text-2)", fontSize: "0.875rem", marginTop: "0.3rem" }}>
-            Everything the client sees in their portal, managed from here.
-          </p>
-        </div>
-        <div className="page-header-actions">
-          <Link href={`/portal?client=${clientId}`} className="btn-primary">
-            <Eye size={14} /> Preview Portal
-          </Link>
-        </div>
-      </div>
-
       {flash && (
-        <div style={{
-          padding: "0.65rem 0.9rem", borderRadius: 10, fontSize: "0.83rem", fontWeight: 500, marginBottom: "1rem",
-          background: flash.ok ? "rgba(52,211,153,0.08)" : "rgba(220,38,38,0.07)",
-          border: `1px solid ${flash.ok ? "rgba(52,211,153,0.2)" : "rgba(220,38,38,0.2)"}`,
+        <div role="status" style={{
+          position: "fixed", right: "1.25rem", bottom: "1.25rem", zIndex: 60, maxWidth: 380,
+          display: "flex", alignItems: "flex-start", gap: "0.6rem",
+          padding: "0.75rem 0.9rem", borderRadius: 12, fontSize: "0.83rem", fontWeight: 500,
+          background: "var(--surface)", boxShadow: "var(--shadow-lg)",
+          border: `1px solid ${flash.ok ? "rgba(16,185,129,0.35)" : "rgba(220,38,38,0.35)"}`,
           color: flash.ok ? "#059669" : "#dc2626",
         }}>
-          {flash.text}
+          {flash.ok ? <Check size={15} style={{ flexShrink: 0, marginTop: 1 }} /> : null}
+          <span style={{ flex: 1 }}>{flash.text}</span>
+          <button onClick={() => setFlash(null)} className="icon-btn" aria-label="Dismiss" style={{ padding: 0 }}><X size={14} /></button>
         </div>
       )}
+
+      {loading && <div className="card" style={{ padding: "2rem", color: "var(--text-3)", fontSize: "0.85rem" }}>Loading…</div>}
 
       {!loading && !client && (
         <div className="card" style={{ padding: "2rem", textAlign: "center", color: "var(--text-2)" }}>
@@ -253,281 +298,167 @@ export default function ClientPortalAdminPage() {
       )}
 
       {client && (
-        <div className="dashboard-grid">
-          {/* ══ LEFT COLUMN ══ */}
-          <div style={{ display: "grid", gap: "1.25rem", alignContent: "start" }}>
+        <>
+          {/* ── Client header ── */}
+          <div className="card" style={{ padding: "1.25rem 1.4rem", marginBottom: "1.25rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+              {client.logo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element -- external client logo, unknown host
+                <img src={client.logo_url} alt="" style={{ width: 52, height: 52, borderRadius: 14, objectFit: "cover", border: "1px solid var(--border)", background: "#fff", flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 52, height: 52, borderRadius: 14, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(79,70,229,0.08)", color: "var(--accent)", fontWeight: 800, fontSize: "1.05rem" }}>
+                  {client.business_name.split(/\s+/).filter((w) => /[A-Za-z0-9]/.test(w[0] ?? "")).map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <div style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-3)", marginBottom: "0.2rem" }}>Client portal</div>
+                <h1 style={{ fontSize: "1.45rem", fontWeight: 850, letterSpacing: "-0.025em", margin: 0, lineHeight: 1.15 }}>{client.business_name}</h1>
+                <div style={{ fontSize: "0.82rem", color: "var(--text-3)", marginTop: "0.2rem" }}>
+                  {[client.contact_name, client.assigned_to && `Looked after by ${client.assigned_to}`].filter(Boolean).join(" · ") || "No contact set"}
+                </div>
+              </div>
+              <Link href={`/portal?client=${clientId}`} className="btn-primary">
+                <Eye size={14} /> Preview portal
+              </Link>
+            </div>
+            <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--border)" }}>
+              {[
+                { ...orientationStatus, tab: "access" },
+                { ...loginStatus, tab: "access" },
+                { ...planStatus, tab: "billing" },
+                { ...stripeStatus, tab: "billing" },
+              ].map((s) => (
+                <button key={s.label} onClick={() => switchTab(s.tab)} style={{
+                  display: "inline-flex", alignItems: "center", gap: "0.4rem", cursor: "pointer",
+                  padding: "0.3rem 0.7rem", borderRadius: 99, border: "1px solid var(--border)", background: "var(--surface-2)",
+                  fontSize: "0.75rem", fontWeight: 600, color: "var(--text-2)",
+                }}>
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: s.color }} />
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-            {/* Projects */}
-            <Section icon={Rocket} title="Projects">
-              <div>
-                {projects.map((p) => (
-                  <div key={p.id} style={{ padding: "0.85rem 1.15rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.65rem", flexWrap: "wrap" }}>
-                    <span style={{ fontWeight: 700, fontSize: "0.87rem", flex: 1, minWidth: 120 }}>{p.name}</span>
-                    <select
-                      className="field"
-                      style={{ width: "auto", padding: "0.3rem 0.5rem", fontSize: "0.78rem" }}
-                      value={p.stage}
-                      disabled={busy}
-                      onChange={async (e) => {
-                        const data = await post("/api/portal/projects", { id: p.id, stage: parseInt(e.target.value, 10) }, "PATCH");
-                        if (data) { ok(`${p.name} moved to ${STAGES[data.stage]}.`); reload(["projects"]); }
-                      }}
-                    >
-                      {STAGES.map((s, i) => <option key={s} value={i}>{s}</option>)}
-                    </select>
-                    <button
-                      onClick={async () => {
-                        if (!confirm(`Delete project "${p.name}"?`)) return;
-                        await post("/api/portal/projects", { id: p.id }, "DELETE");
-                        reload(["projects"]);
-                      }}
-                      className="btn-danger" style={{ minHeight: 0, padding: "0.3rem 0.5rem" }}
-                    ><Trash2 size={12} /></button>
+          {/* ── Tabs ── */}
+          <div role="tablist" style={{ display: "flex", gap: "0.2rem", borderBottom: "1px solid var(--border)", marginBottom: "1.25rem", overflowX: "auto" }}>
+            {TABS.map((t) => {
+              const on = tab === t.key;
+              const Icon = t.icon;
+              const count = tabCount[t.key] ?? 0;
+              return (
+                <button key={t.key} role="tab" aria-selected={on} onClick={() => switchTab(t.key)} style={{
+                  display: "inline-flex", alignItems: "center", gap: "0.45rem", whiteSpace: "nowrap", cursor: "pointer",
+                  padding: "0.7rem 0.95rem", marginBottom: -1, background: "none", border: "none",
+                  borderBottom: `2px solid ${on ? "var(--accent)" : "transparent"}`,
+                  color: on ? "var(--text-1)" : "var(--text-3)", fontWeight: on ? 700 : 600, fontSize: "0.86rem",
+                }}>
+                  <Icon size={14} />
+                  {t.label}
+                  {count > 0 && (
+                    <span style={{ fontSize: "0.66rem", fontWeight: 700, padding: "0.05rem 0.45rem", borderRadius: 99, background: on ? "rgba(79,70,229,0.1)" : "var(--surface-3)", color: on ? "var(--accent)" : "var(--text-3)" }}>{count}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ══ Overview ══ */}
+          {tab === "overview" && (
+            <div className="dashboard-grid">
+              <Panel icon={MessageSquare} title="Updates & messages" hint="The client's thread in their portal" action={
+                <Link href={`/portal?client=${clientId}`} style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.74rem", color: "var(--accent)", textDecoration: "none", fontWeight: 600 }}>
+                  Client view <ChevronRight size={12} />
+                </Link>
+              }>
+            <div ref={threadRef} style={{ maxHeight: 300, overflowY: "auto", padding: "0.85rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+              {messages.length === 0 && <p style={{ fontSize: "0.8rem", color: "var(--text-3)", textAlign: "center", padding: "1rem 0" }}>No messages yet — post the first update.</p>}
+              {messages.map((m) => {
+                const fromStaff = m.author_role !== "client";
+                return (
+                  <div key={m.id} style={{ display: "flex", justifyContent: fromStaff ? "flex-end" : "flex-start" }}>
+                    <div style={{
+                      maxWidth: "82%",
+                      background: fromStaff ? "rgba(124,133,243,0.1)" : "var(--surface-2)",
+                      border: `1px solid ${fromStaff ? "rgba(124,133,243,0.25)" : "var(--border)"}`,
+                      borderRadius: 11, padding: "0.5rem 0.7rem",
+                    }}>
+                      <div style={{ fontSize: "0.64rem", fontWeight: 700, color: fromStaff ? "#7c85f3" : "var(--accent)", marginBottom: "0.15rem" }}>
+                        {fromStaff ? m.author ?? "KW team" : `${client.business_name} (client)`}
+                      </div>
+                      <div style={{ fontSize: "0.82rem", lineHeight: 1.45, whiteSpace: "pre-wrap" }}>{m.body}</div>
+                      <div style={{ fontSize: "0.6rem", color: "var(--text-3)", marginTop: "0.2rem" }}>{msgTime(m.created_at)}</div>
+                    </div>
                   </div>
-                ))}
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", gap: "0.5rem", padding: "0.75rem 1.25rem", borderTop: "1px solid var(--border)" }}>
+              <input
+                className="field"
+                placeholder={`Post an update for ${client.business_name}…`}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              />
+              <button onClick={sendMessage} disabled={sending || !draft.trim()} className="btn-primary" style={{ flexShrink: 0 }}>
+                <Send size={14} />
+              </button>
+            </div>
+              </Panel>
+              <div style={{ display: "grid", gap: "1.25rem", alignContent: "start" }}>
+                <Panel icon={Rocket} title="Projects" action={addToggle("project")}>
+                  {adding === "project" && (
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!newProject.trim()) return;
                     const data = await post("/api/portal/projects", { name: newProject });
-                    if (data) { setNewProject(""); reload(["projects"]); }
+                    if (data) { setNewProject(""); setAdding(null); reload(["projects"]); }
                   }}
-                  style={{ display: "flex", gap: "0.5rem", padding: "0.85rem 1.15rem" }}
+                  style={{ display: "flex", gap: "0.5rem", padding: "0.85rem 1.25rem" }}
                 >
                   <input className="field" placeholder="New project name…" value={newProject} onChange={(e) => setNewProject(e.target.value)} />
                   <button type="submit" className="btn-ghost" disabled={busy || !newProject.trim()}><Plus size={14} /> Add</button>
                 </form>
-              </div>
-            </Section>
-
-            {/* Jobs board for this client */}
-            <Section icon={Briefcase} title="Jobs" extra={
-              <Link href="/client-jobs" className="btn-ghost" style={{ minHeight: 0, padding: "0.35rem 0.7rem", fontSize: "0.75rem" }}>Open full board</Link>
-            }>
-              {clientJobs.length === 0 ? (
-                <div style={{ padding: "1.5rem 1.15rem", color: "var(--text-3)", fontSize: "0.83rem" }}>
-                  No jobs for this client yet — add them on the Client Jobs board.
-                </div>
-              ) : (
-                <div>
-                  {JOB_COLUMNS.filter((col) => clientJobs.some((jb) => jb.status === col.key)).map((col) => (
-                    <div key={col.key}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", padding: "0.6rem 1.15rem 0.25rem", fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-3)" }}>
-                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: col.color }} /> {col.label}
-                      </div>
-                      {clientJobs.filter((jb) => jb.status === col.key).map((jb) => (
-                        <div key={jb.id} style={{ display: "flex", alignItems: "center", gap: "0.65rem", padding: "0.55rem 1.15rem", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
-                          <span style={{ fontWeight: 700, fontSize: "0.85rem", flex: 1, minWidth: 140, textDecoration: jb.status === "done" ? "line-through" : "none", color: jb.status === "done" ? "var(--text-3)" : "var(--text-1)" }}>{jb.title}</span>
-                          {jb.assigned_to && <span style={{ fontSize: "0.72rem", color: "#4f46e5" }}>{jb.assigned_to}</span>}
-                          {jb.due_date && <span style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>{new Date(jb.due_date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}</span>}
-                          <select
-                            className="field"
-                            style={{ width: "auto", padding: "0.25rem 0.45rem", fontSize: "0.74rem" }}
-                            value={jb.status}
-                            disabled={busy}
-                            onChange={async (e) => {
-                              await fetch(`/api/client-jobs/${jb.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: e.target.value }) });
-                              reload(["clientJobs"]);
-                            }}
-                          >
-                            {JOB_COLUMNS.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
-                          </select>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Section>
-
-            {/* Service sections: SEO / Cybersecurity / AI / Systems */}
-            <Section icon={Boxes} title="Service Sections" extra={
-              <span style={{ fontSize: "0.72rem", color: "var(--text-3)", fontWeight: 600 }}>
-                What the client sees in their SEO, Cybersecurity, AI and Systems tabs
-              </span>
-            }>
-              <div>
-                {/* Live data sources */}
-                <div style={{ padding: "0.85rem 1.15rem", borderBottom: "1px solid var(--border)", display: "grid", gap: "0.5rem" }}>
-                  <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>
-                    Live data sources
-                    <span style={{ fontWeight: 600, textTransform: "none", letterSpacing: 0, marginLeft: "0.5rem" }}>
-                      {monitoredSite ? `Uptime monitors ${monitoredSite}` : "Set the client's website to enable uptime monitoring"}
-                    </span>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto auto", gap: "0.5rem" }}>
-                    <input className="field" placeholder="Search Console property — e.g. sc-domain:client.com.au" value={svcConfig.gsc_site} onChange={(e) => setSvcConfig({ ...svcConfig, gsc_site: e.target.value })} />
-                    <input className="field" placeholder="Vercel project ID — e.g. prj_abc123, or Site A: prj_abc, Site B: prj_def" value={svcConfig.vercel_project_id} onChange={(e) => setSvcConfig({ ...svcConfig, vercel_project_id: e.target.value })} />
-                    <button
-                      className="btn-ghost" disabled={busy}
-                      onClick={async () => {
-                        const data = await post("/api/portal/services", svcConfig, "PUT");
-                        if (data) ok("Live sources saved.");
-                      }}
-                    ><Check size={13} /> Save</button>
-                    <button
-                      className="btn-ghost" disabled={syncing}
-                      onClick={async () => {
-                        setSyncing(true);
-                        const data = await post("/api/portal/services/sync", {});
-                        setSyncing(false);
-                        if (data) {
-                          ok(data.synced?.length ? `Synced: ${data.synced.join(", ")}.` : "Nothing to sync — configure a source first.");
-                          reload(["services"]);
-                        }
-                      }}
-                    >{syncing ? "Syncing…" : "Sync now"}</button>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: "0.4rem", padding: "0.75rem 1.15rem 0.25rem", flexWrap: "wrap" }}>
-                  {SERVICE_TABS.map((t) => {
-                    const on = svcTab === t.key;
-                    const count = serviceMetrics.filter((m) => m.service === t.key).length + serviceUpdates.filter((u) => u.service === t.key).length;
-                    return (
-                      <button key={t.key} onClick={() => setSvcTab(t.key)} style={{
-                        padding: "0.35rem 0.75rem", borderRadius: 99, cursor: "pointer", fontSize: "0.76rem", fontWeight: 700,
-                        border: `1px solid ${on ? "rgba(79,70,229,0.35)" : "var(--border-2)"}`,
-                        background: on ? "rgba(79,70,229,0.1)" : "transparent",
-                        color: on ? "var(--accent)" : "var(--text-2)",
-                      }}>
-                        {t.label}{count > 0 && <span style={{ marginLeft: "0.3rem", color: "var(--text-4)", fontWeight: 600 }}>{count}</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Headline metrics */}
-                <div style={{ padding: "0.6rem 1.15rem 0.2rem", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>Headline metrics</div>
-                {serviceMetrics.filter((m) => m.service === svcTab).map((m) => m.source_key ? (
-                  <div key={m.id} style={{ padding: "0.55rem 1.15rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
-                    <span style={{ fontWeight: 700, fontSize: "0.82rem", flex: 1, minWidth: 120 }}>{m.label}</span>
-                    <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: "0.82rem", fontWeight: 700 }}>{m.value}</span>
-                    <span style={{ fontSize: "0.6rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "#059669", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 99, padding: "0.1rem 0.45rem" }}>Live</span>
-                  </div>
-                ) : (
-                  <div key={m.id} style={{ padding: "0.55rem 1.15rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
-                    <span style={{ fontWeight: 700, fontSize: "0.82rem", flex: 1, minWidth: 120 }}>{m.label}</span>
-                    <input
-                      className="field" defaultValue={m.value} key={`${m.id}-${m.value}`}
-                      style={{ width: 110, minHeight: 0, padding: "0.3rem 0.55rem", fontSize: "0.8rem", fontWeight: 700 }}
-                      onBlur={async (e) => {
-                        const v = e.target.value.trim();
-                        if (!v || v === m.value) return;
-                        const data = await post("/api/portal/services", { kind: "metric", id: m.id, value: v }, "PATCH");
-                        if (data) { ok(`${m.label} updated.`); reload(["services"]); }
-                      }}
-                    />
-                    <select
-                      className="field" value={m.trend ?? ""}
-                      style={{ width: 105, minHeight: 0, padding: "0.3rem 0.4rem", fontSize: "0.76rem" }}
-                      onChange={async (e) => {
-                        const data = await post("/api/portal/services", { kind: "metric", id: m.id, trend: e.target.value || null }, "PATCH");
-                        if (data) reload(["services"]);
-                      }}
-                    >
-                      <option value="">No trend</option>
-                      <option value="up">▲ Up</option>
-                      <option value="down">▼ Down</option>
-                      <option value="flat">— Steady</option>
-                    </select>
-                    <button
-                      onClick={async () => {
-                        if (!confirm(`Delete metric "${m.label}"?`)) return;
-                        await post("/api/portal/services", { kind: "metric", id: m.id }, "DELETE");
-                        reload(["services"]);
-                      }}
-                      className="btn-danger" style={{ minHeight: 0, padding: "0.3rem 0.5rem" }}
-                    ><Trash2 size={12} /></button>
-                  </div>
-                ))}
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    if (!newMetric.label.trim() || !newMetric.value.trim()) return;
-                    const data = await post("/api/portal/services", { kind: "metric", service: svcTab, ...newMetric, trend: newMetric.trend || null });
-                    if (data) { setNewMetric({ label: "", value: "", trend: "", trend_note: "" }); ok("Metric added."); reload(["services"]); }
-                  }}
-                  style={{ display: "grid", gridTemplateColumns: "1.4fr 0.8fr 0.9fr 1.2fr auto", gap: "0.5rem", padding: "0.6rem 1.15rem 0.85rem" }}
-                >
-                  <input className="field" placeholder="Label — e.g. Avg. Google position" value={newMetric.label} onChange={(e) => setNewMetric({ ...newMetric, label: e.target.value })} />
-                  <input className="field" placeholder="Value — e.g. 8.2" value={newMetric.value} onChange={(e) => setNewMetric({ ...newMetric, value: e.target.value })} />
-                  <select className="field" value={newMetric.trend} onChange={(e) => setNewMetric({ ...newMetric, trend: e.target.value })}>
-                    <option value="">No trend</option>
-                    <option value="up">▲ Up</option>
-                    <option value="down">▼ Down</option>
-                    <option value="flat">— Steady</option>
+                  )}
+                  {projects.length === 0 && adding !== "project" && empty("No projects yet.")}
+              {projects.map((p) => (
+                <div key={p.id} style={{ padding: "0.85rem 1.25rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.65rem", flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 700, fontSize: "0.87rem", flex: 1, minWidth: 120 }}>{p.name}</span>
+                  <select
+                    className="field"
+                    style={{ width: "auto", padding: "0.3rem 0.5rem", fontSize: "0.78rem" }}
+                    value={p.stage}
+                    disabled={busy}
+                    onChange={async (e) => {
+                      const data = await post("/api/portal/projects", { id: p.id, stage: parseInt(e.target.value, 10) }, "PATCH");
+                      if (data) { ok(`${p.name} moved to ${STAGES[data.stage]}.`); reload(["projects"]); }
+                    }}
+                  >
+                    {STAGES.map((s, i) => <option key={s} value={i}>{s}</option>)}
                   </select>
-                  <input className="field" placeholder="Trend note — e.g. up 3 spots this month" value={newMetric.trend_note} onChange={(e) => setNewMetric({ ...newMetric, trend_note: e.target.value })} />
-                  <button type="submit" className="btn-ghost" disabled={busy || !newMetric.label.trim() || !newMetric.value.trim()}><Plus size={14} /> Add</button>
-                </form>
-
-                {/* Updates feed */}
-                <div style={{ padding: "0.4rem 1.15rem 0.2rem", borderTop: "1px solid var(--border)", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>Updates the client sees</div>
-                {serviceUpdates.filter((u) => u.service === svcTab).map((u) => (
-                  <div key={u.id} style={{ padding: "0.6rem 1.15rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "flex-start", gap: "0.6rem" }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: "0.83rem" }}>{u.title}</div>
-                      {u.body && <div style={{ fontSize: "0.75rem", color: "var(--text-3)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{u.body}</div>}
-                    </div>
-                    <button
-                      onClick={async () => {
-                        if (!confirm(`Delete update "${u.title}"?`)) return;
-                        await post("/api/portal/services", { kind: "update", id: u.id }, "DELETE");
-                        reload(["services"]);
-                      }}
-                      className="btn-danger" style={{ minHeight: 0, padding: "0.3rem 0.5rem", flexShrink: 0 }}
-                    ><Trash2 size={12} /></button>
-                  </div>
-                ))}
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    if (!newUpdate.title.trim()) return;
-                    const data = await post("/api/portal/services", { kind: "update", service: svcTab, ...newUpdate });
-                    if (data) { setNewUpdate({ title: "", body: "" }); ok("Update posted — the client was notified."); reload(["services"]); }
-                  }}
-                  style={{ display: "grid", gap: "0.5rem", padding: "0.6rem 1.15rem 0.85rem" }}
-                >
-                  <input className="field" placeholder="Update headline — e.g. Blocked 42 intrusion attempts this week" value={newUpdate.title} onChange={(e) => setNewUpdate({ ...newUpdate, title: e.target.value })} />
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    <input className="field" placeholder="Optional detail…" value={newUpdate.body} onChange={(e) => setNewUpdate({ ...newUpdate, body: e.target.value })} />
-                    <button type="submit" className="btn-ghost" disabled={busy || !newUpdate.title.trim()}><Send size={13} /> Post</button>
-                  </div>
-                </form>
-              </div>
-            </Section>
-
-            {/* Approvals */}
-            <Section icon={ThumbsUp} title="Approvals">
-              <div>
-                {approvals.map((a) => (
-                  <div key={a.id} style={{ padding: "0.85rem 1.15rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.65rem", flexWrap: "wrap" }}>
-                    <div style={{ flex: 1, minWidth: 140 }}>
-                      <div style={{ fontWeight: 700, fontSize: "0.85rem" }}>{a.title}</div>
-                      {a.response_note && <div style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>&ldquo;{a.response_note}&rdquo;</div>}
-                    </div>
-                    {a.status === "pending" && pill("Pending", "#d97706")}
-                    {a.status === "approved" && pill("Approved", "#10b981")}
-                    {a.status === "changes_requested" && pill("Changes", "#dc2626")}
-                    <button
-                      onClick={async () => {
-                        if (!confirm(`Delete approval "${a.title}"?`)) return;
-                        await post("/api/portal/approvals", { id: a.id }, "DELETE");
-                        reload(["approvals"]);
-                      }}
-                      className="btn-danger" style={{ minHeight: 0, padding: "0.3rem 0.5rem" }}
-                    ><Trash2 size={12} /></button>
-                  </div>
-                ))}
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Delete project "${p.name}"?`)) return;
+                      await post("/api/portal/projects", { id: p.id }, "DELETE");
+                      reload(["projects"]);
+                    }}
+                    className="icon-btn danger" aria-label="Delete"
+                  ><Trash2 size={12} /></button>
+                </div>
+              ))}
+                </Panel>
+                <Panel icon={ThumbsUp} title="Approvals" hint={pendingApprovals ? `${pendingApprovals} waiting on the client` : undefined} action={addToggle("approval", "Request")}>
+                  {adding === "approval" && (
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!newApprovalTitle.trim()) return;
                     const data = await post("/api/portal/approvals", { title: newApprovalTitle, description: newApprovalDesc || null });
-                    if (data) { setNewApprovalTitle(""); setNewApprovalDesc(""); ok("Approval requested — the client was notified."); reload(["approvals"]); }
+                    if (data) { setNewApprovalTitle(""); setNewApprovalDesc(""); setAdding(null); ok("Approval requested — the client was notified."); reload(["approvals"]); }
                   }}
-                  style={{ display: "grid", gap: "0.5rem", padding: "0.85rem 1.15rem" }}
+                  style={{ display: "grid", gap: "0.5rem", padding: "0.85rem 1.25rem" }}
                 >
                   <input className="field" placeholder="What needs approval? e.g. Homepage design v2" value={newApprovalTitle} onChange={(e) => setNewApprovalTitle(e.target.value)} />
                   <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -535,136 +466,240 @@ export default function ClientPortalAdminPage() {
                     <button type="submit" className="btn-ghost" disabled={busy || !newApprovalTitle.trim()}><Send size={13} /> Request</button>
                   </div>
                 </form>
-              </div>
-            </Section>
-
-            {/* Invoices */}
-            <Section icon={Receipt} title="Billing">
-              <div>
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    const data = await post("/api/portal/plan", planForm, "PATCH");
-                    if (data) { ok(data.plan_name ? "Plan saved." : "Plan cleared."); reload(["plan"]); }
-                  }}
-                  style={{ padding: "0.85rem 1.15rem", borderBottom: "1px solid var(--border)", display: "grid", gap: "0.5rem" }}
-                >
-                  <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Plan (shown on the client&apos;s Billing tab)</div>
-                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                    <input className="field" style={{ flex: 2, minWidth: 140 }} placeholder="e.g. Website + SEO" value={planForm.plan_name} onChange={(e) => setPlanForm({ ...planForm, plan_name: e.target.value })} />
-                    <input className="field" style={{ flex: 1, minWidth: 90 }} type="number" min="0" step="0.01" placeholder="Amount ($)" value={planForm.amount} onChange={(e) => setPlanForm({ ...planForm, amount: e.target.value })} />
-                    <select className="field" style={{ flex: 1, minWidth: 100 }} value={planForm.interval} onChange={(e) => setPlanForm({ ...planForm, interval: e.target.value })}>
-                      <option value="month">per month</option>
-                      <option value="quarter">per quarter</option>
-                      <option value="year">per year</option>
-                    </select>
-                    <button type="submit" className="btn-ghost" disabled={busy}><Check size={14} /> Save</button>
-                  </div>
-                </form>
-                {/* Stripe */}
-                <div style={{ padding: "0.85rem 1.15rem", borderBottom: "1px solid var(--border)", display: "grid", gap: "0.55rem", fontSize: "0.8rem" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                    <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Stripe</span>
-                    {!stripeLink?.configured ? pill("Not connected", "#8b95c0")
-                      : stripeLink.subscription ? pill(`Subscription ${stripeLink.subscription.status}`, stripeLink.subscription.status === "active" ? "#10b981" : "#d97706")
-                      : stripeLink.customer_id ? pill("Customer linked", "#4f46e5")
-                      : pill("Not linked", "#8b95c0")}
-                    {stripeLink?.customer_id && (
-                      <a href={`https://dashboard.stripe.com/customers/${stripeLink.customer_id}`} target="_blank" rel="noopener noreferrer"
-                        style={{ marginLeft: "auto", fontSize: "0.72rem", fontWeight: 700, color: "var(--accent)" }}>Open in Stripe ↗</a>
-                    )}
-                  </div>
-                  {!stripeLink?.configured ? (
-                    <span style={{ color: "var(--text-3)" }}>Add STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in Vercel to bill clients through Stripe.</span>
-                  ) : (
-                    <>
-                      {!stripeLink.webhook_configured && (
-                        <span style={{ color: "#d97706" }}>STRIPE_WEBHOOK_SECRET isn&apos;t set, so invoices only update when you press Sync.</span>
-                      )}
-                      {stripeLink.subscription && (
-                        <span>
-                          {stripeLink.subscription.amount_cents != null && `${money(stripeLink.subscription.amount_cents)} per ${stripeLink.subscription.interval ?? "period"}`}
-                          {stripeLink.subscription.next_invoice_at && ` · next invoice ${new Date(stripeLink.subscription.next_invoice_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
-                        </span>
-                      )}
-                      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                        {!stripeLink.subscription_id && (
-                          <button
-                            onClick={async () => {
-                              if (!planForm.plan_name || !planForm.amount) { fail("Save a plan name and amount first."); return; }
-                              if (!confirm(`Start a Stripe subscription for ${planForm.plan_name} at $${planForm.amount} per ${planForm.interval}? Stripe emails the first invoice straight away.`)) return;
-                              const data = await post("/api/stripe/client", { action: "subscribe" });
-                              if (data) { ok("Subscription started. The first invoice will appear once Stripe finalises it."); reload(["stripe", "invoices"]); }
-                            }}
-                            className="btn-primary" disabled={busy} style={{ minHeight: 0, padding: "0.35rem 0.75rem", fontSize: "0.74rem" }}
-                          ><Plus size={12} /> Start subscription</button>
-                        )}
-                        {stripeLink.customer_id && (
-                          <button
-                            onClick={async () => {
-                              const data = await post("/api/stripe/client", { action: "sync" });
-                              if (data) { ok(`Synced ${data.synced} invoice${data.synced === 1 ? "" : "s"} from Stripe.`); reload(["invoices", "stripe"]); }
-                            }}
-                            className="btn-ghost" disabled={busy} style={{ minHeight: 0, padding: "0.35rem 0.7rem", fontSize: "0.74rem" }}
-                          >Sync invoices</button>
-                        )}
-                        {stripeLink.customer_id && (
-                          <button
-                            onClick={async () => {
-                              if (!confirm("Unlink this Stripe customer? Nothing is cancelled in Stripe.")) return;
-                              const data = await post("/api/stripe/client", { action: "unlink" });
-                              if (data) { ok("Stripe customer unlinked."); reload(["stripe"]); }
-                            }}
-                            className="btn-ghost" disabled={busy} style={{ minHeight: 0, padding: "0.35rem 0.7rem", fontSize: "0.74rem" }}
-                          >Unlink</button>
-                        )}
-                      </div>
-                      {!stripeLink.customer_id && (
-                        <form
-                          onSubmit={async (e) => {
-                            e.preventDefault();
-                            const data = await post("/api/stripe/client", { action: "link", customer_id: stripeCustomerInput });
-                            if (data) { setStripeCustomerInput(""); ok(`Linked. Pulled ${data.synced} invoice${data.synced === 1 ? "" : "s"} from Stripe.`); reload(["stripe", "invoices", "plan"]); }
-                          }}
-                          style={{ display: "flex", gap: "0.5rem" }}
-                        >
-                          <input className="field" placeholder="Already in Stripe? Paste the customer ID (cus_…)" value={stripeCustomerInput} onChange={(e) => setStripeCustomerInput(e.target.value)} />
-                          <button type="submit" className="btn-ghost" disabled={busy || !stripeCustomerInput.trim()}>Link</button>
-                        </form>
-                      )}
-                    </>
                   )}
+                  {approvals.length === 0 && adding !== "approval" && empty("Nothing has been sent for approval.")}
+              {approvals.map((a) => (
+                <div key={a.id} style={{ padding: "0.85rem 1.25rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.65rem", flexWrap: "wrap" }}>
+                  <div style={{ flex: 1, minWidth: 140 }}>
+                    <div style={{ fontWeight: 700, fontSize: "0.85rem" }}>{a.title}</div>
+                    {a.response_note && <div style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>&ldquo;{a.response_note}&rdquo;</div>}
+                  </div>
+                  {a.status === "pending" && pill("Pending", "#d97706")}
+                  {a.status === "approved" && pill("Approved", "#10b981")}
+                  {a.status === "changes_requested" && pill("Changes", "#dc2626")}
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Delete approval "${a.title}"?`)) return;
+                      await post("/api/portal/approvals", { id: a.id }, "DELETE");
+                      reload(["approvals"]);
+                    }}
+                    className="icon-btn danger" aria-label="Delete"
+                  ><Trash2 size={12} /></button>
                 </div>
-                {invoices.map((inv) => (
-                  <div key={inv.id} style={{ padding: "0.75rem 1.15rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
-                    <span style={{ fontWeight: 700, fontSize: "0.85rem", flex: 1, minWidth: 90 }}>{inv.number}</span>
-                    <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: "0.85rem", fontWeight: 700 }}>{money(inv.amount_cents)}</span>
-                    {inv.status === "paid" ? pill("Paid", "#10b981") : (
-                      <button
-                        onClick={async () => {
-                          const data = await post("/api/portal/invoices", { id: inv.id, status: "paid" }, "PATCH");
-                          if (data) { ok(`${inv.number} marked paid.`); reload(["invoices"]); }
-                        }}
-                        className="btn-ghost" style={{ minHeight: 0, padding: "0.25rem 0.6rem", fontSize: "0.72rem" }}
-                      ><Check size={12} /> Mark paid</button>
-                    )}
-                    <button
-                      onClick={async () => {
-                        if (!confirm(`Delete invoice ${inv.number}?`)) return;
-                        await post("/api/portal/invoices", { id: inv.id }, "DELETE");
-                        reload(["invoices"]);
-                      }}
-                      className="btn-danger" style={{ minHeight: 0, padding: "0.3rem 0.5rem" }}
-                    ><Trash2 size={12} /></button>
+              ))}
+                </Panel>
+              </div>
+            </div>
+          )}
+
+          {/* ══ Work ══ */}
+          {tab === "work" && (
+            <div style={{ display: "grid", gap: "1.25rem" }}>
+              <Panel icon={Briefcase} title="Jobs" hint="Work on the Client Jobs board for this client" action={
+                <Link href="/client-jobs" className="btn-ghost" style={{ minHeight: 0, padding: "0.35rem 0.75rem", fontSize: "0.76rem" }}>Open board</Link>
+              }>
+            {clientJobs.length === 0 ? (
+              <div style={{ padding: "1.5rem 1.25rem", color: "var(--text-3)", fontSize: "0.83rem" }}>
+                No jobs for this client yet — add them on the Client Jobs board.
+              </div>
+            ) : (
+              <div>
+                {JOB_COLUMNS.filter((col) => clientJobs.some((jb) => jb.status === col.key)).map((col) => (
+                  <div key={col.key}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", padding: "0.6rem 1.25rem 0.25rem", fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-3)" }}>
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: col.color }} /> {col.label}
+                    </div>
+                    {clientJobs.filter((jb) => jb.status === col.key).map((jb) => (
+                      <div key={jb.id} style={{ display: "flex", alignItems: "center", gap: "0.65rem", padding: "0.55rem 1.25rem", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
+                        <span style={{ fontWeight: 700, fontSize: "0.85rem", flex: 1, minWidth: 140, textDecoration: jb.status === "done" ? "line-through" : "none", color: jb.status === "done" ? "var(--text-3)" : "var(--text-1)" }}>{jb.title}</span>
+                        {jb.assigned_to && <span style={{ fontSize: "0.72rem", color: "#4f46e5" }}>{jb.assigned_to}</span>}
+                        {jb.due_date && <span style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>{new Date(jb.due_date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}</span>}
+                        <select
+                          className="field"
+                          style={{ width: "auto", padding: "0.25rem 0.45rem", fontSize: "0.74rem" }}
+                          value={jb.status}
+                          disabled={busy}
+                          onChange={async (e) => {
+                            await fetch(`/api/client-jobs/${jb.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: e.target.value }) });
+                            reload(["clientJobs"]);
+                          }}
+                        >
+                          {JOB_COLUMNS.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+                        </select>
+                      </div>
+                    ))}
                   </div>
                 ))}
+              </div>
+            )}
+              </Panel>
+              <Panel icon={Boxes} title="Service sections" hint="Metrics and updates the client sees on their service tabs">
+            <div>
+              {/* Live data sources */}
+              <div style={{ padding: "0.85rem 1.25rem", borderBottom: "1px solid var(--border)", display: "grid", gap: "0.5rem" }}>
+                <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>
+                  Live data sources
+                  <span style={{ fontWeight: 600, textTransform: "none", letterSpacing: 0, marginLeft: "0.5rem" }}>
+                    {monitoredSite ? `Uptime monitors ${monitoredSite}` : "Set the client's website to enable uptime monitoring"}
+                  </span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto auto", gap: "0.5rem" }}>
+                  <input className="field" placeholder="Search Console property — e.g. sc-domain:client.com.au" value={svcConfig.gsc_site} onChange={(e) => setSvcConfig({ ...svcConfig, gsc_site: e.target.value })} />
+                  <input className="field" placeholder="Vercel project ID — e.g. prj_abc123, or Site A: prj_abc, Site B: prj_def" value={svcConfig.vercel_project_id} onChange={(e) => setSvcConfig({ ...svcConfig, vercel_project_id: e.target.value })} />
+                  <button
+                    className="btn-ghost" disabled={busy}
+                    onClick={async () => {
+                      const data = await post("/api/portal/services", svcConfig, "PUT");
+                      if (data) ok("Live sources saved.");
+                    }}
+                  ><Check size={13} /> Save</button>
+                  <button
+                    className="btn-ghost" disabled={syncing}
+                    onClick={async () => {
+                      setSyncing(true);
+                      const data = await post("/api/portal/services/sync", {});
+                      setSyncing(false);
+                      if (data) {
+                        ok(data.synced?.length ? `Synced: ${data.synced.join(", ")}.` : "Nothing to sync — configure a source first.");
+                        reload(["services"]);
+                      }
+                    }}
+                  >{syncing ? "Syncing…" : "Sync now"}</button>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "0.4rem", padding: "0.75rem 1.25rem 0.25rem", flexWrap: "wrap" }}>
+                {SERVICE_TABS.map((t) => {
+                  const on = svcTab === t.key;
+                  const count = serviceMetrics.filter((m) => m.service === t.key).length + serviceUpdates.filter((u) => u.service === t.key).length;
+                  return (
+                    <button key={t.key} onClick={() => setSvcTab(t.key)} style={{
+                      padding: "0.35rem 0.75rem", borderRadius: 99, cursor: "pointer", fontSize: "0.76rem", fontWeight: 700,
+                      border: `1px solid ${on ? "rgba(79,70,229,0.35)" : "var(--border-2)"}`,
+                      background: on ? "rgba(79,70,229,0.1)" : "transparent",
+                      color: on ? "var(--accent)" : "var(--text-2)",
+                    }}>
+                      {t.label}{count > 0 && <span style={{ marginLeft: "0.3rem", color: "var(--text-4)", fontWeight: 600 }}>{count}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Headline metrics */}
+              <div style={{ padding: "0.6rem 1.25rem 0.2rem", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>Headline metrics</div>
+              {serviceMetrics.filter((m) => m.service === svcTab).map((m) => m.source_key ? (
+                <div key={m.id} style={{ padding: "0.55rem 1.25rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 700, fontSize: "0.82rem", flex: 1, minWidth: 120 }}>{m.label}</span>
+                  <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: "0.82rem", fontWeight: 700 }}>{m.value}</span>
+                  <span style={{ fontSize: "0.6rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "#059669", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 99, padding: "0.1rem 0.45rem" }}>Live</span>
+                </div>
+              ) : (
+                <div key={m.id} style={{ padding: "0.55rem 1.25rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 700, fontSize: "0.82rem", flex: 1, minWidth: 120 }}>{m.label}</span>
+                  <input
+                    className="field" defaultValue={m.value} key={`${m.id}-${m.value}`}
+                    style={{ width: 110, minHeight: 0, padding: "0.3rem 0.55rem", fontSize: "0.8rem", fontWeight: 700 }}
+                    onBlur={async (e) => {
+                      const v = e.target.value.trim();
+                      if (!v || v === m.value) return;
+                      const data = await post("/api/portal/services", { kind: "metric", id: m.id, value: v }, "PATCH");
+                      if (data) { ok(`${m.label} updated.`); reload(["services"]); }
+                    }}
+                  />
+                  <select
+                    className="field" value={m.trend ?? ""}
+                    style={{ width: 105, minHeight: 0, padding: "0.3rem 0.4rem", fontSize: "0.76rem" }}
+                    onChange={async (e) => {
+                      const data = await post("/api/portal/services", { kind: "metric", id: m.id, trend: e.target.value || null }, "PATCH");
+                      if (data) reload(["services"]);
+                    }}
+                  >
+                    <option value="">No trend</option>
+                    <option value="up">▲ Up</option>
+                    <option value="down">▼ Down</option>
+                    <option value="flat">— Steady</option>
+                  </select>
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Delete metric "${m.label}"?`)) return;
+                      await post("/api/portal/services", { kind: "metric", id: m.id }, "DELETE");
+                      reload(["services"]);
+                    }}
+                    className="icon-btn danger" aria-label="Delete"
+                  ><Trash2 size={12} /></button>
+                </div>
+              ))}
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!newMetric.label.trim() || !newMetric.value.trim()) return;
+                  const data = await post("/api/portal/services", { kind: "metric", service: svcTab, ...newMetric, trend: newMetric.trend || null });
+                  if (data) { setNewMetric({ label: "", value: "", trend: "", trend_note: "" }); ok("Metric added."); reload(["services"]); }
+                }}
+                style={{ display: "grid", gridTemplateColumns: "1.4fr 0.8fr 0.9fr 1.2fr auto", gap: "0.5rem", padding: "0.6rem 1.25rem 0.85rem" }}
+              >
+                <input className="field" placeholder="Label — e.g. Avg. Google position" value={newMetric.label} onChange={(e) => setNewMetric({ ...newMetric, label: e.target.value })} />
+                <input className="field" placeholder="Value — e.g. 8.2" value={newMetric.value} onChange={(e) => setNewMetric({ ...newMetric, value: e.target.value })} />
+                <select className="field" value={newMetric.trend} onChange={(e) => setNewMetric({ ...newMetric, trend: e.target.value })}>
+                  <option value="">No trend</option>
+                  <option value="up">▲ Up</option>
+                  <option value="down">▼ Down</option>
+                  <option value="flat">— Steady</option>
+                </select>
+                <input className="field" placeholder="Trend note — e.g. up 3 spots this month" value={newMetric.trend_note} onChange={(e) => setNewMetric({ ...newMetric, trend_note: e.target.value })} />
+                <button type="submit" className="btn-ghost" disabled={busy || !newMetric.label.trim() || !newMetric.value.trim()}><Plus size={14} /> Add</button>
+              </form>
+
+              {/* Updates feed */}
+              <div style={{ padding: "0.4rem 1.25rem 0.2rem", borderTop: "1px solid var(--border)", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>Updates the client sees</div>
+              {serviceUpdates.filter((u) => u.service === svcTab).map((u) => (
+                <div key={u.id} style={{ padding: "0.6rem 1.25rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "flex-start", gap: "0.6rem" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: "0.83rem" }}>{u.title}</div>
+                    {u.body && <div style={{ fontSize: "0.75rem", color: "var(--text-3)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{u.body}</div>}
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Delete update "${u.title}"?`)) return;
+                      await post("/api/portal/services", { kind: "update", id: u.id }, "DELETE");
+                      reload(["services"]);
+                    }}
+                    className="icon-btn danger" aria-label="Delete" style={{ flexShrink: 0 }}
+                  ><Trash2 size={12} /></button>
+                </div>
+              ))}
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!newUpdate.title.trim()) return;
+                  const data = await post("/api/portal/services", { kind: "update", service: svcTab, ...newUpdate });
+                  if (data) { setNewUpdate({ title: "", body: "" }); ok("Update posted — the client was notified."); reload(["services"]); }
+                }}
+                style={{ display: "grid", gap: "0.5rem", padding: "0.6rem 1.25rem 0.85rem" }}
+              >
+                <input className="field" placeholder="Update headline — e.g. Blocked 42 intrusion attempts this week" value={newUpdate.title} onChange={(e) => setNewUpdate({ ...newUpdate, title: e.target.value })} />
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <input className="field" placeholder="Optional detail…" value={newUpdate.body} onChange={(e) => setNewUpdate({ ...newUpdate, body: e.target.value })} />
+                  <button type="submit" className="btn-ghost" disabled={busy || !newUpdate.title.trim()}><Send size={13} /> Post</button>
+                </div>
+              </form>
+            </div>
+              </Panel>
+            </div>
+          )}
+
+          {/* ══ Billing ══ */}
+          {tab === "billing" && (
+            <div className="dashboard-grid">
+              <Panel icon={Receipt} title="Invoices" hint={unpaidInvoices ? `${unpaidInvoices} unpaid` : "Stripe invoices appear here automatically"} action={addToggle("invoice", "Add manually")}>
+                {adding === "invoice" && (
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault();
                     const data = await post("/api/portal/invoices", newInvoice);
-                    if (data) { setNewInvoice({ number: "", amount: "", due_date: "", pdf_url: "", pay_url: "" }); ok("Invoice added — the client was notified."); reload(["invoices"]); }
+                    if (data) { setNewInvoice({ number: "", amount: "", due_date: "", pdf_url: "", pay_url: "" }); setAdding(null); ok("Invoice added — the client was notified."); reload(["invoices"]); }
                   }}
-                  style={{ display: "grid", gap: "0.5rem", padding: "0.85rem 1.15rem" }}
+                  style={{ display: "grid", gap: "0.5rem", padding: "0.85rem 1.25rem" }}
                 >
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
                     <input className="field" placeholder="INV-001" value={newInvoice.number} onChange={(e) => setNewInvoice({ ...newInvoice, number: e.target.value })} />
@@ -677,99 +712,168 @@ export default function ClientPortalAdminPage() {
                     <button type="submit" className="btn-ghost" disabled={busy || !newInvoice.number.trim() || !newInvoice.amount}><Plus size={14} /> Add</button>
                   </div>
                 </form>
-              </div>
-            </Section>
-
-            {/* Onboarding checklist */}
-            <Section icon={ListChecks} title="Onboarding Checklist" extra={
-              <span style={{ fontSize: "0.72rem", color: "var(--text-3)", fontWeight: 600 }}>
-                {checklist.filter((i) => i.done).length}/{checklist.length} done
-              </span>
-            }>
-              <div>
-                {checklist.map((item) => (
-                  <div key={item.id} style={{ padding: "0.6rem 1.15rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                )}
+                {invoices.length === 0 && adding !== "invoice" && empty("No invoices yet.")}
+              {invoices.map((inv) => (
+                <div key={inv.id} style={{ padding: "0.75rem 1.25rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 700, fontSize: "0.85rem", flex: 1, minWidth: 90 }}>{inv.number}</span>
+                  <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: "0.85rem", fontWeight: 700 }}>{money(inv.amount_cents)}</span>
+                  {inv.status === "paid" ? pill("Paid", "#10b981") : (
                     <button
                       onClick={async () => {
-                        await post("/api/portal/checklist", { id: item.id, done: !item.done }, "PATCH");
-                        reload(["checklist"]);
+                        const data = await post("/api/portal/invoices", { id: inv.id, status: "paid" }, "PATCH");
+                        if (data) { ok(`${inv.number} marked paid.`); reload(["invoices"]); }
                       }}
-                      style={{
-                        width: 19, height: 19, borderRadius: 6, flexShrink: 0, cursor: "pointer",
-                        border: `2px solid ${item.done ? "#10b981" : "var(--border-3)"}`,
-                        background: item.done ? "#10b981" : "transparent",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                      }}
-                    >
-                      {item.done && <Check size={11} color="#ffffff" strokeWidth={3} />}
-                    </button>
-                    <span style={{ flex: 1, fontSize: "0.85rem", textDecoration: item.done ? "line-through" : "none", opacity: item.done ? 0.6 : 1 }}>{item.text}</span>
-                    <button
-                      onClick={async () => { await post("/api/portal/checklist", { id: item.id }, "DELETE"); reload(["checklist"]); }}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", display: "flex", padding: "0.2rem" }}
-                    ><Trash2 size={12} /></button>
-                  </div>
-                ))}
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    if (!newCheckItem.trim()) return;
-                    const data = await post("/api/portal/checklist", { text: newCheckItem });
-                    if (data) { setNewCheckItem(""); reload(["checklist"]); }
-                  }}
-                  style={{ display: "flex", gap: "0.5rem", padding: "0.85rem 1.15rem" }}
-                >
-                  <input className="field" placeholder="e.g. Logo files received" value={newCheckItem} onChange={(e) => setNewCheckItem(e.target.value)} />
-                  <button type="submit" className="btn-ghost" disabled={busy || !newCheckItem.trim()}><Plus size={14} /> Add</button>
-                </form>
-              </div>
-            </Section>
-          </div>
-
-          {/* ══ RIGHT COLUMN ══ */}
-          <div style={{ display: "grid", gap: "1.25rem", alignContent: "start" }}>
-
-            {/* Portal logins */}
-            <Section icon={KeyRound} title="Portal Logins" extra={
-              <span style={{ fontSize: "0.72rem", color: "var(--text-3)", fontWeight: 600 }}>{accounts.length} contact{accounts.length !== 1 ? "s" : ""}</span>
-            }>
-              <div>
-                {accounts.map((acct) => (
-                  <div key={acct.id} style={{ padding: "0.75rem 1.15rem", borderBottom: "1px solid var(--border)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
-                      <div style={{ flex: 1, minWidth: 120 }}>
-                        <div style={{ fontWeight: 700, fontSize: "0.85rem" }}>{acct.name}</div>
-                        <div style={{ fontSize: "0.72rem", color: "var(--text-3)", fontFamily: "var(--font-geist-mono)" }}>{acct.username}</div>
-                      </div>
-                      <button onClick={() => { setResetTarget(resetTarget === acct.username ? null : acct.username); setResetPw(""); }} className="btn-ghost" style={{ minHeight: 0, padding: "0.3rem 0.6rem", fontSize: "0.72rem" }}>
-                        <KeyRound size={11} /> Reset
-                      </button>
-                      <button
-                        onClick={async () => {
-                          if (!confirm(`Remove portal access for ${acct.username}?`)) return;
-                          await fetch("/api/portal/accounts", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: acct.username }) });
-                          reload(["accounts"]);
-                        }}
-                        className="btn-danger" style={{ minHeight: 0, padding: "0.3rem 0.5rem" }}
-                      ><Trash2 size={12} /></button>
+                      className="btn-ghost" style={{ minHeight: 0, padding: "0.25rem 0.6rem", fontSize: "0.72rem" }}
+                    ><Check size={12} /> Mark paid</button>
+                  )}
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Delete invoice ${inv.number}?`)) return;
+                      await post("/api/portal/invoices", { id: inv.id }, "DELETE");
+                      reload(["invoices"]);
+                    }}
+                    className="icon-btn danger" aria-label="Delete"
+                  ><Trash2 size={12} /></button>
+                </div>
+              ))}
+              </Panel>
+              <div style={{ display: "grid", gap: "1.25rem", alignContent: "start" }}>
+                <Panel icon={Wallet} title="Plan" hint="Shown on the client's Billing tab">
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const data = await post("/api/portal/plan", planForm, "PATCH");
+                  if (data) { ok(data.plan_name ? "Plan saved." : "Plan cleared."); reload(["plan"]); }
+                }}
+                style={{ padding: "0.85rem 1.25rem", borderBottom: "1px solid var(--border)", display: "grid", gap: "0.5rem" }}
+              >
+                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                  <input className="field" style={{ flex: 2, minWidth: 140 }} placeholder="e.g. Website + SEO" value={planForm.plan_name} onChange={(e) => setPlanForm({ ...planForm, plan_name: e.target.value })} />
+                  <input className="field" style={{ flex: 1, minWidth: 90 }} type="number" min="0" step="0.01" placeholder="Amount ($)" value={planForm.amount} onChange={(e) => setPlanForm({ ...planForm, amount: e.target.value })} />
+                  <select className="field" style={{ flex: 1, minWidth: 100 }} value={planForm.interval} onChange={(e) => setPlanForm({ ...planForm, interval: e.target.value })}>
+                    <option value="month">per month</option>
+                    <option value="quarter">per quarter</option>
+                    <option value="year">per year</option>
+                  </select>
+                  <button type="submit" className="btn-ghost" disabled={busy}><Check size={14} /> Save</button>
+                </div>
+              </form>
+                </Panel>
+                <Panel icon={CreditCard} title="Stripe" action={stripeLink?.customer_id ? (
+                  <a href={`https://dashboard.stripe.com/customers/${stripeLink.customer_id}`} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: "0.74rem", fontWeight: 600, color: "var(--accent)", textDecoration: "none" }}>Open in Stripe ↗</a>
+                ) : undefined}>
+              <div style={{ padding: "0.85rem 1.25rem", borderBottom: "1px solid var(--border)", display: "grid", gap: "0.55rem", fontSize: "0.8rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                  {!stripeLink?.configured ? pill("Not connected", "#8b95c0")
+                    : stripeLink.subscription ? pill(`Subscription ${stripeLink.subscription.status}`, stripeLink.subscription.status === "active" ? "#10b981" : "#d97706")
+                    : stripeLink.customer_id ? pill("Customer linked", "#4f46e5")
+                    : pill("Not linked", "#8b95c0")}
+                </div>
+                {!stripeLink?.configured ? (
+                  <span style={{ color: "var(--text-3)" }}>Add STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in Vercel to bill clients through Stripe.</span>
+                ) : (
+                  <>
+                    {!stripeLink.webhook_configured && (
+                      <span style={{ color: "#d97706" }}>STRIPE_WEBHOOK_SECRET isn&apos;t set, so invoices only update when you press Sync.</span>
+                    )}
+                    {stripeLink.subscription && (
+                      <span>
+                        {stripeLink.subscription.amount_cents != null && `${money(stripeLink.subscription.amount_cents)} per ${stripeLink.subscription.interval ?? "period"}`}
+                        {stripeLink.subscription.next_invoice_at && ` · next invoice ${new Date(stripeLink.subscription.next_invoice_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
+                      </span>
+                    )}
+                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                      {!stripeLink.subscription_id && (
+                        <button
+                          onClick={async () => {
+                            if (!planForm.plan_name || !planForm.amount) { fail("Save a plan name and amount first."); return; }
+                            if (!confirm(`Start a Stripe subscription for ${planForm.plan_name} at $${planForm.amount} per ${planForm.interval}? Stripe emails the first invoice straight away.`)) return;
+                            const data = await post("/api/stripe/client", { action: "subscribe" });
+                            if (data) { ok("Subscription started. The first invoice will appear once Stripe finalises it."); reload(["stripe", "invoices"]); }
+                          }}
+                          className="btn-primary" disabled={busy} style={{ minHeight: 0, padding: "0.35rem 0.75rem", fontSize: "0.74rem" }}
+                        ><Plus size={12} /> Start subscription</button>
+                      )}
+                      {stripeLink.customer_id && (
+                        <button
+                          onClick={async () => {
+                            const data = await post("/api/stripe/client", { action: "sync" });
+                            if (data) { ok(`Synced ${data.synced} invoice${data.synced === 1 ? "" : "s"} from Stripe.`); reload(["invoices", "stripe"]); }
+                          }}
+                          className="btn-ghost" disabled={busy} style={{ minHeight: 0, padding: "0.35rem 0.7rem", fontSize: "0.74rem" }}
+                        >Sync invoices</button>
+                      )}
+                      {stripeLink.customer_id && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm("Unlink this Stripe customer? Nothing is cancelled in Stripe.")) return;
+                            const data = await post("/api/stripe/client", { action: "unlink" });
+                            if (data) { ok("Stripe customer unlinked."); reload(["stripe"]); }
+                          }}
+                          className="btn-ghost" disabled={busy} style={{ minHeight: 0, padding: "0.35rem 0.7rem", fontSize: "0.74rem" }}
+                        >Unlink</button>
+                      )}
                     </div>
-                    {resetTarget === acct.username && (
+                    {!stripeLink.customer_id && (
                       <form
                         onSubmit={async (e) => {
                           e.preventDefault();
-                          const res = await fetch("/api/portal/accounts", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: acct.username, new_password: resetPw }) });
-                          const data = await res.json();
-                          if (!res.ok) fail(data.error ?? "Reset failed.");
-                          else { ok(`Password reset for ${acct.username}.`); setResetTarget(null); }
+                          const data = await post("/api/stripe/client", { action: "link", customer_id: stripeCustomerInput });
+                          if (data) { setStripeCustomerInput(""); ok(`Linked. Pulled ${data.synced} invoice${data.synced === 1 ? "" : "s"} from Stripe.`); reload(["stripe", "invoices", "plan"]); }
                         }}
-                        style={{ display: "flex", gap: "0.5rem", marginTop: "0.55rem" }}
+                        style={{ display: "flex", gap: "0.5rem" }}
                       >
-                        <input className="field" type="text" placeholder="New password (8+ chars)" value={resetPw} onChange={(e) => setResetPw(e.target.value)} autoComplete="off" />
-                        <button type="submit" className="btn-ghost" disabled={resetPw.length < 8}>Save</button>
+                        <input className="field" placeholder="Already in Stripe? Paste the customer ID (cus_…)" value={stripeCustomerInput} onChange={(e) => setStripeCustomerInput(e.target.value)} />
+                        <button type="submit" className="btn-ghost" disabled={busy || !stripeCustomerInput.trim()}>Link</button>
                       </form>
                     )}
-                  </div>
-                ))}
+                  </>
+                )}
+              </div>
+                </Panel>
+              </div>
+            </div>
+          )}
+
+          {/* ══ Files ══ */}
+          {tab === "files" && (
+            <Panel icon={FolderOpen} title="Files" hint="Shared both ways: the client can upload too" action={
+              <>
+                <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={uploadFile} />
+                <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="btn-ghost" style={{ minHeight: 0, padding: "0.3rem 0.65rem", fontSize: "0.72rem" }}>
+                  <Upload size={11} /> {uploading ? "Uploading…" : "Upload"}
+                </button>
+              </>
+            }>
+              {files.length === 0 && empty("No files shared yet.")}
+              {files.length === 0 && <p style={{ padding: "1rem 1.25rem", fontSize: "0.8rem", color: "var(--text-3)" }}>No files shared yet.</p>}
+              {files.map((f) => (
+                <div key={f.id} style={{ padding: "0.65rem 1.25rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                  <a href={f.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, minWidth: 0, fontSize: "0.83rem", fontWeight: 600, color: "var(--text-1)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {f.filename}
+                  </a>
+                  <span style={{ fontSize: "0.68rem", color: "var(--text-3)", flexShrink: 0 }}>{f.uploaded_by ?? ""}</span>
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Delete ${f.filename}?`)) return;
+                      await post("/api/portal/files", { id: f.id }, "DELETE");
+                      reload(["files"]);
+                    }}
+                    className="icon-btn danger" aria-label="Delete"
+                  ><Trash2 size={12} /></button>
+                </div>
+              ))}
+            </Panel>
+          )}
+
+          {/* ══ Access & setup ══ */}
+          {tab === "access" && (
+            <div className="dashboard-grid">
+              <div style={{ display: "grid", gap: "1.25rem", alignContent: "start" }}>
+                <Panel icon={KeyRound} title="Portal logins" hint="Each contact gets their own login" action={addToggle("login")}>
+                  {adding === "login" && (
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault();
@@ -781,11 +885,11 @@ export default function ClientPortalAdminPage() {
                     if (!res.ok) fail(data.error ?? "Couldn't create login.");
                     else {
                       ok(`Login created — username "${data.username}".`);
-                      setNewUsername(""); setNewPassword(""); setNewDisplayName("");
+                      setNewUsername(""); setNewPassword(""); setNewDisplayName(""); setAdding(null);
                       reload(["accounts"]);
                     }
                   }}
-                  style={{ display: "grid", gap: "0.5rem", padding: "0.85rem 1.15rem" }}
+                  style={{ display: "grid", gap: "0.5rem", padding: "0.85rem 1.25rem" }}
                 >
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                     <input className="field" placeholder="Username" value={newUsername} onChange={(e) => setNewUsername(e.target.value.toLowerCase().trim())} autoComplete="off" />
@@ -798,131 +902,134 @@ export default function ClientPortalAdminPage() {
                     </button>
                   </div>
                 </form>
-              </div>
-            </Section>
-
-            {/* Orientation & policies */}
-            <Section icon={Compass} title="Orientation & Policies" extra={
-              orientation?.current ? pill("Complete", "#10b981") : orientation?.completed_at ? pill("Needs re-accept", "#d97706") : pill("Not started", "#8b95c0")
-            }>
-              <div style={{ padding: "0.85rem 1.15rem", display: "grid", gap: "0.5rem", fontSize: "0.82rem" }}>
-                {orientation?.completed_at ? (
-                  <span>
-                    Accepted policies {orientation.accepted_version} {orientation.accepted_by ? `(${orientation.accepted_by}) ` : ""}
-                    on {new Date(orientation.completed_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}.
-                    {!orientation.current && ` Current version is ${orientation.current_version}.`}
-                  </span>
-                ) : (
-                  <span style={{ color: "var(--text-3)" }}>The client sees the orientation on their Overview until they finish it and accept the policies.</span>
-                )}
-                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                  <Link href="/policies" className="btn-ghost" style={{ minHeight: 0, padding: "0.3rem 0.6rem", fontSize: "0.72rem" }}>View policies</Link>
-                  {orientation?.completed_at && (
-                    <button
-                      onClick={async () => {
-                        if (!confirm("Ask this client to go through orientation again?")) return;
-                        const data = await post("/api/portal/orientation", {}, "DELETE");
-                        if (data) { ok("Orientation reset."); reload(["orientation"]); }
-                      }}
-                      className="btn-ghost" style={{ minHeight: 0, padding: "0.3rem 0.6rem", fontSize: "0.72rem" }}
-                    ><RotateCcw size={11} /> Reset</button>
                   )}
-                </div>
-              </div>
-            </Section>
-
-            {/* Branding */}
-            <Section icon={ImageIcon} title="Portal Branding">
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  const data = await post("/api/portal/me", { logo_url: logoUrl }, "PATCH");
-                  if (data) ok(logoUrl ? "Logo saved." : "Logo removed.");
-                }}
-                style={{ display: "flex", gap: "0.5rem", padding: "0.85rem 1.15rem", alignItems: "center" }}
-              >
-                {logoUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element -- external client logo, unknown host
-                  <img src={logoUrl} alt="logo" style={{ width: 34, height: 34, borderRadius: 9, objectFit: "cover", border: "1px solid var(--border-2)", background: "#fff", flexShrink: 0 }} />
-                )}
-                <input className="field" placeholder="Client logo URL (shows in their portal)" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} />
-                <button type="submit" className="btn-ghost" disabled={busy}>Save</button>
-              </form>
-            </Section>
-
-            {/* Files */}
-            <Section icon={FolderOpen} title="Files" extra={
-              <>
-                <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={uploadFile} />
-                <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="btn-ghost" style={{ minHeight: 0, padding: "0.3rem 0.65rem", fontSize: "0.72rem" }}>
-                  <Upload size={11} /> {uploading ? "Uploading…" : "Upload"}
-                </button>
-              </>
-            }>
-              <div>
-                {files.length === 0 && <p style={{ padding: "1rem 1.15rem", fontSize: "0.8rem", color: "var(--text-3)" }}>No files shared yet.</p>}
-                {files.map((f) => (
-                  <div key={f.id} style={{ padding: "0.65rem 1.15rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                    <a href={f.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, minWidth: 0, fontSize: "0.83rem", fontWeight: 600, color: "var(--text-1)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {f.filename}
-                    </a>
-                    <span style={{ fontSize: "0.68rem", color: "var(--text-3)", flexShrink: 0 }}>{f.uploaded_by ?? ""}</span>
+                  {accounts.length === 0 && adding !== "login" && empty("No one can sign in yet. Add a login.")}
+              {accounts.map((acct) => (
+                <div key={acct.id} style={{ padding: "0.75rem 1.25rem", borderBottom: "1px solid var(--border)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                    <div style={{ flex: 1, minWidth: 120 }}>
+                      <div style={{ fontWeight: 700, fontSize: "0.85rem" }}>{acct.name}</div>
+                      <div style={{ fontSize: "0.72rem", color: "var(--text-3)", fontFamily: "var(--font-geist-mono)" }}>{acct.username}</div>
+                    </div>
+                    <button onClick={() => { setResetTarget(resetTarget === acct.username ? null : acct.username); setResetPw(""); }} className="btn-ghost" style={{ minHeight: 0, padding: "0.3rem 0.6rem", fontSize: "0.72rem" }}>
+                      <KeyRound size={11} /> Reset
+                    </button>
                     <button
                       onClick={async () => {
-                        if (!confirm(`Delete ${f.filename}?`)) return;
-                        await post("/api/portal/files", { id: f.id }, "DELETE");
-                        reload(["files"]);
+                        if (!confirm(`Remove portal access for ${acct.username}?`)) return;
+                        await fetch("/api/portal/accounts", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: acct.username }) });
+                        reload(["accounts"]);
                       }}
-                      className="btn-danger" style={{ minHeight: 0, padding: "0.3rem 0.5rem" }}
+                      className="icon-btn danger" aria-label="Delete"
                     ><Trash2 size={12} /></button>
                   </div>
-                ))}
+                  {resetTarget === acct.username && (
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const res = await fetch("/api/portal/accounts", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: acct.username, new_password: resetPw }) });
+                        const data = await res.json();
+                        if (!res.ok) fail(data.error ?? "Reset failed.");
+                        else { ok(`Password reset for ${acct.username}.`); setResetTarget(null); }
+                      }}
+                      style={{ display: "flex", gap: "0.5rem", marginTop: "0.55rem" }}
+                    >
+                      <input className="field" type="text" placeholder="New password (8+ chars)" value={resetPw} onChange={(e) => setResetPw(e.target.value)} autoComplete="off" />
+                      <button type="submit" className="btn-ghost" disabled={resetPw.length < 8}>Save</button>
+                    </form>
+                  )}
+                </div>
+              ))}
+                </Panel>
+                <Panel icon={ListChecks} title="Onboarding checklist" hint={checklist.length ? `${checklist.filter((i) => i.done).length} of ${checklist.length} done` : "Shown on the client's Overview"} action={addToggle("check")}>
+                  {adding === "check" && (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!newCheckItem.trim()) return;
+                    const data = await post("/api/portal/checklist", { text: newCheckItem });
+                    if (data) { setNewCheckItem(""); reload(["checklist"]); }
+                  }}
+                  style={{ display: "flex", gap: "0.5rem", padding: "0.85rem 1.25rem" }}
+                >
+                  <input className="field" placeholder="e.g. Logo files received" value={newCheckItem} onChange={(e) => setNewCheckItem(e.target.value)} />
+                  <button type="submit" className="btn-ghost" disabled={busy || !newCheckItem.trim()}><Plus size={14} /> Add</button>
+                </form>
+                  )}
+                  {checklist.length === 0 && adding !== "check" && empty("No checklist items.")}
+              {checklist.map((item) => (
+                <div key={item.id} style={{ padding: "0.6rem 1.25rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                  <button
+                    onClick={async () => {
+                      await post("/api/portal/checklist", { id: item.id, done: !item.done }, "PATCH");
+                      reload(["checklist"]);
+                    }}
+                    style={{
+                      width: 19, height: 19, borderRadius: 6, flexShrink: 0, cursor: "pointer",
+                      border: `2px solid ${item.done ? "#10b981" : "var(--border-3)"}`,
+                      background: item.done ? "#10b981" : "transparent",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    {item.done && <Check size={11} color="#ffffff" strokeWidth={3} />}
+                  </button>
+                  <span style={{ flex: 1, fontSize: "0.85rem", textDecoration: item.done ? "line-through" : "none", opacity: item.done ? 0.6 : 1 }}>{item.text}</span>
+                  <button
+                    onClick={async () => { await post("/api/portal/checklist", { id: item.id }, "DELETE"); reload(["checklist"]); }}
+                    className="icon-btn danger" aria-label="Delete"
+                  ><Trash2 size={12} /></button>
+                </div>
+              ))}
+                </Panel>
               </div>
-            </Section>
-
-            {/* Messages */}
-            <Section icon={MessageSquare} title="Updates & Messages" extra={
-              <Link href={`/portal?client=${clientId}`} style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.72rem", color: "var(--accent)", textDecoration: "none", fontWeight: 600 }}>
-                Client view <ChevronRight size={12} />
-              </Link>
-            }>
-              <div ref={threadRef} style={{ maxHeight: 300, overflowY: "auto", padding: "0.85rem 1.15rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-                {messages.length === 0 && <p style={{ fontSize: "0.8rem", color: "var(--text-3)", textAlign: "center", padding: "1rem 0" }}>No messages yet — post the first update.</p>}
-                {messages.map((m) => {
-                  const fromStaff = m.author_role !== "client";
-                  return (
-                    <div key={m.id} style={{ display: "flex", justifyContent: fromStaff ? "flex-end" : "flex-start" }}>
-                      <div style={{
-                        maxWidth: "82%",
-                        background: fromStaff ? "rgba(124,133,243,0.1)" : "var(--surface-2)",
-                        border: `1px solid ${fromStaff ? "rgba(124,133,243,0.25)" : "var(--border)"}`,
-                        borderRadius: 11, padding: "0.5rem 0.7rem",
-                      }}>
-                        <div style={{ fontSize: "0.64rem", fontWeight: 700, color: fromStaff ? "#7c85f3" : "var(--accent)", marginBottom: "0.15rem" }}>
-                          {fromStaff ? m.author ?? "KW team" : `${client.business_name} (client)`}
-                        </div>
-                        <div style={{ fontSize: "0.82rem", lineHeight: 1.45, whiteSpace: "pre-wrap" }}>{m.body}</div>
-                        <div style={{ fontSize: "0.6rem", color: "var(--text-3)", marginTop: "0.2rem" }}>{msgTime(m.created_at)}</div>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div style={{ display: "grid", gap: "1.25rem", alignContent: "start" }}>
+                <Panel icon={Compass} title="Orientation & policies" action={pill(orientationStatus.label.replace(/^Orientation /, ""), orientationStatus.color)}>
+            <div style={{ padding: "0.85rem 1.25rem", display: "grid", gap: "0.5rem", fontSize: "0.82rem" }}>
+              {orientation?.completed_at ? (
+                <span>
+                  Accepted policies {orientation.accepted_version} {orientation.accepted_by ? `(${orientation.accepted_by}) ` : ""}
+                  on {new Date(orientation.completed_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}.
+                  {!orientation.current && ` Current version is ${orientation.current_version}.`}
+                </span>
+              ) : (
+                <span style={{ color: "var(--text-3)" }}>The client sees the orientation on their Overview until they finish it and accept the policies.</span>
+              )}
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                <Link href="/policies" className="btn-ghost" style={{ minHeight: 0, padding: "0.3rem 0.6rem", fontSize: "0.72rem" }}>View policies</Link>
+                {orientation?.completed_at && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm("Ask this client to go through orientation again?")) return;
+                      const data = await post("/api/portal/orientation", {}, "DELETE");
+                      if (data) { ok("Orientation reset."); reload(["orientation"]); }
+                    }}
+                    className="btn-ghost" style={{ minHeight: 0, padding: "0.3rem 0.6rem", fontSize: "0.72rem" }}
+                  ><RotateCcw size={11} /> Reset</button>
+                )}
               </div>
-              <div style={{ display: "flex", gap: "0.5rem", padding: "0.75rem 1.15rem", borderTop: "1px solid var(--border)" }}>
-                <input
-                  className="field"
-                  placeholder={`Post an update for ${client.business_name}…`}
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                />
-                <button onClick={sendMessage} disabled={sending || !draft.trim()} className="btn-primary" style={{ flexShrink: 0 }}>
-                  <Send size={14} />
-                </button>
+            </div>
+                </Panel>
+                <Panel icon={ImageIcon} title="Portal branding" hint="Client logo shown in their portal">
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const data = await post("/api/portal/me", { logo_url: logoUrl }, "PATCH");
+                if (data) ok(logoUrl ? "Logo saved." : "Logo removed.");
+              }}
+              style={{ display: "flex", gap: "0.5rem", padding: "0.85rem 1.25rem", alignItems: "center" }}
+            >
+              {logoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element -- external client logo, unknown host
+                <img src={logoUrl} alt="logo" style={{ width: 34, height: 34, borderRadius: 9, objectFit: "cover", border: "1px solid var(--border-2)", background: "#fff", flexShrink: 0 }} />
+              )}
+              <input className="field" placeholder="Client logo URL (shows in their portal)" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} />
+              <button type="submit" className="btn-ghost" disabled={busy}>Save</button>
+            </form>
+                </Panel>
               </div>
-            </Section>
-          </div>
-        </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
