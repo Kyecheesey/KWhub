@@ -459,7 +459,7 @@ export default function PortalPage() {
       body: JSON.stringify({ accept: true }),
     });
     const data = await res.json().catch(() => ({}));
-    if (res.ok) setOrientation(data);
+    if (res.ok) { setOrientation(data); setSection("overview"); }
     else setAcceptErr(data.error ?? "Couldn't save that. Please try again.");
     setAccepting(false);
   }
@@ -492,6 +492,9 @@ export default function PortalPage() {
   const isLocked = (key: string) => !modules.includes(key);
   const active = enabledSections.some((s) => s.key === section) ? section : "overview";
   const orientationDue = !!orientation && !orientation.current;
+  // Clients go through orientation before the rest of the portal opens up
+  // (staff previews skip the gate so they can see the whole dashboard).
+  const gated = orientationDue && !isPreview;
   const attention = (key: string) =>
     key === "marketing" ? pendingPosts.length
       : key === "overview" ? pendingApprovals.length
@@ -1017,9 +1020,14 @@ export default function PortalPage() {
                 </div>
               ))}
             </div>
-            <button onClick={() => setSection("policies")} className="btn-ghost" style={{ minHeight: 0, padding: "0.35rem 0.7rem", fontSize: "0.74rem", marginBottom: "1rem" }}>
-              <BookOpen size={12} /> Read the full policies
-            </button>
+            <details style={{ marginBottom: "1rem" }}>
+              <summary className="btn-ghost" style={{ display: "inline-flex", minHeight: 0, padding: "0.35rem 0.7rem", fontSize: "0.74rem", cursor: "pointer", listStyle: "none" }}>
+                <BookOpen size={12} /> Read the full policies
+              </summary>
+              <div style={{ padding: "1rem 0.25rem 0.25rem" }}>
+                <PolicyPoints keys={POLICY_SECTIONS.map((p) => p.key)} />
+              </div>
+            </details>
             {orientation?.current ? (
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.8rem 0.9rem", borderRadius: 11, background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", fontSize: "0.84rem", fontWeight: 700, color: "#059669" }}>
                 <Check size={15} strokeWidth={3} /> You&apos;re all set. Orientation complete.
@@ -1325,6 +1333,20 @@ export default function PortalPage() {
               <Skeleton height={14} width="35%" />
               <Skeleton height={40} style={{ borderRadius: 10 }} />
             </div>
+          </div>
+        ) : gated ? (
+          <div style={{ maxWidth: 860, margin: "0 auto", display: "grid", gap: "1.25rem" }}>
+            <div className="fade-up">
+              <h1 style={{ fontSize: "clamp(1.5rem, 4vw, 2rem)", fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.12, marginBottom: "0.4rem" }}>
+                {orientation?.completed_at ? "Our policies have been updated" : "Before we start"}
+              </h1>
+              <p style={{ color: "var(--text-2)", fontSize: "0.92rem", lineHeight: 1.6 }}>
+                {orientation?.completed_at
+                  ? "Please take a moment to review and accept them. Your dashboard opens again as soon as you're done."
+                  : "Take two minutes to see how we work together. Your dashboard opens as soon as you finish."}
+              </p>
+            </div>
+            {orientationSection}
           </div>
         ) : (
           <div className="portal-layout">
