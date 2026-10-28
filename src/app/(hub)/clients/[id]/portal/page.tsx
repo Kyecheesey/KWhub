@@ -7,7 +7,7 @@ import {
   ArrowLeft, Send, KeyRound, UserPlus, Trash2,
   MessageSquare, Building2, Eye, Rocket, Plus,
   ThumbsUp, FolderOpen, Upload, Receipt, ListChecks,
-  Check, Image as ImageIcon, ChevronRight, Briefcase, Boxes,
+  Check, Image as ImageIcon, ChevronRight, Briefcase, Boxes, Compass, RotateCcw,
 } from "lucide-react";
 
 interface ClientInfo { id: number; business_name: string; contact_name: string | null; assigned_to: string | null; logo_url: string | null; }
@@ -21,6 +21,8 @@ interface ChecklistItem { id: number; text: string; done: boolean; }
 interface ClientJob { id: number; title: string; status: string; priority: string; assigned_to: string | null; due_date: string | null; visible_to_client?: boolean; }
 interface ServiceMetric { id: number; service: string; label: string; value: string; trend: string | null; trend_note: string | null; source_key: string | null; }
 interface ServiceUpdate { id: number; service: string; title: string; body: string | null; created_by: string | null; created_at: string; }
+interface Orientation { completed_at: string | null; accepted_version: string | null; accepted_by: string | null; current_version: string; current: boolean; }
+interface Plan { plan_name: string | null; plan_amount_cents: number | null; plan_interval: string | null; }
 interface ServiceConfig { website: string | null; gsc_site: string | null; vercel_project_id: string | null; }
 
 const SERVICE_TABS = [
@@ -76,6 +78,8 @@ export default function ClientPortalAdminPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [clientJobs, setClientJobs] = useState<ClientJob[]>([]);
+  const [orientation, setOrientation] = useState<Orientation | null>(null);
+  const [planForm, setPlanForm] = useState({ plan_name: "", amount: "", interval: "month" });
   const [serviceMetrics, setServiceMetrics] = useState<ServiceMetric[]>([]);
   const [serviceUpdates, setServiceUpdates] = useState<ServiceUpdate[]>([]);
   const [svcTab, setSvcTab] = useState("seo");
@@ -120,6 +124,12 @@ export default function ClientPortalAdminPage() {
     if (all || keys.includes("files")) jobs.push(j(`/api/portal/files${q}`, (d: PortalFile[]) => setFiles(Array.isArray(d) ? d : [])));
     if (all || keys.includes("invoices")) jobs.push(j(`/api/portal/invoices${q}`, (d: Invoice[]) => setInvoices(Array.isArray(d) ? d : [])));
     if (all || keys.includes("checklist")) jobs.push(j(`/api/portal/checklist${q}`, (d: ChecklistItem[]) => setChecklist(Array.isArray(d) ? d : [])));
+    if (all || keys.includes("orientation")) jobs.push(j(`/api/portal/orientation${q}`, (d: Orientation) => setOrientation(d)));
+    if (all || keys.includes("plan")) jobs.push(j(`/api/portal/plan${q}`, (d: Plan) => setPlanForm({
+      plan_name: d.plan_name ?? "",
+      amount: d.plan_amount_cents ? String(d.plan_amount_cents / 100) : "",
+      interval: d.plan_interval ?? "month",
+    })));
     if (all || keys.includes("clientJobs")) jobs.push(j(`/api/client-jobs${q}`, (d: ClientJob[]) => setClientJobs(Array.isArray(d) ? d : [])));
     if (all || keys.includes("services")) jobs.push(j(`/api/portal/services${q}`, (d: { metrics: ServiceMetric[]; updates: ServiceUpdate[]; config: ServiceConfig | null }) => {
       setServiceMetrics(Array.isArray(d?.metrics) ? d.metrics : []);
@@ -522,8 +532,28 @@ export default function ClientPortalAdminPage() {
             </Section>
 
             {/* Invoices */}
-            <Section icon={Receipt} title="Invoices">
+            <Section icon={Receipt} title="Billing">
               <div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const data = await post("/api/portal/plan", planForm, "PATCH");
+                    if (data) { ok(data.plan_name ? "Plan saved." : "Plan cleared."); reload(["plan"]); }
+                  }}
+                  style={{ padding: "0.85rem 1.15rem", borderBottom: "1px solid var(--border)", display: "grid", gap: "0.5rem" }}
+                >
+                  <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Plan (shown on the client&apos;s Billing tab)</div>
+                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                    <input className="field" style={{ flex: 2, minWidth: 140 }} placeholder="e.g. Website + SEO" value={planForm.plan_name} onChange={(e) => setPlanForm({ ...planForm, plan_name: e.target.value })} />
+                    <input className="field" style={{ flex: 1, minWidth: 90 }} type="number" min="0" step="0.01" placeholder="Amount ($)" value={planForm.amount} onChange={(e) => setPlanForm({ ...planForm, amount: e.target.value })} />
+                    <select className="field" style={{ flex: 1, minWidth: 100 }} value={planForm.interval} onChange={(e) => setPlanForm({ ...planForm, interval: e.target.value })}>
+                      <option value="month">per month</option>
+                      <option value="quarter">per quarter</option>
+                      <option value="year">per year</option>
+                    </select>
+                    <button type="submit" className="btn-ghost" disabled={busy}><Check size={14} /> Save</button>
+                  </div>
+                </form>
                 {invoices.map((inv) => (
                   <div key={inv.id} style={{ padding: "0.75rem 1.15rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
                     <span style={{ fontWeight: 700, fontSize: "0.85rem", flex: 1, minWidth: 90 }}>{inv.number}</span>
@@ -687,6 +717,36 @@ export default function ClientPortalAdminPage() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </Section>
+
+            {/* Orientation & policies */}
+            <Section icon={Compass} title="Orientation & Policies" extra={
+              orientation?.current ? pill("Complete", "#10b981") : orientation?.completed_at ? pill("Needs re-accept", "#d97706") : pill("Not started", "#8b95c0")
+            }>
+              <div style={{ padding: "0.85rem 1.15rem", display: "grid", gap: "0.5rem", fontSize: "0.82rem" }}>
+                {orientation?.completed_at ? (
+                  <span>
+                    Accepted policies {orientation.accepted_version} {orientation.accepted_by ? `(${orientation.accepted_by}) ` : ""}
+                    on {new Date(orientation.completed_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}.
+                    {!orientation.current && ` Current version is ${orientation.current_version}.`}
+                  </span>
+                ) : (
+                  <span style={{ color: "var(--text-3)" }}>The client sees the orientation on their Overview until they finish it and accept the policies.</span>
+                )}
+                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                  <Link href="/policies" className="btn-ghost" style={{ minHeight: 0, padding: "0.3rem 0.6rem", fontSize: "0.72rem" }}>View policies</Link>
+                  {orientation?.completed_at && (
+                    <button
+                      onClick={async () => {
+                        if (!confirm("Ask this client to go through orientation again?")) return;
+                        const data = await post("/api/portal/orientation", {}, "DELETE");
+                        if (data) { ok("Orientation reset."); reload(["orientation"]); }
+                      }}
+                      className="btn-ghost" style={{ minHeight: 0, padding: "0.3rem 0.6rem", fontSize: "0.72rem" }}
+                    ><RotateCcw size={11} /> Reset</button>
+                  )}
+                </div>
               </div>
             </Section>
 

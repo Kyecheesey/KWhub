@@ -1,6 +1,6 @@
 import { sql, migrate } from "@/lib/db";
 import { resolvePortalScope } from "@/lib/portalAuth";
-import { PORTAL_MODULES, parseModules } from "@/lib/modules";
+import { PORTAL_MODULES, parseModules, withAlwaysModules } from "@/lib/modules";
 
 export async function GET(request: Request) {
   await migrate();
@@ -21,8 +21,9 @@ export async function PATCH(request: Request) {
     return Response.json({ error: "modules must be an array of module keys" }, { status: 400 });
   }
   const valid = new Set(PORTAL_MODULES.map((m) => m.key));
-  const keys = body.modules.filter((k: unknown): k is string => typeof k === "string" && valid.has(k));
-  if (!keys.includes("overview")) keys.unshift("overview");
+  const picked = body.modules.filter((k: unknown): k is string => typeof k === "string" && valid.has(k));
+  if (!picked.includes("overview")) picked.unshift("overview");
+  const keys = withAlwaysModules(picked);
   await sql`UPDATE clients SET portal_modules = ${JSON.stringify(keys)} WHERE id = ${r.scope.clientId}`;
   return Response.json({ enabled: keys });
 }
