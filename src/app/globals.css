@@ -765,3 +765,79 @@ a.card:hover { transform: translateY(-1px); }
 .flex-center { display: flex; align-items: center; justify-content: center; }
 .gap-1 { gap: 0.25rem; }
 .gap-2 { gap: 0.5rem; }
+
+/* ════════ Client portal theme ════════
+   The portal (src/app/portal) wears the kwinnovations.com.au look: Outfit
+   type, ink + KWI blue, light grey canvas, big soft-cornered cards, pill
+   buttons and pastel chips. Scoped to .kwp so the staff hub is unchanged. */
+.kwp {
+  --bg:        #f2f3f6;
+  --surface:   #ffffff;
+  --surface-2: #f6f7f9;
+  --surface-3: #eceef2;
+  --surface-4: #dfe2e8;
+  --border:    #e6e8ec;
+  --border-2:  #d6d9df;
+  --border-3:  #c3c7cf;
+  --text-1:    #1b1d22;
+  --text-2:    #50555f;
+  --text-3:    #8a8f99;
+  --text-4:    #b3b7bf;
+  --accent:    #2f6bff;
+  --accent-2:  #1a8cff;
+  --accent-3:  #2f6bff;
+  --kw-blue-2: #1f55e0;
+  --kw-yellow: #fff3a6;
+  --kw-lilac:  #f1e8ff;
+  --kw-sky:    #c4ecff;
+  --kw-pink:   #ffd8d4;
+  --kw-shadow: 0 30px 60px -40px rgba(27,29,34,0.35);
+  --shadow-sm: 0 1px 2px rgba(27,29,34,0.04);
+  --shadow-md: 0 30px 60px -40px rgba(27,29,34,0.35);
+  font-family: var(--font-outfit), "Outfit", system-ui, sans-serif;
+  color: var(--text-1);
+  background: var(--bg);
+  letter-spacing: -0.005em;
+}
+.kwp h1, .kwp h2, .kwp h3 { letter-spacing: -0.035em; font-weight: 600; }
+.kwp .card {
+  border: 1px solid transparent;
+  border-radius: 30px;
+  box-shadow: var(--kw-shadow);
+}
+.kwp .card:hover { border-color: transparent; box-shadow: var(--kw-shadow); }
+.kwp button.card:hover, .kwp a.card:hover { transform: translateY(-2px); box-shadow: 0 34px 60px -36px rgba(27,29,34,0.4); }
+.kwp .btn-primary {
+  background: var(--accent); color: #fff; font-weight: 500; font-size: 0.9rem; letter-spacing: -0.01em;
+  border-radius: 100px; padding: 0.65rem 1.35rem; box-shadow: none;
+}
+.kwp .btn-primary:hover { background: var(--kw-blue-2); opacity: 1; box-shadow: none; }
+.kwp .btn-ghost {
+  background: #fff; color: var(--text-1); font-weight: 500; border: 1px solid var(--border-2);
+  border-radius: 100px; padding: 0.62rem 1.25rem; box-shadow: none;
+}
+.kwp .btn-ghost:hover { background: #fff; border-color: var(--text-1); color: var(--text-1); }
+.kwp .field { border-radius: 14px; border-color: var(--border-2); }
+.kwp .field:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(47,107,255,0.14); }
+.kwp .glass { background: rgba(255,255,255,0.92); border: none; border-bottom: 1px solid var(--border); }
+.kwp .grad-text { background: none; -webkit-text-fill-color: var(--accent); color: var(--accent); }
+.kwp .kw-eyebrow {
+  font-size: 0.72rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-2);
+}
+.kwp .kw-chip {
+  display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.4rem 0.9rem; border-radius: 100px;
+  font-size: 0.82rem; font-weight: 500; color: var(--text-1); background: var(--kw-yellow);
+}
+.kwp .kw-chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.kwp .kw-nav-item { border-radius: 100px !important; }
+
+/* KW | INNOVATIONS wordmark (same artwork as the website's nav) */
+.kw-wordmark { display: inline-flex; align-items: center; gap: 0.7rem; font-family: var(--font-open-sans), "Open Sans", system-ui, sans-serif; text-decoration: none; }
+.kw-wordmark .kw-mark { width: 42px; height: auto; flex-shrink: 0; overflow: visible; }
+.kw-wordmark .kw-text { display: flex; flex-direction: column; gap: 0.32rem; }
+.kw-wordmark .kw-line { display: inline-flex; align-items: center; gap: 0.45rem; line-height: 1; color: #1b1d22; }
+.kw-wordmark .kw-kw { font-size: 1.08rem; font-weight: 800; letter-spacing: 0.04em; }
+.kw-wordmark .kw-vr { width: 1.5px; height: 1rem; background: #1b1d22; border-radius: 1px; }
+.kw-wordmark .kw-inn { font-size: 1.08rem; font-weight: 300; letter-spacing: 0.08em; }
+.kw-wordmark .kw-sub { font-size: 0.52rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #2f6bff; line-height: 1; white-space: nowrap; }
+@media (max-width: 420px) { .kw-wordmark .kw-mark { width: 34px; } .kw-wordmark .kw-kw, .kw-wordmark .kw-inn { font-size: 0.95rem; } }

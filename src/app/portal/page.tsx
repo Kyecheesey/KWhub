@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LogoMark } from "@/components/Logo";
+import { KwiWordmark } from "@/components/KwiWordmark";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import {
@@ -54,7 +54,7 @@ interface Plan { plan_name: string | null; plan_amount_cents: number | null; pla
 const JOB_STATUS: Record<string, { label: string; color: string }> = {
   todo: { label: "Queued", color: "#60a5fa" },
   in_progress: { label: "In progress", color: "#d97706" },
-  in_review: { label: "In review", color: "#4f46e5" },
+  in_review: { label: "In review", color: "#2f6bff" },
   done: { label: "Done", color: "#059669" },
 };
 
@@ -114,10 +114,10 @@ function MetricTiles({ metrics }: { metrics: ServiceMetric[] }) {
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "0.4rem", marginBottom: "0.3rem" }}>
               <span style={{ fontSize: "0.64rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>{m.label}</span>
               {m.source_key && (
-                <span title={`Live data · updated ${msgTime(m.updated_at)}`} style={{ fontSize: "0.58rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "#059669", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 99, padding: "0.08rem 0.4rem", flexShrink: 0 }}>Live</span>
+                <span title={`Live data · updated ${msgTime(m.updated_at)}`} style={{ fontSize: "0.58rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#059669", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 99, padding: "0.08rem 0.4rem", flexShrink: 0 }}>Live</span>
               )}
             </div>
-            <div style={{ fontSize: "1.35rem", fontWeight: 900, letterSpacing: "-0.02em", lineHeight: 1.1 }}>{m.value}</div>
+            <div style={{ fontSize: "1.35rem", fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.1 }}>{m.value}</div>
             {(t || m.trend_note) && (
               <div style={{ marginTop: "0.35rem", fontSize: "0.7rem", fontWeight: 700, color: t?.color ?? "var(--text-3)", display: "flex", alignItems: "center", gap: "0.3rem" }}>
                 {t && <span aria-hidden="true">{t.glyph}</span>}
@@ -134,7 +134,7 @@ function MetricTiles({ metrics }: { metrics: ServiceMetric[] }) {
 function UpdatesLog({ updates, label }: { updates: ServiceUpdate[]; label: string }) {
   return (
     <div className="card fade-up" style={{ animationDelay: "0.06s" }}>
-      <div style={{ padding: "1rem 1.15rem 0.6rem", fontWeight: 800, fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <div style={{ padding: "1rem 1.15rem 0.6rem", fontWeight: 600, fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <CalendarClock size={15} color="var(--accent)" /> Latest from the team
       </div>
       {updates.length === 0 ? (
@@ -174,7 +174,7 @@ function money(cents: number) {
   return new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(cents / 100);
 }
 function avatarGradient(name: string) {
-  const opts = ["#0891b2,#0ea5e9", "#4f46e5,#6366f1", "#059669,#059669", "#ea580c,#ea580c"];
+  const opts = ["#1a8cff,#4f8fff", "#2f6bff,#4f8fff", "#059669,#059669", "#ea580c,#ea580c"];
   let h = 0;
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
   return `linear-gradient(135deg, ${opts[Math.abs(h) % opts.length]})`;
@@ -194,7 +194,7 @@ function PolicyPoints({ keys }: { keys: string[] }) {
         if (!p) return null;
         return (
           <div key={k}>
-            <div style={{ fontWeight: 800, fontSize: "0.92rem", marginBottom: "0.2rem" }}>{p.title}</div>
+            <div style={{ fontWeight: 600, fontSize: "0.92rem", marginBottom: "0.2rem" }}>{p.title}</div>
             <p style={{ fontSize: "0.82rem", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "0.5rem" }}>{p.summary}</p>
             <ul style={{ display: "grid", gap: "0.4rem", paddingLeft: 0, listStyle: "none" }}>
               {p.points.map((pt) => (
@@ -217,9 +217,9 @@ function Skeleton({ height, width, style }: { height: number; width?: number | s
 
 function CardHeader({ icon: Icon, title, extra }: { icon: React.FC<{ size?: number; color?: string }>; title: string; extra?: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "1rem 1.25rem", borderBottom: "1px solid var(--border)" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "0.55rem", padding: "1.2rem 1.5rem", borderBottom: "1px solid var(--border)" }}>
       <Icon size={15} color="var(--accent)" />
-      <span style={{ fontWeight: 800, fontSize: "0.92rem" }}>{title}</span>
+      <span style={{ fontWeight: 600, fontSize: "1.02rem", letterSpacing: "-0.02em" }}>{title}</span>
       {extra && <span style={{ marginLeft: "auto" }}>{extra}</span>}
     </div>
   );
@@ -525,7 +525,7 @@ export default function PortalPage() {
       <div style={{ display: "flex", flexDirection: "column" }}>
         {pendingApprovals.map((a) => (
           <div key={a.id} style={{ padding: "1rem 1.25rem", borderBottom: "1px solid var(--border)" }}>
-            <div style={{ fontWeight: 800, fontSize: "0.92rem", marginBottom: "0.2rem" }}>{a.title}</div>
+            <div style={{ fontWeight: 600, fontSize: "0.92rem", marginBottom: "0.2rem" }}>{a.title}</div>
             {a.description && <p style={{ fontSize: "0.82rem", color: "var(--text-2)", lineHeight: 1.55, margin: "0 0 0.35rem" }}>{a.description}</p>}
             <div style={{ fontSize: "0.7rem", color: "var(--text-3)", marginBottom: "0.75rem" }}>
               Requested by {a.created_by ?? "KW team"} · {shortDate(a.created_at)}
@@ -574,14 +574,14 @@ export default function PortalPage() {
               width: 46, height: 46, borderRadius: 13, flexShrink: 0,
               background: avatarGradient(client.business_name),
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontWeight: 900, fontSize: "0.95rem", color: "#ffffff",
-              boxShadow: "0 4px 18px rgba(79,70,229,0.2)",
+              fontWeight: 600, fontSize: "0.95rem", color: "#ffffff",
+              boxShadow: "0 4px 18px rgba(47,107,255,0.2)",
             }}>
               {client.business_name.slice(0, 2).toUpperCase()}
             </div>
           )}
           <div>
-            <div style={{ fontWeight: 800, fontSize: "1.05rem", letterSpacing: "-0.01em" }}>{client.business_name}</div>
+            <div style={{ fontWeight: 600, fontSize: "1.05rem", letterSpacing: "-0.01em" }}>{client.business_name}</div>
             <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.72rem", color: "var(--accent-3)", fontWeight: 700 }}>
               <Sparkles size={11} /> Active client
             </div>
@@ -601,7 +601,7 @@ export default function PortalPage() {
               width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
               background: avatarGradient(client.assigned_to),
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "0.68rem", fontWeight: 800, color: "#ffffff",
+              fontSize: "0.68rem", fontWeight: 600, color: "#ffffff",
             }}>
               {client.assigned_to.slice(0, 2).toUpperCase()}
             </div>
@@ -661,7 +661,7 @@ export default function PortalPage() {
           <div style={{ textAlign: "center", padding: "2rem 0" }}>
             <div style={{
               width: 44, height: 44, borderRadius: "50%", margin: "0 auto 0.7rem",
-              background: "rgba(79,70,229,0.07)", border: "1px solid rgba(45,212,232,0.18)",
+              background: "rgba(47,107,255,0.07)", border: "1px solid rgba(47,107,255,0.18)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               <MessageSquare size={18} color="var(--accent)" />
@@ -676,8 +676,8 @@ export default function PortalPage() {
             <div key={m.id} className="msg-in" style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start", animationDelay: `${Math.min(i * 0.04, 0.4)}s` }}>
               <div style={{
                 maxWidth: "78%",
-                background: mine ? "linear-gradient(135deg, rgba(45,212,232,0.14), rgba(14,165,233,0.1))" : "var(--surface-2)",
-                border: `1px solid ${mine ? "rgba(79,70,229,0.25)" : "var(--border)"}`,
+                background: mine ? "rgba(47,107,255,0.1)" : "var(--surface-2)",
+                border: `1px solid ${mine ? "rgba(47,107,255,0.25)" : "var(--border)"}`,
                 borderRadius: mine ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
                 padding: "0.65rem 0.85rem",
               }}>
@@ -738,13 +738,13 @@ export default function PortalPage() {
           return (
             <div key={p.id} style={{ padding: "1.1rem 1.25rem", borderBottom: pi < projects.length - 1 ? "1px solid var(--border)" : "none" }}>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "0.75rem", marginBottom: "0.85rem", flexWrap: "wrap" }}>
-                <span style={{ fontWeight: 800, fontSize: "0.95rem" }}>{p.name}</span>
+                <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>{p.name}</span>
                 <span style={{ fontSize: "0.7rem", color: "var(--text-3)" }}>Updated {shortDate(p.updated_at)}</span>
               </div>
               {/* Progress line */}
               <div style={{ position: "relative", margin: "0 10px 0.5rem" }}>
                 <div style={{ position: "absolute", top: 5, left: 0, right: 0, height: 3, background: "var(--surface-3)", borderRadius: 99 }} />
-                <div style={{ position: "absolute", top: 5, left: 0, width: `${pct}%`, height: 3, background: "linear-gradient(90deg,#0891b2,#4f46e5)", borderRadius: 99, transition: "width 0.6s cubic-bezier(0.16,1,0.3,1)" }} />
+                <div style={{ position: "absolute", top: 5, left: 0, width: `${pct}%`, height: 3, background: "var(--accent)", borderRadius: 99, transition: "width 0.6s cubic-bezier(0.16,1,0.3,1)" }} />
                 <div style={{ display: "flex", justifyContent: "space-between", position: "relative" }}>
                   {STAGES.map((s, i) => {
                     const done = i < p.stage;
@@ -753,8 +753,8 @@ export default function PortalPage() {
                       <div key={s} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 0 }}>
                         <div style={{
                           width: current ? 13 : 11, height: current ? 13 : 11, borderRadius: "50%",
-                          background: done || current ? "linear-gradient(135deg,#0891b2,#4f46e5)" : "var(--surface-3)",
-                          boxShadow: current ? "0 0 0 4px rgba(45,212,232,0.18), 0 0 14px rgba(45,212,232,0.5)" : "none",
+                          background: done || current ? "var(--accent)" : "var(--surface-3)",
+                          boxShadow: current ? "0 0 0 4px rgba(47,107,255,0.18), 0 0 14px rgba(47,107,255,0.5)" : "none",
                           transition: "all 0.3s",
                         }} />
                       </div>
@@ -806,7 +806,7 @@ export default function PortalPage() {
               padding: "0.7rem 1.25rem", textDecoration: "none",
               borderBottom: fi < files.length - 1 ? "1px solid var(--border)" : "none",
             }}>
-              <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: "rgba(124,133,243,0.1)", border: "1px solid rgba(124,133,243,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: "rgba(47,107,255,0.1)", border: "1px solid rgba(47,107,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Download size={14} color="#7c85f3" />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -842,7 +842,7 @@ export default function PortalPage() {
                   <div style={{ fontSize: "0.85rem", fontWeight: 700 }}>{inv.number}</div>
                   {inv.due_date && <div style={{ fontSize: "0.68rem", color: "var(--text-3)" }}>Due {shortDate(inv.due_date)}</div>}
                 </div>
-                <span style={{ fontSize: "0.95rem", fontWeight: 800, fontFamily: "var(--font-geist-mono)" }}>{money(inv.amount_cents)}</span>
+                <span style={{ fontSize: "0.95rem", fontWeight: 600, fontFamily: "var(--font-geist-mono)" }}>{money(inv.amount_cents)}</span>
                 <span style={{
                   fontSize: "0.66rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em",
                   color: st.color, background: `${st.color}14`, border: `1px solid ${st.color}30`,
@@ -868,17 +868,17 @@ export default function PortalPage() {
   const billingSection = (
     <>
       <div className="card fade-up" style={{ padding: "1.15rem 1.25rem", display: "flex", alignItems: "center", gap: "0.9rem", flexWrap: "wrap" }}>
-        <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(79,70,229,0.08)", border: "1px solid rgba(79,70,229,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(47,107,255,0.08)", border: "1px solid rgba(47,107,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <Wallet size={19} color="var(--accent)" />
         </div>
         <div style={{ flex: 1, minWidth: 180 }}>
           <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Your plan</div>
-          <div style={{ fontWeight: 900, fontSize: "1.05rem", letterSpacing: "-0.02em" }}>{plan?.plan_name ?? "Project billing"}</div>
+          <div style={{ fontWeight: 600, fontSize: "1.05rem", letterSpacing: "-0.02em" }}>{plan?.plan_name ?? "Project billing"}</div>
           <div style={{ fontSize: "0.76rem", color: "var(--text-3)" }}>
             {planLine ? `Invoiced ${PLAN_INTERVAL[plan?.plan_interval ?? "month"] === "month" ? "monthly" : `each ${PLAN_INTERVAL[plan?.plan_interval ?? "month"]}`} in advance` : "Work is invoiced as agreed in your proposal"}
           </div>
         </div>
-        {planLine && <div style={{ fontSize: "1.35rem", fontWeight: 900, fontFamily: "var(--font-geist-mono)" }}>{planLine}</div>}
+        {planLine && <div style={{ fontSize: "1.35rem", fontWeight: 600, fontFamily: "var(--font-geist-mono)" }}>{planLine}</div>}
         {plan?.online_billing && !isPreview && (
           <div style={{ flexBasis: "100%", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap", paddingTop: "0.75rem", borderTop: "1px solid var(--border)" }}>
             <button onClick={openBillingPortal} disabled={billingBusy} className="btn-primary" style={{ fontSize: "0.8rem" }}>
@@ -898,7 +898,7 @@ export default function PortalPage() {
         ].map((tile) => (
           <div key={tile.label} className="card fade-up" style={{ padding: "0.8rem 0.9rem" }}>
             <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.4rem" }}>{tile.label}</div>
-            <div style={{ fontSize: "1.2rem", fontWeight: 900, color: tile.color, fontFamily: "var(--font-geist-mono)", lineHeight: 1 }}>{tile.value}</div>
+            <div style={{ fontSize: "1.2rem", fontWeight: 600, color: tile.color, fontFamily: "var(--font-geist-mono)", lineHeight: 1 }}>{tile.value}</div>
           </div>
         ))}
       </div>
@@ -929,11 +929,11 @@ export default function PortalPage() {
   const policiesSection = (
     <>
       <div className="fade-up" style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(79,70,229,0.08)", border: "1px solid rgba(79,70,229,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(47,107,255,0.08)", border: "1px solid rgba(47,107,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <BookOpen size={19} color="var(--accent)" />
         </div>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 900, letterSpacing: "-0.02em", lineHeight: 1.2 }}>Policies & procedures</h2>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.2 }}>Policies & procedures</h2>
           <p style={{ fontSize: "0.76rem", color: "var(--text-3)" }}>How we work with you. Your signed proposal or agreement always takes precedence.</p>
         </div>
         {acceptedNote}
@@ -959,8 +959,8 @@ export default function PortalPage() {
           <button key={s.key} onClick={() => setOrientStep(i)} style={{
             display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.3rem 0.65rem", borderRadius: 99, cursor: "pointer",
             fontSize: "0.7rem", fontWeight: 700,
-            border: `1px solid ${i === orientStep ? "rgba(79,70,229,0.35)" : "var(--border)"}`,
-            background: i === orientStep ? "rgba(79,70,229,0.08)" : i < orientStep || orientation?.current ? "rgba(16,185,129,0.08)" : "transparent",
+            border: `1px solid ${i === orientStep ? "rgba(47,107,255,0.35)" : "var(--border)"}`,
+            background: i === orientStep ? "rgba(47,107,255,0.08)" : i < orientStep || orientation?.current ? "rgba(16,185,129,0.08)" : "transparent",
             color: i === orientStep ? "var(--text-1)" : "var(--text-3)",
           }}>
             {(i < orientStep || orientation?.current) && i !== orientStep ? <Check size={11} color="#10b981" strokeWidth={3} /> : <span>{i + 1}</span>}
@@ -969,13 +969,13 @@ export default function PortalPage() {
         ))}
       </div>
       <div style={{ height: 4, background: "var(--surface-3)", margin: "0.85rem 1.25rem 0", borderRadius: 99, overflow: "hidden" }}>
-        <div style={{ width: `${((orientStep + 1) / ORIENTATION_STEPS.length) * 100}%`, height: "100%", background: "linear-gradient(90deg,#2dd4e8,#4f46e5)", borderRadius: 99, transition: "width 0.4s ease" }} />
+        <div style={{ width: `${((orientStep + 1) / ORIENTATION_STEPS.length) * 100}%`, height: "100%", background: "var(--accent)", borderRadius: 99, transition: "width 0.4s ease" }} />
       </div>
 
       <div style={{ padding: "1.15rem 1.25rem" }}>
         {step.key === "welcome" && (
           <>
-            <h2 style={{ fontSize: "1.15rem", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: "0.35rem" }}>
+            <h2 style={{ fontSize: "1.15rem", fontWeight: 600, letterSpacing: "-0.02em", marginBottom: "0.35rem" }}>
               Welcome aboard{client?.contact_name ? `, ${client.contact_name}` : ""}!
             </h2>
             <p style={{ fontSize: "0.85rem", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "0.9rem" }}>
@@ -989,7 +989,7 @@ export default function PortalPage() {
                   <div key={s.key} style={{ display: "flex", gap: "0.55rem", padding: "0.65rem 0.75rem", borderRadius: 11, border: "1px solid var(--border)" }}>
                     <Icon size={15} color="var(--accent)" />
                     <div>
-                      <div style={{ fontSize: "0.8rem", fontWeight: 800 }}>{s.label}</div>
+                      <div style={{ fontSize: "0.8rem", fontWeight: 600 }}>{s.label}</div>
                       {desc && <div style={{ fontSize: "0.7rem", color: "var(--text-3)", lineHeight: 1.45 }}>{desc}</div>}
                     </div>
                   </div>
@@ -1003,7 +1003,7 @@ export default function PortalPage() {
             <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", padding: "0.75rem 0.85rem", borderRadius: 11, border: "1px solid var(--border)", marginBottom: "1rem" }}>
               <Users size={16} color="var(--accent)" />
               <div style={{ fontSize: "0.82rem" }}>
-                <span style={{ fontWeight: 800 }}>Your team: </span>
+                <span style={{ fontWeight: 600 }}>Your team: </span>
                 {client?.assigned_to ?? "the KW Innovations team"}
               </div>
               {client?.booking_url && (
@@ -1020,8 +1020,8 @@ export default function PortalPage() {
             {planLine && (
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", padding: "0.75rem 0.85rem", borderRadius: 11, border: "1px solid var(--border)", marginBottom: "1rem", flexWrap: "wrap" }}>
                 <Wallet size={16} color="var(--accent)" />
-                <span style={{ fontSize: "0.82rem", fontWeight: 800 }}>Your plan: {plan?.plan_name}</span>
-                <span style={{ marginLeft: "auto", fontSize: "0.9rem", fontWeight: 900, fontFamily: "var(--font-geist-mono)" }}>{planLine}</span>
+                <span style={{ fontSize: "0.82rem", fontWeight: 600 }}>Your plan: {plan?.plan_name}</span>
+                <span style={{ marginLeft: "auto", fontSize: "0.9rem", fontWeight: 600, fontFamily: "var(--font-geist-mono)" }}>{planLine}</span>
               </div>
             )}
             <PolicyPoints keys={step.policies} />
@@ -1036,7 +1036,7 @@ export default function PortalPage() {
             <div style={{ display: "grid", gap: "0.45rem", marginBottom: "1rem" }}>
               {POLICY_SECTIONS.map((p) => (
                 <div key={p.key} style={{ padding: "0.6rem 0.8rem", borderRadius: 10, border: "1px solid var(--border)" }}>
-                  <div style={{ fontSize: "0.82rem", fontWeight: 800 }}>{p.title}</div>
+                  <div style={{ fontSize: "0.82rem", fontWeight: 600 }}>{p.title}</div>
                   <div style={{ fontSize: "0.74rem", color: "var(--text-3)", lineHeight: 1.5 }}>{p.summary}</div>
                 </div>
               ))}
@@ -1090,7 +1090,7 @@ export default function PortalPage() {
       pending_approval: { label: "Waiting on you", color: "#d97706" },
       approved: { label: "Approved — scheduled", color: "#059669" },
       changes_requested: { label: "Changes requested", color: "#dc2626" },
-      published: { label: "Published", color: "#4f46e5" },
+      published: { label: "Published", color: "#2f6bff" },
     };
     const st = statusMeta[p.status] ?? { label: p.status, color: "#8b95c0" };
     return (
@@ -1113,7 +1113,7 @@ export default function PortalPage() {
             {st.label}
           </span>
         </div>
-        {p.title && <div style={{ fontWeight: 800, fontSize: "0.9rem", marginBottom: "0.25rem" }}>{p.title}</div>}
+        {p.title && <div style={{ fontWeight: 600, fontSize: "0.9rem", marginBottom: "0.25rem" }}>{p.title}</div>}
         {p.caption && <p style={{ fontSize: "0.85rem", color: "var(--text-1)", lineHeight: 1.55, whiteSpace: "pre-wrap", margin: "0 0 0.6rem" }}>{p.caption}</p>}
         {p.media.length > 0 && (
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.6rem" }}>
@@ -1273,12 +1273,6 @@ export default function PortalPage() {
         }
       `}</style>
 
-      {/* Ambient background */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
-        <div className="login-blob" style={{ width: 420, height: 420, top: -140, right: -120, background: "rgba(45,212,232,0.09)" }} />
-        <div className="login-blob" style={{ width: 360, height: 360, bottom: -140, left: -100, background: "rgba(124,133,243,0.08)", animationDelay: "-7s" }} />
-      </div>
-
       {/* ── Header ── */}
       <header className="glass" style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -1293,22 +1287,24 @@ export default function PortalPage() {
           ) : client?.partner ? (
             <div style={{
               width: 32, height: 32, borderRadius: 9,
-              background: `linear-gradient(135deg, ${client.partner.accent_color ?? "#7c3aed"}, #4f46e5)`,
+              background: `linear-gradient(135deg, ${client.partner.accent_color ?? "#7c3aed"}, #2f6bff)`,
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontWeight: 900, fontSize: "0.75rem", color: "#ffffff",
-              boxShadow: "0 2px 12px rgba(45,212,232,0.35)",
+              fontWeight: 600, fontSize: "0.75rem", color: "#ffffff",
+              boxShadow: "0 2px 12px rgba(47,107,255,0.35)",
             }}>
               {client.partner.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
             </div>
           ) : (
-            <LogoMark size={32} style={{ borderRadius: 9, boxShadow: "0 2px 12px rgba(79,70,229,0.3)" }} />
+            <KwiWordmark />
           )}
-          <div>
-            <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "var(--text-1)", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-              {client?.partner?.name ?? "KW Innovations"}
+          {client?.partner && (
+            <div>
+              <div style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-1)", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+                {client.partner.name}
+              </div>
+              <div style={{ fontSize: "0.6rem", color: "var(--text-3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Client Dashboard</div>
             </div>
-            <div style={{ fontSize: "0.6rem", color: "var(--text-3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Client Dashboard</div>
-          </div>
+          )}
         </div>
         {isPreview ? (
           <Link href={`/clients/${previewId}/portal`} className="btn-ghost" style={{ padding: "0.45rem 0.85rem", fontSize: "0.8rem", minHeight: 0 }}>
@@ -1358,7 +1354,8 @@ export default function PortalPage() {
         ) : gated ? (
           <div style={{ maxWidth: 860, margin: "0 auto", display: "grid", gap: "1.25rem" }}>
             <div className="fade-up">
-              <h1 style={{ fontSize: "clamp(1.5rem, 4vw, 2rem)", fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.12, marginBottom: "0.4rem" }}>
+              <span className="kw-eyebrow" style={{ display: "block", marginBottom: "0.75rem" }}>Welcome to KW Innovations</span>
+              <h1 style={{ fontSize: "clamp(2rem, 5vw, 3.1rem)", fontWeight: 600, letterSpacing: "-0.04em", lineHeight: 1.05, marginBottom: "0.6rem" }}>
                 {orientation?.completed_at ? "Our policies have been updated" : "Before we start"}
               </h1>
               <p style={{ color: "var(--text-2)", fontSize: "0.92rem", lineHeight: 1.6 }}>
@@ -1383,23 +1380,24 @@ export default function PortalPage() {
                     title={locked ? `${s.label} is locked — it unlocks when this service is added to your plan` : undefined}
                     style={{
                       display: "flex", alignItems: "center", gap: "0.6rem", width: "100%",
-                      padding: "0.6rem 0.85rem", borderRadius: 11, cursor: locked ? "not-allowed" : "pointer", textAlign: "left",
-                      border: `1px solid ${on ? "rgba(79,70,229,0.3)" : "transparent"}`,
-                      background: on ? "linear-gradient(135deg, rgba(45,212,232,0.1), rgba(124,133,243,0.08))" : "transparent",
+                      padding: "0.62rem 1rem", borderRadius: 100, cursor: locked ? "not-allowed" : "pointer", textAlign: "left",
+                      border: "1px solid transparent",
+                      background: on ? "#ffffff" : "transparent",
+                      boxShadow: on ? "var(--kw-shadow)" : "none",
                       color: on ? "var(--text-1)" : locked ? "var(--text-4)" : "var(--text-2)",
-                      fontWeight: on ? 800 : 600, fontSize: "0.84rem",
+                      fontWeight: on ? 600 : 500, fontSize: "0.9rem",
                       opacity: locked ? 0.55 : 1,
                     }}>
                     <Icon size={15} color={on ? "var(--accent)" : locked ? "var(--text-4)" : "var(--text-3)"} />
                     <span style={{ flex: 1 }}>{s.label}</span>
                     {locked && <Lock size={12} color="var(--text-4)" />}
                     {dot > 0 && (
-                      <span style={{ fontSize: "0.62rem", fontWeight: 800, color: "#fff", background: "#d97706", borderRadius: 99, padding: "0.05rem 0.4rem", minWidth: 17, textAlign: "center" }}>{dot}</span>
+                      <span style={{ fontSize: "0.62rem", fontWeight: 600, color: "#fff", background: "#d97706", borderRadius: 99, padding: "0.05rem 0.4rem", minWidth: 17, textAlign: "center" }}>{dot}</span>
                     )}
                   </button>
                 );
               })}
-              <div style={{ marginTop: "0.75rem", padding: "0.75rem 0.85rem", borderRadius: 11, border: "1px dashed var(--border-2)", fontSize: "0.66rem", color: "var(--text-4)", lineHeight: 1.5 }}>
+              <div style={{ marginTop: "0.75rem", padding: "0.85rem 1rem", borderRadius: 20, border: "1px dashed var(--border-2)", fontSize: "0.66rem", color: "var(--text-4)", lineHeight: 1.5 }}>
                 Locked sections unlock as services are added to your plan — message the KW team to get one switched on.
               </div>
             </nav>
@@ -1416,14 +1414,14 @@ export default function PortalPage() {
                     <button key={s.key} onClick={() => !locked && setSection(s.key)} disabled={locked} style={{
                       display: "inline-flex", alignItems: "center", gap: "0.4rem", whiteSpace: "nowrap",
                       padding: "0.45rem 0.8rem", borderRadius: 99, cursor: locked ? "not-allowed" : "pointer", flexShrink: 0,
-                      border: `1px solid ${on ? "rgba(79,70,229,0.3)" : "var(--border)"}`,
-                      background: on ? "linear-gradient(135deg, rgba(45,212,232,0.12), rgba(124,133,243,0.1))" : "var(--surface)",
-                      color: on ? "var(--text-1)" : locked ? "var(--text-4)" : "var(--text-2)", fontWeight: 700, fontSize: "0.76rem",
+                      border: `1px solid ${on ? "var(--accent)" : "var(--border)"}`,
+                      background: on ? "var(--accent)" : "var(--surface)",
+                      color: on ? "#ffffff" : locked ? "var(--text-4)" : "var(--text-2)", fontWeight: 700, fontSize: "0.76rem",
                       opacity: locked ? 0.55 : 1,
                     }}>
-                      <Icon size={13} color={on ? "var(--accent)" : locked ? "var(--text-4)" : "var(--text-3)"} /> {s.label}
+                      <Icon size={13} color={on ? "#ffffff" : locked ? "var(--text-4)" : "var(--text-3)"} /> {s.label}
                       {locked && <Lock size={11} color="var(--text-4)" />}
-                      {dot > 0 && <span style={{ fontSize: "0.6rem", fontWeight: 800, color: "#fff", background: "#d97706", borderRadius: 99, padding: "0 0.35rem" }}>{dot}</span>}
+                      {dot > 0 && <span style={{ fontSize: "0.6rem", fontWeight: 600, color: "#fff", background: "#d97706", borderRadius: 99, padding: "0 0.35rem" }}>{dot}</span>}
                     </button>
                   );
                 })}
@@ -1432,17 +1430,10 @@ export default function PortalPage() {
               {/* Hero (overview only) */}
               {active === "overview" && (
                 <div className="fade-up" style={{ marginBottom: "1.5rem" }}>
-                  <span style={{
-                    display: "inline-flex", alignItems: "center", gap: "0.4rem",
-                    fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
-                    color: "var(--accent)", background: "rgba(45,212,232,0.1)",
-                    border: "1px solid rgba(79,70,229,0.2)", padding: "0.22rem 0.7rem", borderRadius: 99,
-                    marginBottom: "0.85rem",
-                  }}>
-                    <span className="pulse-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
+                  <span className="kw-chip" style={{ marginBottom: "1rem" }}>
                     {today}
                   </span>
-                  <h1 style={{ fontSize: "clamp(1.6rem, 4vw, 2.1rem)", fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.12, marginBottom: "0.4rem" }}>
+                  <h1 style={{ fontSize: "clamp(2rem, 5vw, 3.1rem)", fontWeight: 600, letterSpacing: "-0.04em", lineHeight: 1.05, marginBottom: "0.6rem" }}>
                     {greeting}{client ? "," : ""} {client && <span className="grad-text">{client.contact_name ?? client.business_name}</span>}
                   </h1>
                   <p style={{ color: "var(--text-2)", fontSize: "0.92rem", maxWidth: 520, lineHeight: 1.6, marginBottom: client?.booking_url ? "1rem" : 0 }}>
@@ -1475,7 +1466,7 @@ export default function PortalPage() {
                               .sort((a, b) => new Date(a.scheduled_at!).getTime() - new Date(b.scheduled_at!).getTime())[0];
                             return next?.scheduled_at ? new Date(next.scheduled_at).toLocaleDateString("en-AU", { day: "numeric", month: "short" }) : "—";
                           })(),
-                          color: "#4f46e5", icon: CalendarClock, target: "marketing",
+                          color: "#2f6bff", icon: CalendarClock, target: "marketing",
                         } : null,
                         modules.includes("support") ? {
                           label: "Open requests",
@@ -1497,7 +1488,7 @@ export default function PortalPage() {
                               </span>
                               <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.05em", lineHeight: 1.2 }}>{tile.label}</span>
                             </div>
-                            <div style={{ fontSize: "1.35rem", fontWeight: 900, color: "var(--text-1)", lineHeight: 1 }}>{tile.value}</div>
+                            <div style={{ fontSize: "1.35rem", fontWeight: 600, color: "var(--text-1)", lineHeight: 1 }}>{tile.value}</div>
                           </button>
                         );
                       })}
@@ -1518,12 +1509,12 @@ export default function PortalPage() {
                     {orientationDue && (
                       <button onClick={() => setSection("welcome")} className="card fade-up" style={{
                         display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.95rem 1.1rem",
-                        border: "1px solid rgba(79,70,229,0.3)", cursor: "pointer", textAlign: "left", width: "100%",
-                        background: "linear-gradient(135deg, rgba(45,212,232,0.08), rgba(124,133,243,0.07))",
+                        border: "1px solid rgba(47,107,255,0.3)", cursor: "pointer", textAlign: "left", width: "100%",
+                        background: "var(--kw-lilac)",
                       }}>
                         <Compass size={18} color="var(--accent)" />
                         <span style={{ flex: 1 }}>
-                          <span style={{ display: "block", fontSize: "0.88rem", fontWeight: 800 }}>
+                          <span style={{ display: "block", fontSize: "0.88rem", fontWeight: 600 }}>
                             {orientation?.completed_at ? "Our policies have been updated" : "Start here: your 2-minute orientation"}
                           </span>
                           <span style={{ display: "block", fontSize: "0.74rem", color: "var(--text-3)" }}>
@@ -1563,10 +1554,10 @@ export default function PortalPage() {
                   if (metrics.length === 0 && updates.length === 0) {
                     return (
                       <div className="card fade-up" style={{ padding: "2rem 1.5rem", textAlign: "center" }}>
-                        <div style={{ width: 48, height: 48, borderRadius: 14, margin: "0 auto 0.85rem", background: "rgba(79,70,229,0.08)", border: "1px solid rgba(79,70,229,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <div style={{ width: 48, height: 48, borderRadius: 14, margin: "0 auto 0.85rem", background: "rgba(47,107,255,0.08)", border: "1px solid rgba(47,107,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <Icon size={22} color="var(--accent)" />
                         </div>
-                        <h2 style={{ fontSize: "1.1rem", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: "0.35rem" }}>{s.label}</h2>
+                        <h2 style={{ fontSize: "1.1rem", fontWeight: 600, letterSpacing: "-0.02em", marginBottom: "0.35rem" }}>{s.label}</h2>
                         <p style={{ fontSize: "0.85rem", color: "var(--text-2)", lineHeight: 1.6, maxWidth: 420, margin: "0 auto 0.85rem" }}>
                           {SERVICE_BLURB[active]}
                         </p>
@@ -1580,11 +1571,11 @@ export default function PortalPage() {
                     <>
                       {/* Section header */}
                       <div className="fade-up" style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(79,70,229,0.08)", border: "1px solid rgba(79,70,229,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(47,107,255,0.08)", border: "1px solid rgba(47,107,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           <Icon size={19} color="var(--accent)" />
                         </div>
                         <div>
-                          <h2 style={{ fontSize: "1.1rem", fontWeight: 900, letterSpacing: "-0.02em", lineHeight: 1.2 }}>{s.label}</h2>
+                          <h2 style={{ fontSize: "1.1rem", fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.2 }}>{s.label}</h2>
                           <p style={{ fontSize: "0.76rem", color: "var(--text-3)" }}>{SERVICE_BLURB[active]}</p>
                         </div>
                       </div>

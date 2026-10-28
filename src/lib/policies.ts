@@ -66,7 +66,7 @@ export const POLICY_SECTIONS: PolicySection[] = [
   {
     key: "billing",
     title: "Billing & payments",
-    summary: "Invoices come from our Xero account and also appear on the Billing tab of your portal.",
+    summary: "Invoices are emailed to you and also appear on the Billing tab of your portal.",
     points: [
       "Monthly plans (website, SEO, hosting, care and marketing) are invoiced monthly in advance.",
       "One-off project work is quoted upfront. Usually 50% is due to start and the balance at launch.",
