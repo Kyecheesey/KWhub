@@ -28,7 +28,7 @@ export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promis
 let _migrated: Promise<void> | null = null;
 
 // Bump whenever a statement is added/changed below, so existing databases re-run the set.
-const SCHEMA_VERSION = "2026-10-28.1";
+const SCHEMA_VERSION = "2026-10-28.2";
 
 export function migrate(): Promise<void> {
   if (!_migrated) {
@@ -599,6 +599,12 @@ async function runMigrations() {
   await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS plan_name TEXT`;
   await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS plan_amount_cents INTEGER`;
   await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS plan_interval TEXT`;
+  // Stripe billing: the client's Stripe customer/subscription, and the Stripe
+  // invoice each mirrored portal invoice came from (kept in sync by webhook)
+  await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`;
+  await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT`;
+  await sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS stripe_invoice_id TEXT`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS invoices_stripe_idx ON invoices (stripe_invoice_id)`;
   await sql`
     INSERT INTO settings (key, value) VALUES ('schema_version', ${SCHEMA_VERSION})
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()

@@ -49,7 +49,7 @@ interface SupportTicket { id: number; title: string; description: string | null;
 interface ServiceMetric { id: number; service: string; label: string; value: string; trend: string | null; trend_note: string | null; source_key: string | null; updated_at: string; }
 interface ServiceUpdate { id: number; service: string; title: string; body: string | null; created_by: string | null; created_at: string; }
 interface Orientation { completed_at: string | null; accepted_version: string | null; accepted_by: string | null; current_version: string; current: boolean; }
-interface Plan { plan_name: string | null; plan_amount_cents: number | null; plan_interval: string | null; }
+interface Plan { plan_name: string | null; plan_amount_cents: number | null; plan_interval: string | null; online_billing?: boolean; }
 
 const JOB_STATUS: Record<string, { label: string; color: string }> = {
   todo: { label: "Queued", color: "#60a5fa" },
@@ -252,6 +252,8 @@ export default function PortalPage() {
   const [agreed, setAgreed] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [acceptErr, setAcceptErr] = useState("");
+  const [billingBusy, setBillingBusy] = useState(false);
+  const [billingErr, setBillingErr] = useState("");
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -462,6 +464,16 @@ export default function PortalPage() {
     if (res.ok) { setOrientation(data); setSection("overview"); }
     else setAcceptErr(data.error ?? "Couldn't save that. Please try again.");
     setAccepting(false);
+  }
+
+  async function openBillingPortal() {
+    if (billingBusy) return;
+    setBillingBusy(true);
+    setBillingErr("");
+    const res = await fetch("/api/portal/billing-portal", { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.url) window.location.href = data.url;
+    else { setBillingErr(data.error ?? "Couldn't open billing. Please try again."); setBillingBusy(false); }
   }
 
   async function uploadFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -867,6 +879,15 @@ export default function PortalPage() {
           </div>
         </div>
         {planLine && <div style={{ fontSize: "1.35rem", fontWeight: 900, fontFamily: "var(--font-geist-mono)" }}>{planLine}</div>}
+        {plan?.online_billing && !isPreview && (
+          <div style={{ flexBasis: "100%", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap", paddingTop: "0.75rem", borderTop: "1px solid var(--border)" }}>
+            <button onClick={openBillingPortal} disabled={billingBusy} className="btn-primary" style={{ fontSize: "0.8rem" }}>
+              <ExternalLink size={13} /> {billingBusy ? "Opening…" : "Manage billing & payment details"}
+            </button>
+            <span style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>Update your card and download receipts securely with Stripe.</span>
+            {billingErr && <span style={{ flexBasis: "100%", fontSize: "0.74rem", color: "#dc2626" }}>{billingErr}</span>}
+          </div>
+        )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0.6rem" }}>
