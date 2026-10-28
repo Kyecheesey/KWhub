@@ -357,7 +357,7 @@ export default function ClientPortalAdminPage() {
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto auto", gap: "0.5rem" }}>
                     <input className="field" placeholder="Search Console property — e.g. sc-domain:client.com.au" value={svcConfig.gsc_site} onChange={(e) => setSvcConfig({ ...svcConfig, gsc_site: e.target.value })} />
-                    <input className="field" placeholder="Vercel project ID — e.g. prj_abc123" value={svcConfig.vercel_project_id} onChange={(e) => setSvcConfig({ ...svcConfig, vercel_project_id: e.target.value })} />
+                    <input className="field" placeholder="Vercel project ID — e.g. prj_abc123, or Site A: prj_abc, Site B: prj_def" value={svcConfig.vercel_project_id} onChange={(e) => setSvcConfig({ ...svcConfig, vercel_project_id: e.target.value })} />
                     <button
                       className="btn-ghost" disabled={busy}
                       onClick={async () => {

@@ -11,7 +11,9 @@ import { sql } from "./db";
  *  - Google Search Console: service account (GSC_CLIENT_EMAIL + GSC_PRIVATE_KEY)
  *    added as a user to the client's property (clients.gsc_site).
  *  - Vercel Web Analytics: VERCEL_API_TOKEN (+ optional VERCEL_TEAM_ID) and the
- *    client's project id (clients.vercel_project_id).
+ *    client's project id (clients.vercel_project_id). A client with more than
+ *    one site lists them as "Site name: prj_abc, Other site: prj_def"; each
+ *    gets its own visitor and page-view tiles in the SEO section.
  */
 
 interface ClientRow {
@@ -203,31 +205,62 @@ async function vercelCount(projectId: string, since: number, until: number) {
   return data.data ?? null;
 }
 
+/** One project id, or several as "Site name: prj_abc, Other site: prj_def". */
+export function vercelSources(raw: string | null): { label: string | null; projectId: string }[] {
+  return (raw ?? "")
+    .split(/[,\n]/)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      const m = entry.match(/^(.+?):\s*(\S+)$/);
+      return m ? { label: m[1].trim(), projectId: m[2] } : { label: null, projectId: entry };
+    });
+}
+
 export async function syncVercel(client: ClientRow): Promise<string | null> {
-  const projectId = client.vercel_project_id?.trim();
-  if (!projectId) return null;
+  const sources = vercelSources(client.vercel_project_id);
+  if (sources.length === 0) return null;
   const now = Date.now();
   const D28 = 28 * 86400000;
-  const [cur, prev] = await Promise.all([
-    vercelCount(projectId, now - D28, now),
-    vercelCount(projectId, now - 2 * D28, now - D28),
-  ]);
-  if (!cur) return null;
+  const keys: string[] = [];
 
-  const pv = cur.pageviews ?? 0;
-  const vis = cur.visitors ?? 0;
-  await upsertMetric(client.id, "websites", "vercel_visitors", {
-    label: "Visitors (28 days)",
-    value: vis.toLocaleString("en-AU"),
-    trend: !prev || prev.visitors === vis ? "flat" : vis > (prev.visitors ?? 0) ? "up" : "down",
-    trend_note: prev ? pctNote(vis, prev.visitors ?? 0, "visitors") : "last 28 days",
-  });
-  await upsertMetric(client.id, "websites", "vercel_pageviews", {
-    label: "Page views (28 days)",
-    value: pv.toLocaleString("en-AU"),
-    trend: !prev || prev.pageviews === pv ? "flat" : pv > (prev.pageviews ?? 0) ? "up" : "down",
-    trend_note: prev ? pctNote(pv, prev.pageviews ?? 0, "page views") : "last 28 days",
-  });
+  for (const { label, projectId } of sources) {
+    const [cur, prev] = await Promise.all([
+      vercelCount(projectId, now - D28, now),
+      vercelCount(projectId, now - 2 * D28, now - D28),
+    ]);
+    if (!cur) continue;
+
+    // A single unlabelled project keeps the original keys and tile names
+    const suffix = label ? `:${projectId}` : "";
+    const prefix = label ? `${label}: ` : "";
+    const pv = cur.pageviews ?? 0;
+    const vis = cur.visitors ?? 0;
+    keys.push(`vercel_visitors${suffix}`, `vercel_pageviews${suffix}`);
+    await upsertMetric(client.id, "seo", `vercel_visitors${suffix}`, {
+      label: `${prefix}Visitors (28 days)`,
+      value: vis.toLocaleString("en-AU"),
+      trend: !prev || prev.visitors === vis ? "flat" : vis > (prev.visitors ?? 0) ? "up" : "down",
+      trend_note: prev ? pctNote(vis, prev.visitors ?? 0, "visitors") : "last 28 days",
+    });
+    await upsertMetric(client.id, "seo", `vercel_pageviews${suffix}`, {
+      label: `${prefix}Page views (28 days)`,
+      value: pv.toLocaleString("en-AU"),
+      trend: !prev || prev.pageviews === pv ? "flat" : pv > (prev.pageviews ?? 0) ? "up" : "down",
+      trend_note: prev ? pctNote(pv, prev.pageviews ?? 0, "page views") : "last 28 days",
+    });
+  }
+  if (keys.length === 0) return null;
+
+  // Drop tiles for sites that are no longer listed
+  const existing = await sql`
+    SELECT source_key FROM service_metrics WHERE client_id = ${client.id} AND source_key LIKE 'vercel%'
+  ` as { source_key: string }[];
+  for (const { source_key } of existing) {
+    if (!keys.includes(source_key)) {
+      await sql`DELETE FROM service_metrics WHERE client_id = ${client.id} AND source_key = ${source_key}`;
+    }
+  }
   return "vercel";
 }
 
