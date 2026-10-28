@@ -23,6 +23,10 @@ interface ServiceMetric { id: number; service: string; label: string; value: str
 interface ServiceUpdate { id: number; service: string; title: string; body: string | null; created_by: string | null; created_at: string; }
 interface Orientation { completed_at: string | null; accepted_version: string | null; accepted_by: string | null; current_version: string; current: boolean; }
 interface Plan { plan_name: string | null; plan_amount_cents: number | null; plan_interval: string | null; }
+interface StripeLink {
+  configured: boolean; webhook_configured: boolean; customer_id: string | null; subscription_id: string | null;
+  subscription: { status: string; amount_cents: number | null; interval: string | null; next_invoice_at: string | null } | null;
+}
 interface ServiceConfig { website: string | null; gsc_site: string | null; vercel_project_id: string | null; }
 
 const SERVICE_TABS = [
@@ -80,6 +84,8 @@ export default function ClientPortalAdminPage() {
   const [clientJobs, setClientJobs] = useState<ClientJob[]>([]);
   const [orientation, setOrientation] = useState<Orientation | null>(null);
   const [planForm, setPlanForm] = useState({ plan_name: "", amount: "", interval: "month" });
+  const [stripeLink, setStripeLink] = useState<StripeLink | null>(null);
+  const [stripeCustomerInput, setStripeCustomerInput] = useState("");
   const [serviceMetrics, setServiceMetrics] = useState<ServiceMetric[]>([]);
   const [serviceUpdates, setServiceUpdates] = useState<ServiceUpdate[]>([]);
   const [svcTab, setSvcTab] = useState("seo");
@@ -130,6 +136,7 @@ export default function ClientPortalAdminPage() {
       amount: d.plan_amount_cents ? String(d.plan_amount_cents / 100) : "",
       interval: d.plan_interval ?? "month",
     })));
+    if (all || keys.includes("stripe")) jobs.push(j(`/api/stripe/client${q}`, (d: StripeLink) => setStripeLink(d)));
     if (all || keys.includes("clientJobs")) jobs.push(j(`/api/client-jobs${q}`, (d: ClientJob[]) => setClientJobs(Array.isArray(d) ? d : [])));
     if (all || keys.includes("services")) jobs.push(j(`/api/portal/services${q}`, (d: { metrics: ServiceMetric[]; updates: ServiceUpdate[]; config: ServiceConfig | null }) => {
       setServiceMetrics(Array.isArray(d?.metrics) ? d.metrics : []);
@@ -554,6 +561,80 @@ export default function ClientPortalAdminPage() {
                     <button type="submit" className="btn-ghost" disabled={busy}><Check size={14} /> Save</button>
                   </div>
                 </form>
+                {/* Stripe */}
+                <div style={{ padding: "0.85rem 1.15rem", borderBottom: "1px solid var(--border)", display: "grid", gap: "0.55rem", fontSize: "0.8rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                    <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Stripe</span>
+                    {!stripeLink?.configured ? pill("Not connected", "#8b95c0")
+                      : stripeLink.subscription ? pill(`Subscription ${stripeLink.subscription.status}`, stripeLink.subscription.status === "active" ? "#10b981" : "#d97706")
+                      : stripeLink.customer_id ? pill("Customer linked", "#4f46e5")
+                      : pill("Not linked", "#8b95c0")}
+                    {stripeLink?.customer_id && (
+                      <a href={`https://dashboard.stripe.com/customers/${stripeLink.customer_id}`} target="_blank" rel="noopener noreferrer"
+                        style={{ marginLeft: "auto", fontSize: "0.72rem", fontWeight: 700, color: "var(--accent)" }}>Open in Stripe ↗</a>
+                    )}
+                  </div>
+                  {!stripeLink?.configured ? (
+                    <span style={{ color: "var(--text-3)" }}>Add STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in Vercel to bill clients through Stripe.</span>
+                  ) : (
+                    <>
+                      {!stripeLink.webhook_configured && (
+                        <span style={{ color: "#d97706" }}>STRIPE_WEBHOOK_SECRET isn&apos;t set, so invoices only update when you press Sync.</span>
+                      )}
+                      {stripeLink.subscription && (
+                        <span>
+                          {stripeLink.subscription.amount_cents != null && `${money(stripeLink.subscription.amount_cents)} per ${stripeLink.subscription.interval ?? "period"}`}
+                          {stripeLink.subscription.next_invoice_at && ` · next invoice ${new Date(stripeLink.subscription.next_invoice_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
+                        </span>
+                      )}
+                      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                        {!stripeLink.subscription_id && (
+                          <button
+                            onClick={async () => {
+                              if (!planForm.plan_name || !planForm.amount) { fail("Save a plan name and amount first."); return; }
+                              if (!confirm(`Start a Stripe subscription for ${planForm.plan_name} at $${planForm.amount} per ${planForm.interval}? Stripe emails the first invoice straight away.`)) return;
+                              const data = await post("/api/stripe/client", { action: "subscribe" });
+                              if (data) { ok("Subscription started. The first invoice will appear once Stripe finalises it."); reload(["stripe", "invoices"]); }
+                            }}
+                            className="btn-primary" disabled={busy} style={{ minHeight: 0, padding: "0.35rem 0.75rem", fontSize: "0.74rem" }}
+                          ><Plus size={12} /> Start subscription</button>
+                        )}
+                        {stripeLink.customer_id && (
+                          <button
+                            onClick={async () => {
+                              const data = await post("/api/stripe/client", { action: "sync" });
+                              if (data) { ok(`Synced ${data.synced} invoice${data.synced === 1 ? "" : "s"} from Stripe.`); reload(["invoices", "stripe"]); }
+                            }}
+                            className="btn-ghost" disabled={busy} style={{ minHeight: 0, padding: "0.35rem 0.7rem", fontSize: "0.74rem" }}
+                          >Sync invoices</button>
+                        )}
+                        {stripeLink.customer_id && (
+                          <button
+                            onClick={async () => {
+                              if (!confirm("Unlink this Stripe customer? Nothing is cancelled in Stripe.")) return;
+                              const data = await post("/api/stripe/client", { action: "unlink" });
+                              if (data) { ok("Stripe customer unlinked."); reload(["stripe"]); }
+                            }}
+                            className="btn-ghost" disabled={busy} style={{ minHeight: 0, padding: "0.35rem 0.7rem", fontSize: "0.74rem" }}
+                          >Unlink</button>
+                        )}
+                      </div>
+                      {!stripeLink.customer_id && (
+                        <form
+                          onSubmit={async (e) => {
+                            e.preventDefault();
+                            const data = await post("/api/stripe/client", { action: "link", customer_id: stripeCustomerInput });
+                            if (data) { setStripeCustomerInput(""); ok(`Linked. Pulled ${data.synced} invoice${data.synced === 1 ? "" : "s"} from Stripe.`); reload(["stripe", "invoices", "plan"]); }
+                          }}
+                          style={{ display: "flex", gap: "0.5rem" }}
+                        >
+                          <input className="field" placeholder="Already in Stripe? Paste the customer ID (cus_…)" value={stripeCustomerInput} onChange={(e) => setStripeCustomerInput(e.target.value)} />
+                          <button type="submit" className="btn-ghost" disabled={busy || !stripeCustomerInput.trim()}>Link</button>
+                        </form>
+                      )}
+                    </>
+                  )}
+                </div>
                 {invoices.map((inv) => (
                   <div key={inv.id} style={{ padding: "0.75rem 1.15rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
                     <span style={{ fontWeight: 700, fontSize: "0.85rem", flex: 1, minWidth: 90 }}>{inv.number}</span>

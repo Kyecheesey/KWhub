@@ -1,5 +1,6 @@
 import { sql, migrate } from "@/lib/db";
 import { resolvePortalScope } from "@/lib/portalAuth";
+import { getStripe } from "@/lib/stripe";
 
 const INTERVALS = ["month", "quarter", "year"];
 
@@ -9,10 +10,13 @@ export async function GET(request: Request) {
   const r = await resolvePortalScope(request);
   if ("error" in r) return r.error;
   const rows = await sql`
-    SELECT plan_name, plan_amount_cents, plan_interval FROM clients WHERE id = ${r.scope.clientId}
+    SELECT plan_name, plan_amount_cents, plan_interval, stripe_customer_id FROM clients WHERE id = ${r.scope.clientId}
   `;
-  if (rows.length === 0) return Response.json({ error: "Client not found" }, { status: 404 });
-  return Response.json(rows[0]);
+  const row = rows[0] as { plan_name: string | null; plan_amount_cents: number | null; plan_interval: string | null; stripe_customer_id: string | null } | undefined;
+  if (!row) return Response.json({ error: "Client not found" }, { status: 404 });
+  const { stripe_customer_id, ...plan } = row;
+  // online_billing → the portal shows "Manage billing" (Stripe billing portal)
+  return Response.json({ ...plan, online_billing: !!stripe_customer_id && !!getStripe() });
 }
 
 // PATCH {client_id, plan_name, amount, interval} → staff set the plan (blank name clears it)
