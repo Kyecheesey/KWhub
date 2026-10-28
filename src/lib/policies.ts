@@ -48,7 +48,6 @@ export const POLICY_SECTIONS: PolicySection[] = [
     summary: "Nothing goes live without your approval, and nothing is billed that you didn't agree to first.",
     points: [
       "We ask for approvals in your portal. Approve, or request changes with a short note.",
-      "Each design stage includes two rounds of changes.",
       "If you ask for work outside the agreed scope, we quote it before we start.",
       "Waiting on approvals or feedback pauses the timeline until we hear back.",
     ],
