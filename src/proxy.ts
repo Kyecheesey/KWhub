@@ -1,6 +1,10 @@
 import { auth } from "../auth";
 import { NextResponse } from "next/server";
 
+// True for base itself and anything under it ("/partner" and "/partner/x",
+// but not "/partnerships", which is a separate hub page)
+const under = (path: string, base: string) => path === base || path.startsWith(base + "/");
+
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const path = req.nextUrl.pathname;
@@ -52,7 +56,7 @@ export default auth((req) => {
     // portal APIs to clients belonging to their own partner org. Everything
     // else in the KWI hub is off limits.
     const allowed =
-      path.startsWith("/partner") || path.startsWith("/api/partner") ||
+      under(path, "/partner") || under(path, "/api/partner") ||
       path.startsWith("/portal") || path.startsWith("/api/portal") ||
       path.startsWith("/api/account") || // change their own password
       path.startsWith("/api/push"); // push notifications on their devices
@@ -64,7 +68,7 @@ export default auth((req) => {
     }
   }
 
-  if (isLoggedIn && role !== "partner" && (path.startsWith("/partner") || path.startsWith("/api/partner"))) {
+  if (isLoggedIn && role !== "partner" && (under(path, "/partner") || under(path, "/api/partner"))) {
     // KWI staff and clients never enter the partner workspace — the two
     // businesses stay fully separated.
     if (path.startsWith("/api/")) {
