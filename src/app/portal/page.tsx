@@ -11,8 +11,11 @@ import {
   Upload, Receipt, ListChecks, Check, ExternalLink,
   LayoutDashboard, Megaphone, LifeBuoy, CalendarClock, Plus, X, Lock,
   Smartphone, Search, ShieldCheck, Cpu, Boxes,
+  BookOpen, Compass, ChevronLeft, ChevronRight, Users, Wallet,
 } from "lucide-react";
 import { platformInfo } from "@/lib/social/platforms";
+import { PORTAL_MODULES } from "@/lib/modules";
+import { POLICY_SECTIONS, policySection } from "@/lib/policies";
 
 interface ClientInfo {
   id: number;
@@ -45,6 +48,8 @@ interface PostComment { id: number; author: string | null; author_role: string; 
 interface SupportTicket { id: number; title: string; description: string | null; status: string; priority: string; created_at: string; updated_at: string; }
 interface ServiceMetric { id: number; service: string; label: string; value: string; trend: string | null; trend_note: string | null; source_key: string | null; updated_at: string; }
 interface ServiceUpdate { id: number; service: string; title: string; body: string | null; created_by: string | null; created_at: string; }
+interface Orientation { completed_at: string | null; accepted_version: string | null; accepted_by: string | null; current_version: string; current: boolean; }
+interface Plan { plan_name: string | null; plan_amount_cents: number | null; plan_interval: string | null; }
 
 const JOB_STATUS: Record<string, { label: string; color: string }> = {
   todo: { label: "Queued", color: "#60a5fa" },
@@ -58,6 +63,7 @@ const POLL_MS = 20_000;
 
 const SECTIONS: { key: string; label: string; icon: React.FC<{ size?: number; color?: string }> }[] = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
+  { key: "welcome", label: "Welcome", icon: Compass },
   { key: "websites", label: "Websites", icon: Globe },
   { key: "apps", label: "Apps", icon: Smartphone },
   { key: "seo", label: "SEO", icon: Search },
@@ -67,8 +73,21 @@ const SECTIONS: { key: string; label: string; icon: React.FC<{ size?: number; co
   { key: "systems", label: "Systems", icon: Boxes },
   { key: "support", label: "IT Support", icon: LifeBuoy },
   { key: "files", label: "Files", icon: FolderOpen },
-  { key: "invoices", label: "Invoices", icon: Receipt },
+  { key: "invoices", label: "Billing", icon: Receipt },
+  { key: "policies", label: "Policies", icon: BookOpen },
 ];
+
+/** Orientation steps; each shows one or more policy sections from lib/policies. */
+const ORIENTATION_STEPS: { key: string; title: string; policies: string[] }[] = [
+  { key: "welcome", title: "Welcome", policies: [] },
+  { key: "team", title: "Reaching us", policies: ["communication"] },
+  { key: "process", title: "Your project", policies: ["process"] },
+  { key: "approvals", title: "Approvals & content", policies: ["approvals", "content"] },
+  { key: "billing", title: "Billing", policies: ["billing"] },
+  { key: "agree", title: "Policies", policies: [] },
+];
+
+const PLAN_INTERVAL: Record<string, string> = { month: "month", quarter: "quarter", year: "year" };
 
 /** Blurb shown on service sections that don't have bespoke portal content yet. */
 const SERVICE_BLURB: Record<string, string> = {
@@ -167,6 +186,31 @@ function invoiceState(inv: Invoice): { label: string; color: string } {
   return { label: "Due", color: "#d97706" };
 }
 
+function PolicyPoints({ keys }: { keys: string[] }) {
+  return (
+    <div style={{ display: "grid", gap: "1rem" }}>
+      {keys.map((k) => {
+        const p = policySection(k);
+        if (!p) return null;
+        return (
+          <div key={k}>
+            <div style={{ fontWeight: 800, fontSize: "0.92rem", marginBottom: "0.2rem" }}>{p.title}</div>
+            <p style={{ fontSize: "0.82rem", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "0.5rem" }}>{p.summary}</p>
+            <ul style={{ display: "grid", gap: "0.4rem", paddingLeft: 0, listStyle: "none" }}>
+              {p.points.map((pt) => (
+                <li key={pt} style={{ display: "flex", gap: "0.5rem", fontSize: "0.82rem", color: "var(--text-1)", lineHeight: 1.55 }}>
+                  <Check size={14} color="#10b981" strokeWidth={3} style={{ flexShrink: 0, marginTop: 3 }} />
+                  <span>{pt}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function Skeleton({ height, width, style }: { height: number; width?: number | string; style?: React.CSSProperties }) {
   return <div className="skeleton" style={{ height, width: width ?? "100%", ...style }} />;
 }
@@ -202,6 +246,12 @@ export default function PortalPage() {
   const [visibleJobs, setVisibleJobs] = useState<VisibleJob[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [orientation, setOrientation] = useState<Orientation | null>(null);
+  const [plan, setPlan] = useState<Plan | null>(null);
+  const [orientStep, setOrientStep] = useState(0);
+  const [agreed, setAgreed] = useState(false);
+  const [accepting, setAccepting] = useState(false);
+  const [acceptErr, setAcceptErr] = useState("");
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -281,7 +331,9 @@ export default function PortalPage() {
       fetch(`/api/portal/posts${qs}`).then((r) => r.json()),
       fetch(`/api/portal/support${qs}`).then((r) => r.json()),
       fetch(`/api/portal/services${qs}`).then((r) => r.json()),
-    ]).then(([me, msgs, projs, apprs, fls, invs, chk, jbs, mods, psts, tkts, svcs]) => {
+      fetch(`/api/portal/orientation${qs}`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/portal/plan${qs}`).then((r) => r.json()).catch(() => null),
+    ]).then(([me, msgs, projs, apprs, fls, invs, chk, jbs, mods, psts, tkts, svcs, orient, pln]) => {
       if (cancelled) return;
       if (!me.error) setClient(me);
       if (Array.isArray(msgs)) setMessages(msgs);
@@ -296,6 +348,8 @@ export default function PortalPage() {
       if (Array.isArray(tkts)) setTickets(tkts);
       if (Array.isArray(svcs?.metrics)) setServiceMetrics(svcs.metrics);
       if (Array.isArray(svcs?.updates)) setServiceUpdates(svcs.updates);
+      if (orient && !orient.error) setOrientation(orient);
+      if (pln && !pln.error) setPlan(pln);
       setLoading(false);
     });
     const interval = setInterval(() => { loadMessages(); loadApprovals(); loadPosts(); }, POLL_MS);
@@ -395,6 +449,21 @@ export default function PortalPage() {
     setSupportSending(false);
   }
 
+  async function acceptPolicies() {
+    if (!agreed || accepting) return;
+    setAccepting(true);
+    setAcceptErr("");
+    const res = await fetch("/api/portal/orientation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accept: true }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) setOrientation(data);
+    else setAcceptErr(data.error ?? "Couldn't save that. Please try again.");
+    setAccepting(false);
+  }
+
   async function uploadFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -422,8 +491,12 @@ export default function PortalPage() {
   // Locked sections stay visible but greyed out until staff unlock them
   const isLocked = (key: string) => !modules.includes(key);
   const active = enabledSections.some((s) => s.key === section) ? section : "overview";
+  const orientationDue = !!orientation && !orientation.current;
   const attention = (key: string) =>
-    key === "marketing" ? pendingPosts.length : key === "overview" ? pendingApprovals.length : 0;
+    key === "marketing" ? pendingPosts.length
+      : key === "overview" ? pendingApprovals.length
+      : key === "welcome" ? (orientationDue ? 1 : 0)
+      : 0;
 
   // ── section blocks (rendered per active tab) ──
 
@@ -767,6 +840,218 @@ export default function PortalPage() {
           })}
         </div>
       )}
+    </div>
+  );
+
+  const billedInvoices = invoices.filter((inv) => inv.status !== "draft");
+  const unpaid = billedInvoices.filter((inv) => inv.status !== "paid");
+  const overdue = unpaid.filter((inv) => invoiceState(inv).label === "Overdue");
+  const planLine = plan?.plan_name && plan.plan_amount_cents
+    ? `${money(plan.plan_amount_cents)} / ${PLAN_INTERVAL[plan.plan_interval ?? "month"] ?? "month"}`
+    : null;
+
+  const billingSection = (
+    <>
+      <div className="card fade-up" style={{ padding: "1.15rem 1.25rem", display: "flex", alignItems: "center", gap: "0.9rem", flexWrap: "wrap" }}>
+        <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(79,70,229,0.08)", border: "1px solid rgba(79,70,229,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Wallet size={19} color="var(--accent)" />
+        </div>
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Your plan</div>
+          <div style={{ fontWeight: 900, fontSize: "1.05rem", letterSpacing: "-0.02em" }}>{plan?.plan_name ?? "Project billing"}</div>
+          <div style={{ fontSize: "0.76rem", color: "var(--text-3)" }}>
+            {planLine ? `Invoiced ${PLAN_INTERVAL[plan?.plan_interval ?? "month"] === "month" ? "monthly" : `each ${PLAN_INTERVAL[plan?.plan_interval ?? "month"]}`} in advance` : "Work is invoiced as agreed in your proposal"}
+          </div>
+        </div>
+        {planLine && <div style={{ fontSize: "1.35rem", fontWeight: 900, fontFamily: "var(--font-geist-mono)" }}>{planLine}</div>}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0.6rem" }}>
+        {[
+          { label: "Outstanding", value: money(unpaid.reduce((t, i) => t + i.amount_cents, 0)), color: "#d97706" },
+          { label: "Overdue", value: money(overdue.reduce((t, i) => t + i.amount_cents, 0)), color: "#dc2626" },
+          { label: "Paid to date", value: money(billedInvoices.filter((i) => i.status === "paid").reduce((t, i) => t + i.amount_cents, 0)), color: "#059669" },
+        ].map((tile) => (
+          <div key={tile.label} className="card fade-up" style={{ padding: "0.8rem 0.9rem" }}>
+            <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.4rem" }}>{tile.label}</div>
+            <div style={{ fontSize: "1.2rem", fontWeight: 900, color: tile.color, fontFamily: "var(--font-geist-mono)", lineHeight: 1 }}>{tile.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {invoicesCard}
+
+      <div className="card fade-up" style={{ overflow: "hidden" }}>
+        <CardHeader icon={BookOpen} title="How billing works" />
+        <div style={{ padding: "1rem 1.25rem" }}>
+          <PolicyPoints keys={["billing"]} />
+          <p style={{ fontSize: "0.76rem", color: "var(--text-3)", marginTop: "0.9rem" }}>
+            Questions about an invoice? Send us a message from your Overview and we&apos;ll sort it out.
+          </p>
+        </div>
+      </div>
+    </>
+  );
+
+  const acceptedNote = orientation?.completed_at && (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.72rem", fontWeight: 700, color: orientation.current ? "#059669" : "#d97706" }}>
+      {orientation.current ? <Check size={12} strokeWidth={3} /> : null}
+      {orientation.current
+        ? `Accepted${orientation.accepted_by ? ` by ${orientation.accepted_by}` : ""} on ${shortDate(orientation.completed_at)}`
+        : "Updated since you last accepted. Please review"}
+    </span>
+  );
+
+  const policiesSection = (
+    <>
+      <div className="fade-up" style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(79,70,229,0.08)", border: "1px solid rgba(79,70,229,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <BookOpen size={19} color="var(--accent)" />
+        </div>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 900, letterSpacing: "-0.02em", lineHeight: 1.2 }}>Policies & procedures</h2>
+          <p style={{ fontSize: "0.76rem", color: "var(--text-3)" }}>How we work with you. Your signed proposal or agreement always takes precedence.</p>
+        </div>
+        {acceptedNote}
+      </div>
+      {POLICY_SECTIONS.map((p) => (
+        <div key={p.key} className="card fade-up" style={{ padding: "1rem 1.25rem" }}>
+          <PolicyPoints keys={[p.key]} />
+        </div>
+      ))}
+    </>
+  );
+
+  const step = ORIENTATION_STEPS[Math.min(orientStep, ORIENTATION_STEPS.length - 1)];
+  const lastStep = orientStep >= ORIENTATION_STEPS.length - 1;
+  const orientationSection = (
+    <div className="card fade-up" style={{ overflow: "hidden" }}>
+      <CardHeader icon={Compass} title="Getting started with KW Innovations" extra={acceptedNote || (
+        <span style={{ fontSize: "0.72rem", color: "var(--text-3)", fontWeight: 600 }}>Step {orientStep + 1} of {ORIENTATION_STEPS.length}</span>
+      )} />
+      {/* Step pills */}
+      <div style={{ display: "flex", gap: "0.35rem", padding: "0.85rem 1.25rem 0", flexWrap: "wrap" }}>
+        {ORIENTATION_STEPS.map((s, i) => (
+          <button key={s.key} onClick={() => setOrientStep(i)} style={{
+            display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.3rem 0.65rem", borderRadius: 99, cursor: "pointer",
+            fontSize: "0.7rem", fontWeight: 700,
+            border: `1px solid ${i === orientStep ? "rgba(79,70,229,0.35)" : "var(--border)"}`,
+            background: i === orientStep ? "rgba(79,70,229,0.08)" : i < orientStep || orientation?.current ? "rgba(16,185,129,0.08)" : "transparent",
+            color: i === orientStep ? "var(--text-1)" : "var(--text-3)",
+          }}>
+            {(i < orientStep || orientation?.current) && i !== orientStep ? <Check size={11} color="#10b981" strokeWidth={3} /> : <span>{i + 1}</span>}
+            {s.title}
+          </button>
+        ))}
+      </div>
+      <div style={{ height: 4, background: "var(--surface-3)", margin: "0.85rem 1.25rem 0", borderRadius: 99, overflow: "hidden" }}>
+        <div style={{ width: `${((orientStep + 1) / ORIENTATION_STEPS.length) * 100}%`, height: "100%", background: "linear-gradient(90deg,#2dd4e8,#4f46e5)", borderRadius: 99, transition: "width 0.4s ease" }} />
+      </div>
+
+      <div style={{ padding: "1.15rem 1.25rem" }}>
+        {step.key === "welcome" && (
+          <>
+            <h2 style={{ fontSize: "1.15rem", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: "0.35rem" }}>
+              Welcome aboard{client?.contact_name ? `, ${client.contact_name}` : ""}!
+            </h2>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "0.9rem" }}>
+              This portal is where we work together on {client?.business_name ?? "your business"}. It takes about two minutes to go through how we work, how to reach us and how billing runs. Here&apos;s what&apos;s in your portal:
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "0.5rem" }}>
+              {SECTIONS.filter((s) => modules.includes(s.key) && s.key !== "welcome").map((s) => {
+                const Icon = s.icon;
+                const desc = PORTAL_MODULES.find((m) => m.key === s.key)?.description;
+                return (
+                  <div key={s.key} style={{ display: "flex", gap: "0.55rem", padding: "0.65rem 0.75rem", borderRadius: 11, border: "1px solid var(--border)" }}>
+                    <Icon size={15} color="var(--accent)" />
+                    <div>
+                      <div style={{ fontSize: "0.8rem", fontWeight: 800 }}>{s.label}</div>
+                      {desc && <div style={{ fontSize: "0.7rem", color: "var(--text-3)", lineHeight: 1.45 }}>{desc}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+        {step.key === "team" && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", padding: "0.75rem 0.85rem", borderRadius: 11, border: "1px solid var(--border)", marginBottom: "1rem" }}>
+              <Users size={16} color="var(--accent)" />
+              <div style={{ fontSize: "0.82rem" }}>
+                <span style={{ fontWeight: 800 }}>Your team: </span>
+                {client?.assigned_to ?? "the KW Innovations team"}
+              </div>
+              {client?.booking_url && (
+                <a href={client.booking_url} target="_blank" rel="noopener noreferrer" className="btn-ghost" style={{ marginLeft: "auto", minHeight: 0, padding: "0.3rem 0.65rem", fontSize: "0.72rem" }}>
+                  <CalendarPlus size={12} /> Book a call
+                </a>
+              )}
+            </div>
+            <PolicyPoints keys={step.policies} />
+          </>
+        )}
+        {step.key === "billing" && (
+          <>
+            {planLine && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", padding: "0.75rem 0.85rem", borderRadius: 11, border: "1px solid var(--border)", marginBottom: "1rem", flexWrap: "wrap" }}>
+                <Wallet size={16} color="var(--accent)" />
+                <span style={{ fontSize: "0.82rem", fontWeight: 800 }}>Your plan: {plan?.plan_name}</span>
+                <span style={{ marginLeft: "auto", fontSize: "0.9rem", fontWeight: 900, fontFamily: "var(--font-geist-mono)" }}>{planLine}</span>
+              </div>
+            )}
+            <PolicyPoints keys={step.policies} />
+          </>
+        )}
+        {["process", "approvals"].includes(step.key) && <PolicyPoints keys={step.policies} />}
+        {step.key === "agree" && (
+          <>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "0.85rem" }}>
+              These are the policies and procedures we follow with every client. The full wording is always on the Policies tab, and your signed proposal or agreement takes precedence.
+            </p>
+            <div style={{ display: "grid", gap: "0.45rem", marginBottom: "1rem" }}>
+              {POLICY_SECTIONS.map((p) => (
+                <div key={p.key} style={{ padding: "0.6rem 0.8rem", borderRadius: 10, border: "1px solid var(--border)" }}>
+                  <div style={{ fontSize: "0.82rem", fontWeight: 800 }}>{p.title}</div>
+                  <div style={{ fontSize: "0.74rem", color: "var(--text-3)", lineHeight: 1.5 }}>{p.summary}</div>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setSection("policies")} className="btn-ghost" style={{ minHeight: 0, padding: "0.35rem 0.7rem", fontSize: "0.74rem", marginBottom: "1rem" }}>
+              <BookOpen size={12} /> Read the full policies
+            </button>
+            {orientation?.current ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.8rem 0.9rem", borderRadius: 11, background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", fontSize: "0.84rem", fontWeight: 700, color: "#059669" }}>
+                <Check size={15} strokeWidth={3} /> You&apos;re all set. Orientation complete.
+              </div>
+            ) : isPreview ? (
+              <p style={{ fontSize: "0.78rem", color: "#d97706", fontWeight: 700 }}>Preview mode: only the client can accept the policies.</p>
+            ) : (
+              <>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: "0.55rem", fontSize: "0.84rem", cursor: "pointer", marginBottom: "0.85rem" }}>
+                  <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ marginTop: 3 }} />
+                  <span>I&apos;ve read and agree to the KW Innovations policies & procedures.</span>
+                </label>
+                <button onClick={acceptPolicies} disabled={!agreed || accepting} className="btn-primary" style={{ fontSize: "0.82rem" }}>
+                  <Check size={14} /> {accepting ? "Saving…" : "Finish orientation"}
+                </button>
+                {acceptErr && <p style={{ fontSize: "0.76rem", color: "#dc2626", marginTop: "0.5rem" }}>{acceptErr}</p>}
+              </>
+            )}
+          </>
+        )}
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "0.85rem 1.25rem", borderTop: "1px solid var(--border)" }}>
+        <button onClick={() => setOrientStep((n) => Math.max(0, n - 1))} disabled={orientStep === 0} className="btn-ghost" style={{ minHeight: 0, padding: "0.4rem 0.8rem", fontSize: "0.78rem", opacity: orientStep === 0 ? 0.4 : 1 }}>
+          <ChevronLeft size={13} /> Back
+        </button>
+        {!lastStep && (
+          <button onClick={() => setOrientStep((n) => Math.min(ORIENTATION_STEPS.length - 1, n + 1))} className="btn-primary" style={{ minHeight: 0, padding: "0.4rem 0.9rem", fontSize: "0.78rem" }}>
+            Next <ChevronRight size={13} />
+          </button>
+        )}
+      </div>
     </div>
   );
 
@@ -1187,6 +1472,24 @@ export default function PortalPage() {
                         <span style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--accent)" }}>Review →</span>
                       </button>
                     )}
+                    {orientationDue && (
+                      <button onClick={() => setSection("welcome")} className="card fade-up" style={{
+                        display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.95rem 1.1rem",
+                        border: "1px solid rgba(79,70,229,0.3)", cursor: "pointer", textAlign: "left", width: "100%",
+                        background: "linear-gradient(135deg, rgba(45,212,232,0.08), rgba(124,133,243,0.07))",
+                      }}>
+                        <Compass size={18} color="var(--accent)" />
+                        <span style={{ flex: 1 }}>
+                          <span style={{ display: "block", fontSize: "0.88rem", fontWeight: 800 }}>
+                            {orientation?.completed_at ? "Our policies have been updated" : "Start here: your 2-minute orientation"}
+                          </span>
+                          <span style={{ display: "block", fontSize: "0.74rem", color: "var(--text-3)" }}>
+                            How we work together, how to reach us, billing and the policies we follow.
+                          </span>
+                        </span>
+                        <span style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--accent)" }}>Start →</span>
+                      </button>
+                    )}
                     {approvalsCard}
                     {detailsCard}
                     {checklistCard}
@@ -1250,7 +1553,9 @@ export default function PortalPage() {
                 })()}
                 {active === "support" && supportSection}
                 {active === "files" && filesCard}
-                {active === "invoices" && invoicesCard}
+                {active === "invoices" && billingSection}
+                {active === "welcome" && orientationSection}
+                {active === "policies" && policiesSection}
 
                 <p className="fade-up" style={{ animationDelay: "0.3s", textAlign: "center", fontSize: "0.72rem", color: "var(--text-4)" }}>
                   {isPreview

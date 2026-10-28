@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, Target, PhoneCall,
-  FileText, Zap, Kanban, ClipboardList, Briefcase, Megaphone,
-  UsersRound, Settings, Bell, TrendingUp, UserRound, Compass, Handshake, FileSignature, ScrollText,
+  Zap, Kanban, ClipboardList, Briefcase, Megaphone,
+  UsersRound, Settings, Bell, TrendingUp, UserRound, Compass, Handshake, FileSignature, ScrollText, BookOpen,
 } from "lucide-react";
 
 export interface NavItem {
@@ -10,6 +10,8 @@ export interface NavItem {
   icon: React.FC<{ size?: number; strokeWidth?: number }>;
   soon?: boolean;
   kyeOnly?: boolean;
+  /** open to every staff login, never gated by Management → Users & access */
+  everyone?: boolean;
   keywords?: string;
 }
 
@@ -40,6 +42,7 @@ export const navGroups: NavGroup[] = [
       { href: "/activities", label: "My Tasks", icon: Kanban, keywords: "kanban board activities personal" },
       { href: "/tasks", label: "Team Tasks", icon: ClipboardList, keywords: "todo assignments tasks" },
       { href: "/contracts", label: "Contracts", icon: FileSignature, keywords: "sign it signit esign signature envelope agreements proposals" },
+      { href: "/policies", label: "Policies", icon: BookOpen, everyone: true, keywords: "procedures terms orientation onboarding billing payment rules how we work" },
       { href: "/partnerships", label: "Partnerships", icon: Handshake, kyeOnly: true, keywords: "partners gc media white label agencies" },
       { href: "/management", label: "Management", icon: Settings, kyeOnly: true, keywords: "admin settings" },
       { href: "/directions", label: "Directions", icon: Compass, kyeOnly: true, keywords: "strategy xero financials growth ai advisor business model" },
@@ -49,7 +52,6 @@ export const navGroups: NavGroup[] = [
     label: "Coming Soon",
     items: [
       { href: "#", label: "Team Hub", icon: UsersRound, soon: true },
-      { href: "#", label: "Policies", icon: FileText, soon: true },
       { href: "#", label: "AI Tools", icon: Zap, soon: true },
     ],
   },
@@ -70,7 +72,7 @@ export const bottomTabs: NavItem[] = [
  */
 export const ACCESS_SECTIONS: { href: string; label: string }[] = navGroups
   .flatMap((g) => g.items)
-  .filter((i) => !i.soon && i.href !== "#" && i.href !== "/" && !i.kyeOnly)
+  .filter((i) => !i.soon && i.href !== "#" && i.href !== "/" && !i.kyeOnly && !i.everyone)
   .map(({ href, label }) => ({ href, label }));
 
 /** Does this user's allowed-sections list (null = everything) cover an item? */

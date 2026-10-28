@@ -28,7 +28,7 @@ export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promis
 let _migrated: Promise<void> | null = null;
 
 // Bump whenever a statement is added/changed below, so existing databases re-run the set.
-const SCHEMA_VERSION = "2026-09-30.2";
+const SCHEMA_VERSION = "2026-10-28.1";
 
 export function migrate(): Promise<void> {
   if (!_migrated) {
@@ -590,6 +590,15 @@ async function runMigrations() {
   await sql`ALTER TABLE proposals ADD COLUMN IF NOT EXISTS name TEXT`;
   // Per-user hub section access (JSON array of nav hrefs; NULL = all sections)
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS allowed_sections TEXT`;
+  // Portal orientation: when the client finished it and which version of
+  // the policies (lib/policies.ts) they accepted, and who accepted.
+  await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS orientation_completed_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS policies_version TEXT`;
+  await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS policies_accepted_by TEXT`;
+  // Billing plan shown on the portal's Billing tab (e.g. "Website + SEO", $100/month)
+  await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS plan_name TEXT`;
+  await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS plan_amount_cents INTEGER`;
+  await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS plan_interval TEXT`;
   await sql`
     INSERT INTO settings (key, value) VALUES ('schema_version', ${SCHEMA_VERSION})
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
