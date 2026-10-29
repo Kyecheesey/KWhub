@@ -72,7 +72,7 @@ function UsersAccess() {
     if (res.ok) {
       flash(true, renamed
         ? `Saved — ${u.name} is now ${draftName.trim()} everywhere (their login username stays "${u.username}")`
-        : `${u.name}'s access saved — applies at their next sign-in`);
+        : `${u.name}'s access saved — applies within a few minutes`);
       setEditing(null);
       load();
     } else flash(false, "Couldn't save");
