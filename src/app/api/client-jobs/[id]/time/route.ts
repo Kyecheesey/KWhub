@@ -1,9 +1,11 @@
 import { sql, migrate } from "@/lib/db";
+import { isKwiJob } from "@/lib/kwiScope";
 import { auth } from "../../../../../../auth";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   await migrate();
   const { id } = await params;
+  if (!(await isKwiJob(Number(id)))) return Response.json({ error: "Job not found" }, { status: 404 });
   const rows = await sql`SELECT * FROM job_time_entries WHERE job_id = ${id} ORDER BY entry_date DESC, created_at DESC`;
   return Response.json(rows);
 }
@@ -11,6 +13,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   await migrate();
   const { id } = await params;
+  if (!(await isKwiJob(Number(id)))) return Response.json({ error: "Job not found" }, { status: 404 });
   const { hours, note, entry_date } = await req.json();
   const h = Number(hours);
   if (!h || h <= 0 || h > 24) return Response.json({ error: "Hours must be between 0 and 24" }, { status: 400 });

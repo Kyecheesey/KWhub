@@ -1,5 +1,6 @@
 import { sql, migrate } from "@/lib/db";
 import { auth } from "../../../../auth";
+import { isKwiClient, notKwiClient } from "@/lib/kwiScope";
 import { oauthConfigured, PLATFORMS } from "@/lib/social/platforms";
 
 async function staffSession() {
@@ -20,6 +21,7 @@ export async function GET(request: Request) {
            (access_token IS NOT NULL) AS has_token, token_expires_at
     FROM social_accounts
     WHERE (${clientId}::int IS NULL OR client_id = ${clientId})
+      AND client_id IN (SELECT id FROM clients WHERE partner_id IS NULL)
     ORDER BY platform, account_name
   `;
   return Response.json({ accounts: rows, oauth: oauthConfigured(), platforms: PLATFORMS });
@@ -34,6 +36,7 @@ export async function POST(request: Request) {
   const body = await request.json();
   const clientId = parseInt(body.client_id, 10);
   if (!clientId) return Response.json({ error: "client_id is required" }, { status: 400 });
+  if (!(await isKwiClient(clientId))) return notKwiClient();
   if (!body.platform || !body.account_name?.trim()) {
     return Response.json({ error: "platform and account_name are required" }, { status: 400 });
   }
@@ -49,8 +52,13 @@ export async function DELETE(request: Request) {
   await migrate();
   const session = await staffSession();
   if (!session) return Response.json({ error: "Staff only" }, { status: 403 });
-  const body = await request.json();
-  await sql`DELETE FROM social_accounts WHERE id = ${body.id}`;
+  const body = await request.json().catch(() => ({}));
+  const removed = await sql`
+    DELETE FROM social_accounts
+    WHERE id = ${body.id} AND client_id IN (SELECT id FROM clients WHERE partner_id IS NULL)
+    RETURNING id
+  `;
+  if (removed.length === 0) return Response.json({ error: "Account not found" }, { status: 404 });
   await sql`UPDATE post_channels SET social_account_id = NULL WHERE social_account_id = ${body.id}`;
   return Response.json({ ok: true });
 }

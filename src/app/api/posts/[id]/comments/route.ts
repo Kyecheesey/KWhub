@@ -1,4 +1,5 @@
 import { sql, migrate } from "@/lib/db";
+import { isKwiPost } from "@/lib/kwiScope";
 import { auth } from "../../../../../../auth";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -8,6 +9,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return Response.json({ error: "Staff only" }, { status: 403 });
   }
   const { id } = await params;
+  if (!(await isKwiPost(Number(id)))) return Response.json({ error: "Post not found" }, { status: 404 });
   const rows = await sql`SELECT * FROM post_comments WHERE post_id = ${id} ORDER BY created_at ASC`;
   return Response.json(rows);
 }
@@ -19,6 +21,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return Response.json({ error: "Staff only" }, { status: 403 });
   }
   const { id } = await params;
+  if (!(await isKwiPost(Number(id)))) return Response.json({ error: "Post not found" }, { status: 404 });
   const { body } = await req.json();
   if (!body?.trim()) return Response.json({ error: "Comment required" }, { status: 400 });
   const rows = await sql`

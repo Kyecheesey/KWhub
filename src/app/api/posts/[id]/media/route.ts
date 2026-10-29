@@ -1,5 +1,6 @@
 import { put, del } from "@vercel/blob";
 import { sql, migrate } from "@/lib/db";
+import { isKwiPost } from "@/lib/kwiScope";
 import { auth } from "../../../../../../auth";
 
 const MAX_BYTES = 15 * 1024 * 1024; // 15MB, same cap as portal files
@@ -14,6 +15,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return Response.json({ error: "File storage isn't configured yet (BLOB_READ_WRITE_TOKEN missing)." }, { status: 503 });
   }
   const { id } = await params;
+  if (!(await isKwiPost(Number(id)))) return Response.json({ error: "Post not found" }, { status: 404 });
   const post = (await sql`SELECT client_id FROM posts WHERE id = ${id}`)[0] as { client_id: number } | undefined;
   if (!post) return Response.json({ error: "Post not found" }, { status: 404 });
 
@@ -41,6 +43,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     return Response.json({ error: "Staff only" }, { status: 403 });
   }
   const { id } = await params;
+  if (!(await isKwiPost(Number(id)))) return Response.json({ error: "Post not found" }, { status: 404 });
   const body = await request.json();
   const rows = await sql`
     DELETE FROM post_media WHERE id = ${body.media_id} AND post_id = ${id} RETURNING url

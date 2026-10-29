@@ -6,7 +6,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   await migrate();
   const { id } = await params;
   const { title, description, status, priority, assigned_to, due_date, visible_to_client } = await req.json();
-  const prev = await sql`SELECT status, assigned_to, client_id FROM client_jobs WHERE id = ${id}`;
+  const prev = await sql`SELECT status, assigned_to, client_id FROM client_jobs WHERE id = ${id} AND NOT EXISTS (SELECT 1 FROM clients pc WHERE pc.id = client_jobs.client_id AND pc.partner_id IS NOT NULL)`;
+  if (prev.length === 0) return Response.json({ error: "Job not found" }, { status: 404 });
   const rows = await sql`
     UPDATE client_jobs SET
       title       = ${title},
@@ -17,7 +18,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       due_date    = ${due_date || null},
       visible_to_client = ${Boolean(visible_to_client)},
       updated_at  = NOW()
-    WHERE id = ${id}
+    WHERE id = ${id} AND NOT EXISTS (SELECT 1 FROM clients pc WHERE pc.id = client_jobs.client_id AND pc.partner_id IS NOT NULL)
     RETURNING *
   `;
   const old = prev[0] as { status: string; assigned_to: string | null; client_id: number } | undefined;
@@ -41,12 +42,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   await migrate();
   const { id } = await params;
   const body = await req.json();
-  const prev = await sql`SELECT status, title FROM client_jobs WHERE id = ${id}`;
+  const prev = await sql`SELECT status, title FROM client_jobs WHERE id = ${id} AND NOT EXISTS (SELECT 1 FROM clients pc WHERE pc.id = client_jobs.client_id AND pc.partner_id IS NOT NULL)`;
+  if (prev.length === 0) return Response.json({ error: "Job not found" }, { status: 404 });
   const rows = await sql`
     UPDATE client_jobs SET
       status     = COALESCE(${body.status ?? null}, status),
       updated_at = NOW()
-    WHERE id = ${id}
+    WHERE id = ${id} AND NOT EXISTS (SELECT 1 FROM clients pc WHERE pc.id = client_jobs.client_id AND pc.partner_id IS NOT NULL)
     RETURNING *
   `;
   const old = prev[0] as { status: string; title: string } | undefined;
@@ -62,8 +64,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   await migrate();
   const { id } = await params;
-  const prev = await sql`SELECT title FROM client_jobs WHERE id = ${id}`;
-  await sql`DELETE FROM client_jobs WHERE id = ${id}`;
+  const prev = await sql`SELECT title FROM client_jobs WHERE id = ${id} AND NOT EXISTS (SELECT 1 FROM clients pc WHERE pc.id = client_jobs.client_id AND pc.partner_id IS NOT NULL)`;
+  if (prev.length === 0) return Response.json({ error: "Job not found" }, { status: 404 });
+  await sql`DELETE FROM client_jobs WHERE id = ${id} AND NOT EXISTS (SELECT 1 FROM clients pc WHERE pc.id = client_jobs.client_id AND pc.partner_id IS NOT NULL)`;
   await logEvent({
     entity_type: "client_job", entity_id: Number(id),
     entity_name: (prev[0] as { title: string } | undefined)?.title ?? null,

@@ -1,6 +1,7 @@
 import { sql, migrate } from "@/lib/db";
 import { auth } from "../../../../../auth";
 import { resolvePortalScope } from "@/lib/portalAuth";
+import { clientAgent } from "@/lib/agent";
 
 export async function GET(request: Request) {
   await migrate();
@@ -20,6 +21,9 @@ export async function GET(request: Request) {
       // Partners may only preview their own clients' portals
       const owned = await sql`SELECT 1 FROM clients WHERE id = ${clientId} AND partner_id = ${session.user.partnerId ?? -1}`;
       if (owned.length === 0) return Response.json({ error: "Not one of your clients" }, { status: 403 });
+    } else {
+      const kwi = await sql`SELECT 1 FROM clients WHERE id = ${clientId} AND partner_id IS NULL`;
+      if (kwi.length === 0) return Response.json({ error: "That client belongs to a partner" }, { status: 403 });
     }
   }
 
@@ -37,7 +41,7 @@ export async function GET(request: Request) {
   ]);
   if (rows.length === 0) return Response.json({ error: "Client record not found" }, { status: 404 });
   const bookingUrl = (settings[0] as { value: string | null } | undefined)?.value ?? null;
-  return Response.json({ ...rows[0], booking_url: bookingUrl });
+  return Response.json({ ...rows[0], booking_url: bookingUrl, agent: await clientAgent(clientId) });
 }
 
 // Staff set portal branding (logo)

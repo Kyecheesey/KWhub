@@ -54,6 +54,12 @@ export async function resolvePortalScope(
     if (owned.length === 0) {
       return { error: Response.json({ error: "Not one of your clients" }, { status: 403 }) };
     }
+  } else {
+    // KWI staff: KWI's own clients only; partner clients are run from /partner
+    const kwi = await sql`SELECT 1 FROM clients WHERE id = ${clientId} AND partner_id IS NULL`;
+    if (kwi.length === 0) {
+      return { error: Response.json({ error: "That client belongs to a partner" }, { status: 403 }) };
+    }
   }
 
   return { scope: { clientId, role: "staff", name, username } };

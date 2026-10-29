@@ -1,5 +1,6 @@
 import { sql, migrate } from "@/lib/db";
 import { auth } from "../../../../../auth";
+import { isKwiPost } from "@/lib/kwiScope";
 import { notifyClient } from "@/lib/portalNotify";
 
 const STATUSES = ["draft", "pending_approval", "approved", "changes_requested", "published"];
@@ -12,6 +13,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return Response.json({ error: "Staff only" }, { status: 403 });
   }
   const { id } = await params;
+  if (!(await isKwiPost(Number(id)))) return Response.json({ error: "Post not found" }, { status: 404 });
   const body = await request.json();
 
   const existing = (await sql`SELECT * FROM posts WHERE id = ${id}`)[0] as
@@ -34,6 +36,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   `;
 
   if (Array.isArray(body.channels)) {
+    // A channel may only publish through the post's own client's accounts
+    const ownAccounts = new Set(
+      ((await sql`SELECT id FROM social_accounts WHERE client_id = ${existing.client_id}`) as unknown as { id: number }[]).map((a) => a.id)
+    );
+    if ((body.channels as { social_account_id?: number | null }[]).some((c) => c?.social_account_id != null && !ownAccounts.has(Number(c.social_account_id)))) {
+      return Response.json({ error: "That social account belongs to a different client" }, { status: 400 });
+    }
     // Replace the channel set, keeping publish state on unchanged platforms
     const wanted = new Set((body.channels as { platform: string }[]).map((c) => c?.platform).filter(Boolean));
     const current = (await sql`SELECT id, platform FROM post_channels WHERE post_id = ${id}`) as unknown as { id: number; platform: string }[];
@@ -76,6 +85,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     return Response.json({ error: "Staff only" }, { status: 403 });
   }
   const { id } = await params;
+  if (!(await isKwiPost(Number(id)))) return Response.json({ error: "Post not found" }, { status: 404 });
   await sql`DELETE FROM post_channels WHERE post_id = ${id}`;
   await sql`DELETE FROM post_media WHERE post_id = ${id}`;
   await sql`DELETE FROM post_comments WHERE post_id = ${id}`;

@@ -1,4 +1,5 @@
 import { sql, migrate } from "@/lib/db";
+import { isKwiClient, notKwiClient } from "@/lib/kwiScope";
 import { auth } from "../../../../auth";
 
 async function staffSession() {
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
   const body = await request.json();
   const clientId = parseInt(body.client_id, 10);
   if (!clientId) return Response.json({ error: "client_id is required" }, { status: 400 });
+  if (!(await isKwiClient(clientId))) return notKwiClient();
   if (!body.caption?.trim() && !body.title?.trim()) {
     return Response.json({ error: "A title or caption is required" }, { status: 400 });
   }
