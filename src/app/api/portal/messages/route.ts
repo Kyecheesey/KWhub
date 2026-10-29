@@ -1,6 +1,8 @@
 import { sql, migrate } from "@/lib/db";
 import { auth } from "../../../../../auth";
 import { notifyClient, notifyStaff } from "@/lib/portalNotify";
+import { clientAgent } from "@/lib/agent";
+import { sendEmail } from "@/lib/email";
 
 async function resolveClientId(request: Request) {
   const session = await auth();
@@ -14,10 +16,15 @@ async function resolveClientId(request: Request) {
   const param = url.searchParams.get("client_id");
   if (!param) return { error: Response.json({ error: "client_id is required" }, { status: 400 }) };
   const clientId = parseInt(param, 10);
+  if (Number.isNaN(clientId)) return { error: Response.json({ error: "client_id is required" }, { status: 400 }) };
   if (role === "partner") {
     // Partners may only read their own clients' threads
     const owned = await sql`SELECT 1 FROM clients WHERE id = ${clientId} AND partner_id = ${session.user.partnerId ?? -1}`;
     if (owned.length === 0) return { error: Response.json({ error: "Not one of your clients" }, { status: 403 }) };
+  } else {
+    // KWI staff read KWI's own clients' threads only
+    const kwi = await sql`SELECT 1 FROM clients WHERE id = ${clientId} AND partner_id IS NULL`;
+    if (kwi.length === 0) return { error: Response.json({ error: "That client belongs to a partner" }, { status: 403 }) };
   }
   return { session, clientId, role };
 }
@@ -50,6 +57,9 @@ export async function POST(request: Request) {
     if (role === "partner") {
       const owned = await sql`SELECT 1 FROM clients WHERE id = ${clientId} AND partner_id = ${session.user.partnerId ?? -1}`;
       if (owned.length === 0) return Response.json({ error: "Not one of your clients" }, { status: 403 });
+    } else {
+      const kwi = await sql`SELECT 1 FROM clients WHERE id = ${clientId} AND partner_id IS NULL`;
+      if (kwi.length === 0) return Response.json({ error: "That client belongs to a partner" }, { status: 403 });
     }
   }
 
@@ -61,8 +71,22 @@ export async function POST(request: Request) {
 
   const preview = body.trim().length > 160 ? `${body.trim().slice(0, 160)}…` : body.trim();
   if (role === "client") {
-    await notifyStaff(clientId, `Portal message from ${session.user.name ?? "a client"}`,
-      `${session.user.name ?? "A client"} wrote in their portal:\n\n"${preview}"`);
+    // Email the client's agent (lib/agent); fall back to the usual staff alert
+    const agent = await clientAgent(clientId);
+    const biz = (await sql`SELECT business_name FROM clients WHERE id = ${clientId}`)[0] as { business_name: string } | undefined;
+    const sent = agent?.email
+      ? await sendEmail({
+          to: agent.email,
+          subject: `New portal message from ${biz?.business_name ?? session.user.name ?? "a client"}`,
+          text:
+            `Hi ${agent.name},\n\n${session.user.name ?? "Your client"}${biz ? ` (${biz.business_name})` : ""} sent a message in their portal:\n\n` +
+            `"${body.trim()}"\n\nReply in KWI ONE: https://www.kwinnovationshub.com.au/clients/${clientId}/portal`,
+        }).catch(() => ({ ok: false }))
+      : { ok: false };
+    if (!sent.ok) {
+      await notifyStaff(clientId, `Portal message from ${session.user.name ?? "a client"}`,
+        `${session.user.name ?? "A client"} wrote in their portal:\n\n"${preview}"`);
+    }
   } else {
     await notifyClient(clientId, "New update from KW Innovations",
       `${session.user.name ?? "The KW team"} posted in your portal:\n\n"${preview}"\n\nSign in to reply.`);

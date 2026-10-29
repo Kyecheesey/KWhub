@@ -27,6 +27,8 @@ interface ClientInfo {
   assigned_to: string | null;
   logo_url: string | null;
   booking_url: string | null;
+  // Their KWI agent (title, phone, email); null for partner clients
+  agent?: { name: string; title: string | null; phone: string | null; email: string | null } | null;
   // Set when this client belongs to a partner agency (white-label branding)
   partner?: { name: string; logo_url: string | null; accent_color: string | null } | null;
 }
@@ -609,7 +611,36 @@ export default function PortalPage() {
           {client.website && <a href={client.website} target="_blank" rel="noopener noreferrer" className="btn-ghost" style={{ minHeight: 0, padding: "0.4rem 0.75rem", fontSize: "0.78rem", color: "var(--accent)" }}><Globe size={12} /> {client.website.replace(/^https?:\/\//, "")}</a>}
         </div>
 
-        {client.assigned_to && (
+        {client.agent ? (
+          <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+            <div style={{
+              width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
+              background: avatarGradient(client.agent.name),
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "0.74rem", fontWeight: 600, color: "#ffffff",
+            }}>
+              {client.agent.name.slice(0, 2).toUpperCase()}
+            </div>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <div style={{ fontSize: "0.66rem", fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-3)" }}>Your agent</div>
+              <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)" }}>
+                {client.agent.name}{client.agent.title ? ` · ${client.agent.title}` : ""}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
+              {client.agent.phone && (
+                <a href={`tel:${client.agent.phone.replace(/\s+/g, "")}`} className="btn-ghost" style={{ minHeight: 0, padding: "0.4rem 0.8rem", fontSize: "0.78rem" }}>
+                  <Phone size={12} /> {client.agent.phone.replace(/^(\d{4})(\d{3})(\d{3})$/, "$1 $2 $3")}
+                </a>
+              )}
+              {client.agent.email && (
+                <a href={`mailto:${client.agent.email}`} className="btn-ghost" style={{ minHeight: 0, padding: "0.4rem 0.8rem", fontSize: "0.78rem" }}>
+                  <Mail size={12} /> {client.agent.email}
+                </a>
+              )}
+            </div>
+          </div>
+        ) : client.assigned_to && (
           <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.65rem" }}>
             <div style={{
               width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
@@ -623,11 +654,6 @@ export default function PortalPage() {
               <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-1)" }}>{client.assigned_to}</div>
               <div style={{ fontSize: "0.68rem", color: "var(--text-3)" }}>Your contact at {client.partner?.name ?? "KW Innovations"}</div>
             </div>
-            {!client.partner && (
-              <a href="mailto:director@kwinnovations.com.au" className="btn-ghost" style={{ marginLeft: "auto", minHeight: 0, padding: "0.4rem 0.75rem", fontSize: "0.78rem" }}>
-                <Mail size={12} /> director@kwinnovations.com.au
-              </a>
-            )}
           </div>
         )}
       </div>

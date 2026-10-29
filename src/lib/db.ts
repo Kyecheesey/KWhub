@@ -61,7 +61,7 @@ export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promis
 let _migrated: Promise<void> | null = null;
 
 // Bump whenever a statement is added/changed below, so existing databases re-run the set.
-const SCHEMA_VERSION = "2026-10-28.2";
+const SCHEMA_VERSION = "2026-10-29.1";
 
 export function migrate(): Promise<void> {
   if (!_migrated) {
@@ -638,6 +638,17 @@ async function runMigrations() {
   await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT`;
   await sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS stripe_invoice_id TEXT`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS invoices_stripe_idx ON invoices (stripe_invoice_id)`;
+  // Publishing claims a channel before posting so overlapping runs can't
+  // post twice, and counts attempts so the scheduler gives up on dead ones.
+  await sql`ALTER TABLE post_channels ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE post_channels ADD COLUMN IF NOT EXISTS attempts INTEGER DEFAULT 0`;
+  // Staff contact card shown to clients in their portal (lib/agent.ts)
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS title TEXT`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT`;
+  await sql`
+    UPDATE users SET title = 'Managing Director', phone = '0434347095'
+    WHERE username = 'kye' AND title IS NULL AND phone IS NULL
+  `;
   await sql`
     INSERT INTO settings (key, value) VALUES ('schema_version', ${SCHEMA_VERSION})
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
