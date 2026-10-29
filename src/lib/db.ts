@@ -3,23 +3,12 @@ import postgres, { type Sql } from "postgres";
 let _sql: Sql | null = null;
 
 /**
- * Supabase's session pooler (port 5432 on *.pooler.supabase.com) caps the
- * whole project at pool_size clients, shared with every app on it, and each
- * serverless instance holds one, so overlapping requests fail with
- * EMAXCONNSESSION. Route through the transaction pooler (6543) instead,
- * which shares server connections between clients.
+ * DATABASE_URL points at Supabase's session pooler (port 5432). It caps the
+ * project at 15 clients shared with every app on it, so each instance lets
+ * its connection go after a few idle seconds (idle_timeout below) instead of
+ * holding it. (The transaction pooler on 6543 left queries hanging, so it is
+ * not used.)
  */
-function databaseUrl(raw: string): string {
-  try {
-    const url = new URL(raw);
-    if (url.hostname.endsWith(".pooler.supabase.com") && (url.port === "5432" || url.port === "")) {
-      url.port = "6543";
-      return url.toString();
-    }
-  } catch { /* not a URL we understand; use it as given */ }
-  return raw;
-}
-
 function client(): Sql {
   if (!_sql) {
     if (!process.env.DATABASE_URL) {
@@ -27,11 +16,11 @@ function client(): Sql {
     }
     // Supabase transaction-mode pooler (port 6543) doesn't support prepared statements.
     // Fail fast on connect issues instead of hanging until the function times out.
-    _sql = postgres(databaseUrl(process.env.DATABASE_URL), {
+    _sql = postgres(process.env.DATABASE_URL, {
       prepare: false,
       max: 1,
       connect_timeout: 10,
-      idle_timeout: 20,
+      idle_timeout: 5,
     });
   }
   return _sql;
