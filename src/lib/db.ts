@@ -26,6 +26,33 @@ function client(): Sql {
   return _sql;
 }
 
+// Supabase's session pooler refuses new clients once its 15 slots (shared by
+// every app on the project) are taken. That clears within moments, so wait
+// and try again instead of failing the request.
+const RETRY_DELAYS_MS = [250, 700, 1500];
+
+function isPoolFull(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /EMAXCONN|max clients reached|remaining connection slots|too many clients/i.test(msg);
+}
+
+function sendWithRetry(
+  send: (onOk: (v: unknown) => unknown, onErr: (e: unknown) => unknown) => unknown,
+  strings: TemplateStringsArray,
+  params: unknown[],
+): Promise<unknown> {
+  const attempt = (n: number, run: typeof send): Promise<unknown> =>
+    new Promise((resolve, reject) => { run(resolve, reject); }).catch((err) => {
+      if (!isPoolFull(err) || n >= RETRY_DELAYS_MS.length) throw err;
+      return new Promise((res) => setTimeout(res, RETRY_DELAYS_MS[n])).then(() => {
+        // A sent query can't be re-sent; build the same one again
+        const retry = client()(strings, ...(params as never[]));
+        return attempt(n + 1, retry.then.bind(retry));
+      });
+    });
+  return attempt(0, send);
+}
+
 // A connection the pooler dropped without telling us can leave a query
 // waiting until the function's 300s limit. Give up after 25s and throw the
 // client away so the next query reconnects.
@@ -49,7 +76,7 @@ export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promis
         reject(new Error("Database query timed out"));
       }, QUERY_TIMEOUT_MS);
     });
-    return Promise.race([new Promise((resolve, reject) => { send(resolve, reject); }), timeout])
+    return Promise.race([sendWithRetry(send, strings, params), timeout])
       .finally(() => clearTimeout(timer))
       .then(onFulfilled, onRejected);
   };
