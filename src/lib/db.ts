@@ -44,18 +44,27 @@ const QUERY_TIMEOUT_MS = 25_000;
 
 export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promise<Record<string, unknown>[]> {
   const db = client();
-  const query = db(strings, ...(params as never[])) as unknown as Promise<Record<string, unknown>[]>;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      if (_sql === db) {
-        _sql = null;
-        db.end({ timeout: 0 }).catch(() => {});
-      }
-      reject(new Error("Database query timed out"));
-    }, QUERY_TIMEOUT_MS);
-  });
-  return Promise.race([query, timeout]).finally(() => clearTimeout(timer));
+  const query = db(strings, ...(params as never[]));
+  // The query object itself is returned so it still works as a fragment
+  // inside another sql`` (e.g. ${cond ? sql`NOW()` : null}); the timeout
+  // starts only when it is actually awaited and sent.
+  const send = query.then.bind(query);
+  (query as unknown as { then: Promise<unknown>["then"] }).then = (onFulfilled, onRejected) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        if (_sql === db) {
+          _sql = null;
+          db.end({ timeout: 0 }).catch(() => {});
+        }
+        reject(new Error("Database query timed out"));
+      }, QUERY_TIMEOUT_MS);
+    });
+    return Promise.race([new Promise((resolve, reject) => { send(resolve, reject); }), timeout])
+      .finally(() => clearTimeout(timer))
+      .then(onFulfilled, onRejected);
+  };
+  return query as unknown as Promise<Record<string, unknown>[]>;
 }
 
 // Ensure all tables exist + seed initial users — called at the start of each handler.
