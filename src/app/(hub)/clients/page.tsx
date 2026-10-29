@@ -46,6 +46,8 @@ export default function ClientsPage() {
   const [callSet, setCallSet] = useState<Set<number>>(new Set());
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<Form>(BLANK);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -100,7 +102,16 @@ export default function ClientsPage() {
   async function save() {
     if (!form.business_name.trim()) return;
     const url = editId ? `/api/clients/${editId}` : "/api/clients";
-    await fetch(url, { method: editId ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+    if (saving) return;
+    setSaving(true);
+    setSaveError("");
+    const res = await fetch(url, { method: editId ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) }).catch(() => null);
+    setSaving(false);
+    if (!res?.ok) {
+      const data = await res?.json().catch(() => null);
+      setSaveError(data?.error ?? "Couldn't save that. Please try again.");
+      return;
+    }
     setShowForm(false);
     load();
   }
@@ -545,11 +556,12 @@ export default function ClientsPage() {
                 <textarea className="field" rows={3} style={{ resize: "vertical" }} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Any additional notes…" />
               </div>
             </div>
+            {saveError && <p role="alert" style={{ marginTop: "1rem", fontSize: "0.82rem", color: "var(--danger)" }}>{saveError}</p>}
             <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
-              <button onClick={save} className="btn-primary" style={{ flex: 1, justifyContent: "center" }}>
-                {editId ? "Save Changes" : "Add Client"}
+              <button onClick={save} disabled={saving} className="btn-primary" style={{ flex: 1, justifyContent: "center" }}>
+                {saving ? "Saving…" : editId ? "Save Changes" : "Add Client"}
               </button>
-              <button onClick={() => setShowForm(false)} className="btn-ghost">Cancel</button>
+              <button onClick={() => { setShowForm(false); setSaveError(""); }} className="btn-ghost">Cancel</button>
             </div>
             {editId && (
               <RecordTimeline

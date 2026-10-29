@@ -335,23 +335,23 @@ export default function PortalPage() {
     if (previewId === "pending") return;
     let cancelled = false;
     Promise.all([
-      fetch(`/api/portal/me${qs}`).then((r) => r.json()),
-      fetch(`/api/portal/messages${qs}`).then((r) => r.json()),
-      fetch(`/api/portal/projects${qs}`).then((r) => r.json()),
-      fetch(`/api/portal/approvals${qs}`).then((r) => r.json()),
-      fetch(`/api/portal/files${qs}`).then((r) => r.json()),
-      fetch(`/api/portal/invoices${qs}`).then((r) => r.json()),
-      fetch(`/api/portal/checklist${qs}`).then((r) => r.json()),
-      fetch(`/api/portal/jobs${qs}`).then((r) => r.json()),
-      fetch(`/api/portal/modules${qs}`).then((r) => r.json()),
-      fetch(`/api/portal/posts${qs}`).then((r) => r.json()),
-      fetch(`/api/portal/support${qs}`).then((r) => r.json()),
-      fetch(`/api/portal/services${qs}`).then((r) => r.json()),
+      fetch(`/api/portal/me${qs}`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/portal/messages${qs}`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/portal/projects${qs}`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/portal/approvals${qs}`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/portal/files${qs}`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/portal/invoices${qs}`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/portal/checklist${qs}`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/portal/jobs${qs}`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/portal/modules${qs}`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/portal/posts${qs}`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/portal/support${qs}`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/portal/services${qs}`).then((r) => r.json()).catch(() => null),
       fetch(`/api/portal/orientation${qs}`).then((r) => r.json()).catch(() => null),
       fetch(`/api/portal/plan${qs}`).then((r) => r.json()).catch(() => null),
     ]).then(([me, msgs, projs, apprs, fls, invs, chk, jbs, mods, psts, tkts, svcs, orient, pln]) => {
       if (cancelled) return;
-      if (!me.error) setClient(me);
+      if (me && !me.error) setClient(me);
       if (Array.isArray(msgs)) setMessages(msgs);
       if (Array.isArray(projs)) setProjects(projs);
       if (Array.isArray(apprs)) setApprovals(apprs);

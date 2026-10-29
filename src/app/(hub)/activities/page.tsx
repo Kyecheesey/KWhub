@@ -57,6 +57,8 @@ export default function ActivitiesPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<Form>(BLANK);
   const [filterAgent, setFilterAgent] = useState("all");
@@ -93,11 +95,20 @@ export default function ActivitiesPage() {
   async function save() {
     if (!form.title.trim()) return;
     const url = editId ? `/api/activities/${editId}` : "/api/activities";
-    await fetch(url, {
+    if (saving) return;
+    setSaving(true);
+    setSaveError("");
+    const res = await fetch(url, {
       method: editId ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
-    });
+    }).catch(() => null);
+    setSaving(false);
+    if (!res?.ok) {
+      const data = await res?.json().catch(() => null);
+      setSaveError(data?.error ?? "Couldn't save that. Please try again.");
+      return;
+    }
     setShowForm(false);
     load();
   }
@@ -424,11 +435,13 @@ export default function ActivitiesPage() {
               </div>
             </div>
 
+            {saveError && <p role="alert" style={{ marginTop: "1rem", fontSize: "0.82rem", color: "var(--danger)" }}>{saveError}</p>}
+
             <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
-              <button onClick={save} className="btn-primary" style={{ flex: 1, justifyContent: "center", background: "linear-gradient(135deg, #4f46e5, #4f46e5)" }}>
-                {editId ? "Save Changes" : "Create Activity"}
+              <button onClick={save} disabled={saving} className="btn-primary" style={{ flex: 1, justifyContent: "center", background: "linear-gradient(135deg, #4f46e5, #4f46e5)" }}>
+                {saving ? "Saving…" : editId ? "Save Changes" : "Create Activity"}
               </button>
-              <button onClick={() => setShowForm(false)} className="btn-ghost">Cancel</button>
+              <button onClick={() => { setShowForm(false); setSaveError(""); }} className="btn-ghost">Cancel</button>
             </div>
           </div>
         </div>

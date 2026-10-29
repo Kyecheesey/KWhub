@@ -169,7 +169,7 @@ export default function ClientPortalAdminPage() {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      fetch("/api/clients").then((r) => r.json()),
+      fetch("/api/clients").then((r) => r.json()).catch(() => null),
       reload(),
     ]).then(([clients]) => {
       if (cancelled) return;
@@ -531,7 +531,7 @@ export default function ClientPortalAdminPage() {
                           value={jb.status}
                           disabled={busy}
                           onChange={async (e) => {
-                            await fetch(`/api/client-jobs/${jb.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: e.target.value }) });
+                            await post(`/api/client-jobs/${jb.id}`, { status: e.target.value }, "PATCH");
                             reload(["clientJobs"]);
                           }}
                         >
@@ -554,7 +554,7 @@ export default function ClientPortalAdminPage() {
                     {monitoredSite ? `Uptime monitors ${monitoredSite}` : "Set the client's website to enable uptime monitoring"}
                   </span>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto auto", gap: "0.5rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "0.5rem" }}>
                   <input className="field" placeholder="Search Console property — e.g. sc-domain:client.com.au" value={svcConfig.gsc_site} onChange={(e) => setSvcConfig({ ...svcConfig, gsc_site: e.target.value })} />
                   <input className="field" placeholder="Vercel project ID — e.g. prj_abc123, or Site A: prj_abc, Site B: prj_def" value={svcConfig.vercel_project_id} onChange={(e) => setSvcConfig({ ...svcConfig, vercel_project_id: e.target.value })} />
                   <button
@@ -647,7 +647,7 @@ export default function ClientPortalAdminPage() {
                   const data = await post("/api/portal/services", { kind: "metric", service: svcTab, ...newMetric, trend: newMetric.trend || null });
                   if (data) { setNewMetric({ label: "", value: "", trend: "", trend_note: "" }); ok("Metric added."); reload(["services"]); }
                 }}
-                style={{ display: "grid", gridTemplateColumns: "1.4fr 0.8fr 0.9fr 1.2fr auto", gap: "0.5rem", padding: "0.6rem 1.25rem 0.85rem" }}
+                style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.5rem", padding: "0.6rem 1.25rem 0.85rem" }}
               >
                 <input className="field" placeholder="Label — e.g. Avg. Google position" value={newMetric.label} onChange={(e) => setNewMetric({ ...newMetric, label: e.target.value })} />
                 <input className="field" placeholder="Value — e.g. 8.2" value={newMetric.value} onChange={(e) => setNewMetric({ ...newMetric, value: e.target.value })} />
@@ -712,7 +712,7 @@ export default function ClientPortalAdminPage() {
                   }}
                   style={{ display: "grid", gap: "0.5rem", padding: "0.85rem 1.25rem" }}
                 >
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "0.5rem" }}>
                     <input className="field" placeholder="INV-001" value={newInvoice.number} onChange={(e) => setNewInvoice({ ...newInvoice, number: e.target.value })} />
                     <input className="field" type="number" min="0" step="0.01" placeholder="Amount ($)" value={newInvoice.amount} onChange={(e) => setNewInvoice({ ...newInvoice, amount: e.target.value })} />
                     <input className="field" type="date" value={newInvoice.due_date} onChange={(e) => setNewInvoice({ ...newInvoice, due_date: e.target.value })} />
@@ -859,7 +859,6 @@ export default function ClientPortalAdminPage() {
               </>
             }>
               {files.length === 0 && empty("No files shared yet.")}
-              {files.length === 0 && <p style={{ padding: "1rem 1.25rem", fontSize: "0.8rem", color: "var(--text-3)" }}>No files shared yet.</p>}
               {files.map((f) => (
                 <div key={f.id} style={{ padding: "0.65rem 1.25rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.6rem" }}>
                   <a href={f.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, minWidth: 0, fontSize: "0.83rem", fontWeight: 600, color: "var(--text-1)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -902,7 +901,7 @@ export default function ClientPortalAdminPage() {
                   }}
                   style={{ display: "grid", gap: "0.5rem", padding: "0.85rem 1.25rem" }}
                 >
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0.5rem" }}>
                     <input className="field" placeholder="Username" value={newUsername} onChange={(e) => setNewUsername(e.target.value.toLowerCase().trim())} autoComplete="off" />
                     <input className="field" placeholder="Contact name (optional)" value={newDisplayName} onChange={(e) => setNewDisplayName(e.target.value)} autoComplete="off" />
                   </div>
@@ -928,7 +927,7 @@ export default function ClientPortalAdminPage() {
                     <button
                       onClick={async () => {
                         if (!confirm(`Remove portal access for ${acct.username}?`)) return;
-                        await fetch("/api/portal/accounts", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: acct.username }) });
+                        await post("/api/portal/accounts", { username: acct.username }, "DELETE");
                         reload(["accounts"]);
                       }}
                       className="icon-btn danger" aria-label="Delete"
@@ -1044,7 +1043,7 @@ export default function ClientPortalAdminPage() {
               onSubmit={async (e) => {
                 e.preventDefault();
                 const data = await post("/api/portal/me", { logo_url: logoUrl }, "PATCH");
-                if (data) ok(logoUrl ? "Logo saved." : "Logo removed.");
+                if (data) { setClient({ ...client, logo_url: logoUrl || null }); ok(logoUrl ? "Logo saved." : "Logo removed."); }
               }}
               style={{ display: "flex", gap: "0.5rem", padding: "0.85rem 1.25rem", alignItems: "center" }}
             >
