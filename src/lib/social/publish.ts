@@ -102,7 +102,8 @@ async function publishLinkedIn(account: AccountRow, caption: string): Promise<Pu
 async function publishChannel(channel: ChannelRow, post: PostRow, media: MediaRow[]): Promise<PublishOutcome> {
   const caption = post.caption ?? post.title ?? "";
   const account = channel.social_account_id
-    ? ((await sql`SELECT * FROM social_accounts WHERE id = ${channel.social_account_id}`)[0] as unknown as AccountRow | undefined)
+    // Only the post's own client's accounts: never publish to another client's page
+    ? ((await sql`SELECT * FROM social_accounts WHERE id = ${channel.social_account_id} AND client_id = ${post.client_id}`)[0] as unknown as AccountRow | undefined)
     : undefined;
   if (!account) return { ok: false, manual: true, error: "No connected account — post manually." };
   if (account.status !== "connected" || !account.access_token) {
@@ -129,17 +130,34 @@ async function publishChannel(channel: ChannelRow, post: PostRow, media: MediaRo
  * and returns a summary. Safe to call repeatedly — published channels are
  * skipped, failed ones retried.
  */
-export async function publishPost(postId: number): Promise<{ published: number; manual: number; failed: number; errors: string[] }> {
+export async function publishPost(
+  postId: number,
+  opts: { maxAttempts?: number } = {},
+): Promise<{ published: number; manual: number; failed: number; errors: string[] }> {
+  const maxAttempts = opts.maxAttempts ?? 1_000_000;
   const post = (await sql`SELECT * FROM posts WHERE id = ${postId}`)[0] as unknown as PostRow | undefined;
   if (!post) return { published: 0, manual: 0, failed: 1, errors: ["Post not found"] };
   const channels = (await sql`
     SELECT * FROM post_channels WHERE post_id = ${postId} AND publish_status NOT IN ('published', 'manual')
+    ORDER BY id
   `) as unknown as ChannelRow[];
   const media = (await sql`SELECT url, content_type FROM post_media WHERE post_id = ${postId} ORDER BY id`) as unknown as MediaRow[];
 
   let published = 0, manual = 0, failed = 0;
   const errors: string[] = [];
   for (const ch of channels) {
+    // Claim the channel first: the 15-minute scheduler, the daily cron and
+    // "Publish now" can overlap, and only the run holding the claim posts.
+    // A claim older than 10 minutes belongs to a run that died.
+    const claimed = await sql`
+      UPDATE post_channels SET publish_status = 'publishing', claimed_at = NOW(), attempts = COALESCE(attempts, 0) + 1
+      WHERE id = ${ch.id}
+        AND (publish_status IN ('pending', 'failed')
+             OR (publish_status = 'publishing' AND claimed_at < NOW() - INTERVAL '10 minutes'))
+        AND COALESCE(attempts, 0) < ${maxAttempts}
+      RETURNING id
+    `;
+    if (claimed.length === 0) continue;
     const result = await publishChannel(ch, post, media);
     if (result.ok) {
       published++;
@@ -159,7 +177,7 @@ export async function publishPost(postId: number): Promise<{ published: number; 
   }
 
   const remaining = (await sql`
-    SELECT COUNT(*)::int AS n FROM post_channels WHERE post_id = ${postId} AND publish_status IN ('pending', 'failed')
+    SELECT COUNT(*)::int AS n FROM post_channels WHERE post_id = ${postId} AND publish_status IN ('pending', 'failed', 'publishing')
   `)[0] as { n: number };
   if (remaining.n === 0) {
     await sql`
