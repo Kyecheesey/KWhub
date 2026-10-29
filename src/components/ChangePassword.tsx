@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { KeyRound, X, Check, AlertCircle } from "lucide-react";
 
 export default function ChangePassword({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -11,6 +12,7 @@ export default function ChangePassword({ open, onClose }: { open: boolean; onClo
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [wasOpen, setWasOpen] = useState(open);
+  const { update } = useSession();
 
   if (open !== wasOpen) {
     setWasOpen(open);
@@ -36,6 +38,8 @@ export default function ChangePassword({ open, onClose }: { open: boolean; onClo
     const data = await res.json();
     setBusy(false);
     if (!res.ok) { setError(data.error ?? "Something went wrong."); return; }
+    // Refresh this session's password stamp so the change doesn't sign us out
+    await update();
     setDone(true);
   }
 
