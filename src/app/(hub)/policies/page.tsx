@@ -20,8 +20,7 @@ export default function PoliciesPage() {
       <div className="card" style={{ display: "flex", alignItems: "center", gap: "0.6rem", padding: "0.8rem 1rem", marginBottom: "1.25rem", fontSize: "0.82rem" }}>
         <Compass size={15} color="var(--accent)" />
         <span style={{ flex: 1 }}>
-          Version <strong>{POLICIES_VERSION}</strong>. Changing the wording in <code>src/lib/policies.ts</code> and bumping the
-          version asks every client to accept again.
+          Version <strong>{POLICIES_VERSION}</strong>. When the wording changes, every client is asked to read and accept it again.
         </span>
       </div>
       <div style={{ display: "grid", gap: "1rem" }}>

@@ -25,9 +25,9 @@ const SHORTCUTS: [string, string][] = [
   ["g c", "Clients"],
   ["g p", "Potentials"],
   ["g f", "Follow-ups"],
-  ["g l", "Call List"],
+  ["g l", "Cold Calls"],
   ["g i", "Insights"],
-  ["g a", "Activities"],
+  ["g a", "My Tasks"],
   ["g t", "Team Tasks"],
   ["?", "Show this help"],
 ];
@@ -314,7 +314,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
 
       {/* ── Mobile bottom tab bar ── */}
       <nav className="bottom-tab-bar">
-        {bottomTabs.map(({ href, label, icon: Icon }) => {
+        {bottomTabs.filter((t) => isKye || sectionAllowed(t.href, sections)).map(({ href, label, icon: Icon }) => {
           const active = path === href;
           return (
             <Link key={href} href={href} style={{
