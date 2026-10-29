@@ -99,7 +99,7 @@ export async function GET() {
 
   const today = startOfToday();
   for (const t of tasks) {
-    if (t.assigned_to.toLowerCase() !== me) continue;
+    if ((t.assigned_to ?? "").toLowerCase() !== me) continue;
     const overdue = t.due_date && new Date(t.due_date) < today;
     items.push({
       id: `task-${t.id}`,

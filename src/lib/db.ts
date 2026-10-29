@@ -37,8 +37,25 @@ function client(): Sql {
   return _sql;
 }
 
+// A connection the pooler dropped without telling us can leave a query
+// waiting until the function's 300s limit. Give up after 25s and throw the
+// client away so the next query reconnects.
+const QUERY_TIMEOUT_MS = 25_000;
+
 export function sql(strings: TemplateStringsArray, ...params: unknown[]): Promise<Record<string, unknown>[]> {
-  return client()(strings, ...(params as never[])) as unknown as Promise<Record<string, unknown>[]>;
+  const db = client();
+  const query = db(strings, ...(params as never[])) as unknown as Promise<Record<string, unknown>[]>;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      if (_sql === db) {
+        _sql = null;
+        db.end({ timeout: 0 }).catch(() => {});
+      }
+      reject(new Error("Database query timed out"));
+    }, QUERY_TIMEOUT_MS);
+  });
+  return Promise.race([query, timeout]).finally(() => clearTimeout(timer));
 }
 
 // Ensure all tables exist + seed initial users — called at the start of each handler.
