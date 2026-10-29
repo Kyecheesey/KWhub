@@ -336,40 +336,32 @@ export default function PortalPage() {
   useEffect(() => {
     if (previewId === "pending") return;
     let cancelled = false;
-    Promise.all([
-      fetch(`/api/portal/me${qs}`).then((r) => r.json()).catch(() => null),
-      fetch(`/api/portal/messages${qs}`).then((r) => r.json()).catch(() => null),
-      fetch(`/api/portal/projects${qs}`).then((r) => r.json()).catch(() => null),
-      fetch(`/api/portal/approvals${qs}`).then((r) => r.json()).catch(() => null),
-      fetch(`/api/portal/files${qs}`).then((r) => r.json()).catch(() => null),
-      fetch(`/api/portal/invoices${qs}`).then((r) => r.json()).catch(() => null),
-      fetch(`/api/portal/checklist${qs}`).then((r) => r.json()).catch(() => null),
-      fetch(`/api/portal/jobs${qs}`).then((r) => r.json()).catch(() => null),
-      fetch(`/api/portal/modules${qs}`).then((r) => r.json()).catch(() => null),
-      fetch(`/api/portal/posts${qs}`).then((r) => r.json()).catch(() => null),
-      fetch(`/api/portal/support${qs}`).then((r) => r.json()).catch(() => null),
-      fetch(`/api/portal/services${qs}`).then((r) => r.json()).catch(() => null),
-      fetch(`/api/portal/orientation${qs}`).then((r) => r.json()).catch(() => null),
-      fetch(`/api/portal/plan${qs}`).then((r) => r.json()).catch(() => null),
-    ]).then(([me, msgs, projs, apprs, fls, invs, chk, jbs, mods, psts, tkts, svcs, orient, pln]) => {
-      if (cancelled) return;
-      if (me && !me.error) setClient(me);
-      if (Array.isArray(msgs)) setMessages(msgs);
-      if (Array.isArray(projs)) setProjects(projs);
-      if (Array.isArray(apprs)) setApprovals(apprs);
-      if (Array.isArray(fls)) setFiles(fls);
-      if (Array.isArray(invs)) setInvoices(invs);
-      if (Array.isArray(chk)) setChecklist(chk);
-      if (Array.isArray(jbs)) setVisibleJobs(jbs);
-      if (Array.isArray(mods?.enabled)) setModules(mods.enabled);
-      if (Array.isArray(psts)) setPosts(psts);
-      if (Array.isArray(tkts)) setTickets(tkts);
-      if (Array.isArray(svcs?.metrics)) setServiceMetrics(svcs.metrics);
-      if (Array.isArray(svcs?.updates)) setServiceUpdates(svcs.updates);
-      if (orient && !orient.error) setOrientation(orient);
-      if (pln && !pln.error) setPlan(pln);
-      setLoading(false);
-    });
+    // Everything in one request (one database connection); retried once on a blip
+    const load = () => fetch(`/api/portal/bootstrap${qs}`).then((r) => (r.ok ? r.json() : Promise.reject(r.status)));
+    load()
+      .catch(() => new Promise((res) => setTimeout(res, 1500)).then(load))
+      .catch(() => ({}))
+      .then((d) => {
+        const { me, messages: msgs, projects: projs, approvals: apprs, files: fls, invoices: invs, checklist: chk,
+          jobs: jbs, modules: mods, posts: psts, support: tkts, services: svcs, orientation: orient, plan: pln } = d;
+        if (cancelled) return;
+        if (me && !me.error) setClient(me);
+        if (Array.isArray(msgs)) setMessages(msgs);
+        if (Array.isArray(projs)) setProjects(projs);
+        if (Array.isArray(apprs)) setApprovals(apprs);
+        if (Array.isArray(fls)) setFiles(fls);
+        if (Array.isArray(invs)) setInvoices(invs);
+        if (Array.isArray(chk)) setChecklist(chk);
+        if (Array.isArray(jbs)) setVisibleJobs(jbs);
+        if (Array.isArray(mods?.enabled)) setModules(mods.enabled);
+        if (Array.isArray(psts)) setPosts(psts);
+        if (Array.isArray(tkts)) setTickets(tkts);
+        if (Array.isArray(svcs?.metrics)) setServiceMetrics(svcs.metrics);
+        if (Array.isArray(svcs?.updates)) setServiceUpdates(svcs.updates);
+        if (orient && !orient.error) setOrientation(orient);
+        if (pln && !pln.error) setPlan(pln);
+        setLoading(false);
+      });
     const interval = setInterval(() => { loadMessages(); loadApprovals(); loadPosts(); }, POLL_MS);
     return () => { cancelled = true; clearInterval(interval); };
   }, [previewId, qs, loadMessages, loadApprovals, loadPosts]);
