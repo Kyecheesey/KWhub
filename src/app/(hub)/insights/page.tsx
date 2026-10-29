@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { TrendingUp, Target, Award, CalendarPlus, Timer } from "lucide-react";
+import { useHydrated } from "@/lib/useHydrated";
 import { swrJson } from "@/lib/cache";
 
 interface Pot {
@@ -31,6 +32,9 @@ const ACTIVE = ["new", "contacted", "qualified", "proposal"];
 const SERIES = { active: "#7c85f3", won: "#10b981" };
 const DAY = 86400000;
 
+// Fixed labels: Node and browsers disagree on en-AU short months ("Sept" vs "Sep")
+const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 function monthKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
@@ -38,6 +42,7 @@ function monthKey(d: Date) {
 export default function InsightsPage() {
   const [pots, setPots] = useState<Pot[]>([]);
   const [loading, setLoading] = useState(true);
+  const hydrated = useHydrated();
 
   useEffect(() => {
     let cancelled = false;
@@ -87,12 +92,13 @@ export default function InsightsPage() {
 
   /* ── Monthly trend (last 6 months) ── */
   const months: { key: string; label: string; count: number }[] = [];
-  for (let i = 5; i >= 0; i--) {
+  // Built only in the browser: at prerender time "now" is the build date
+  for (let i = hydrated ? 5 : -1; i >= 0; i--) {
     const d = new Date();
     d.setDate(1); d.setMonth(d.getMonth() - i);
     months.push({
       key: monthKey(d),
-      label: d.toLocaleDateString("en-AU", { month: "short" }),
+      label: MONTH_LABELS[d.getMonth()],
       count: 0,
     });
   }

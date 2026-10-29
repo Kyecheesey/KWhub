@@ -9,7 +9,8 @@ import {
   ThumbsUp, PencilLine, AlertTriangle, CircleDot, Activity,
   DollarSign, Receipt, ChevronRight,
 } from "lucide-react";
-import { getCached, setCached } from "@/lib/cache";
+import { swrJson } from "@/lib/cache";
+import { useHydrated } from "@/lib/useHydrated";
 
 interface Stats {
   clients: number; potentials: number; active_pipeline: number; won: number;
@@ -45,19 +46,15 @@ function timeAgo(iso: string) {
 export default function Home() {
   const { data: session } = useSession();
   const isKye = (session?.user?.name ?? "").toLowerCase() === "kye";
-  const [data, setData] = useState<DashboardData | null>(() =>
-    typeof window === "undefined" ? null : getCached<DashboardData>("/api/dashboard")
-  );
+  // Cached data is applied after mount (not in the initial state) so the
+  // first client render matches the prerendered HTML
+  const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
-    fetch("/api/dashboard")
-      .then((r) => r.json())
-      .then((d: DashboardData) => {
-        if (d && !("error" in d)) { setCached("/api/dashboard", d); setData(d); }
-      })
-      .catch(() => {});
+    swrJson<DashboardData>("/api/dashboard", setData);
   }, []);
 
+  const hydrated = useHydrated();
   const firstName = (session?.user?.name ?? "").split(" ")[0];
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
@@ -123,8 +120,7 @@ export default function Home() {
   return (
     <div className="page">
       <style>{`
-        .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.7rem; margin-bottom: 1.4rem; }
-        @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.7rem; margin-bottom: 1.4rem; }
         @media (max-width: 560px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
         .home-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 1.1rem; align-items: start; }
         @media (max-width: 980px) { .home-grid { grid-template-columns: 1fr; } }
@@ -136,14 +132,14 @@ export default function Home() {
         <div>
           <div style={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase", color: "var(--accent)", marginBottom: "0.3rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
             <span className="pulse-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
-            {today}
+            {hydrated ? today : "\u00a0"}
           </div>
           <h1 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-            {greeting}{firstName ? `, ${firstName}` : ""}
+            {hydrated ? <>{greeting}{firstName ? `, ${firstName}` : ""}</> : "\u00a0"}
           </h1>
         </div>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          <Link href="/potentials" className="btn-primary" style={{ fontSize: "0.8rem" }}><Target size={13} /> New potential</Link>
+          <Link href="/potentials?new=1" className="btn-primary" style={{ fontSize: "0.8rem" }}><Target size={13} /> New potential</Link>
           <Link href="/tasks" className="btn-ghost" style={{ fontSize: "0.8rem" }}><ClipboardList size={13} /> New task</Link>
         </div>
       </div>

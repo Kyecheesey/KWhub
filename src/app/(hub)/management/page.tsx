@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Trash2, Plus, Check, RefreshCw, PhoneCall, ClipboardList, TrendingUp, AlertCircle, ScrollText, KeyRound, UserPlus, ShieldCheck, Pencil } from "lucide-react";
+import { useHydrated } from "@/lib/useHydrated";
 import { swrJson } from "@/lib/cache";
 
 /* ─── types ─── */
@@ -569,6 +570,7 @@ export default function ManagementPage() {
   const maxStage   = Math.max(...stageCount.map(s => s.count), 1);
 
   const doneItems  = checklist.filter(i => i.done).length;
+  const hydrated = useHydrated();
 
   return (
     <div className="page">
@@ -576,7 +578,7 @@ export default function ManagementPage() {
       <div className="page-header" style={{ marginBottom: "1.5rem" }}>
         <div>
           <h1 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--text-1)", margin: 0 }}>
-            {greet()}, Kye 👋
+            {hydrated ? `${greet()}, Kye 👋` : "\u00a0"}
           </h1>
           <p style={{ color: "var(--text-3)", fontSize: "0.85rem", margin: "0.25rem 0 0" }}>
             Here&apos;s your management overview
