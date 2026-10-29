@@ -5,6 +5,22 @@ import { NextResponse } from "next/server";
 // but not "/partnerships", which is a separate hub page)
 const under = (path: string, base: string) => path === base || path.startsWith(base + "/");
 
+// Which hub sections use each staff API (see ACCESS_SECTIONS in lib/nav)
+const API_SECTIONS: [string, string[]][] = [
+  ["/api/clients", ["/clients", "/client-jobs", "/contracts", "/proposals", "/my-work"]],
+  ["/api/client-jobs", ["/clients", "/client-jobs", "/my-work"]],
+  ["/api/call-list", ["/clients", "/potentials", "/call-list"]],
+  ["/api/portal", ["/clients"]],
+  ["/api/stripe/client", ["/clients"]],
+  ["/api/posts", ["/clients"]],
+  ["/api/social-accounts", ["/clients"]],
+  ["/api/contracts", ["/contracts"]],
+  ["/api/potentials", ["/potentials", "/proposals", "/follow-ups", "/insights"]],
+  ["/api/proposals", ["/proposals"]],
+  ["/api/activities", ["/activities", "/my-work"]],
+  ["/api/tasks", ["/tasks", "/my-work"]],
+];
+
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const path = req.nextUrl.pathname;
@@ -99,7 +115,7 @@ export default auth((req) => {
 
   // Per-user section access — Kye assigns sections from Management → Users &
   // access; users with a restricted list are bounced off pages outside it.
-  // (Changes take effect at that user's next sign-in.)
+  // (Changes reach a signed-in user within minutes; see RECHECK_MS in auth.ts.)
   if (isLoggedIn && role === "staff" && (req.auth?.user?.name ?? "").toLowerCase() !== "kye") {
     const sections = (req.auth?.user as { sections?: string[] | null } | undefined)?.sections;
     if (Array.isArray(sections)) {
@@ -108,6 +124,12 @@ export default auth((req) => {
       const hit = gated.find((p) => path === p || path.startsWith(p + "/"));
       if (hit && !sections.includes(hit)) {
         return NextResponse.redirect(new URL("/", req.nextUrl.origin));
+      }
+      // The same restriction for the data behind those pages: an API is open
+      // if any section the user has relies on it.
+      const api = API_SECTIONS.find(([prefix]) => under(path, prefix));
+      if (api && !api[1].some((s) => sections.includes(s))) {
+        return NextResponse.json({ error: "You don't have access to this section" }, { status: 403 });
       }
     }
   }
