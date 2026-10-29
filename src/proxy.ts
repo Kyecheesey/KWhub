@@ -35,6 +35,10 @@ export default auth((req) => {
     }
     return;
   }
+  if (path === "/content") {
+    // The Content planner was removed; send old bookmarks home
+    return NextResponse.redirect(new URL("/", req.nextUrl.origin));
+  }
   if (path === "/marketing") {
     return NextResponse.redirect(new URL("/portal?section=marketing", req.nextUrl.origin));
   }

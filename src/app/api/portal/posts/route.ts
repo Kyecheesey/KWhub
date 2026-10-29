@@ -51,7 +51,7 @@ export async function PATCH(request: Request) {
     await notifyStaff(
       r.scope.clientId,
       `Client ${status === "approved" ? "approved" : "requested changes on"} a post: ${label}`,
-      `${r.scope.name ?? "The client"} ${status === "approved" ? "approved" : "requested changes on"} "${label}".${note ? `\n\nNote: ${note}` : ""}\n\nOpen the Content planner to see it.`
+      `${r.scope.name ?? "The client"} ${status === "approved" ? "approved" : "requested changes on"} "${label}".${note ? `\n\nNote: ${note}` : ""}\n\nOpen their portal preview in KWI ONE to see it.`
     );
   }
   return Response.json(rows[0]);

@@ -94,7 +94,7 @@ export async function applySubscription(sub: Stripe.Subscription): Promise<void>
       RETURNING id, business_name
     `;
     const c = rows[0] as { id: number; business_name: string } | undefined;
-    if (c) await logEvent({ entity_type: "client", entity_id: c.id, entity_name: c.business_name, action: "Stripe subscription ended", actor: "Stripe" });
+    if (c) await logEvent({ entity_type: "client", entity_id: c.id, entity_name: c.business_name, action: "subscription ended", actor: "Stripe" });
     return;
   }
   const price = sub.items.data[0]?.price;

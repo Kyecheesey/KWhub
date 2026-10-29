@@ -6,8 +6,8 @@ import { appBaseUrl } from "@/lib/social/platforms";
 const GRAPH = "https://graph.facebook.com/v21.0";
 
 function backToPlanner(request: Request, clientId: number | null, msg: string, ok: boolean) {
-  const url = new URL(`${appBaseUrl(request)}/content`);
-  if (clientId) url.searchParams.set("client", String(clientId));
+  // The Content planner is gone; land on the client's portal admin page instead
+  const url = new URL(`${appBaseUrl(request)}${clientId ? `/clients/${clientId}/portal` : "/clients"}`);
   url.searchParams.set(ok ? "connected" : "connect_error", msg);
   return Response.redirect(url.toString(), 302);
 }

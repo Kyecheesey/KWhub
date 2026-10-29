@@ -175,7 +175,7 @@ export async function publishPost(postId: number): Promise<{ published: number; 
     await notifyStaff(
       post.client_id,
       `Manual posting needed: "${post.title ?? post.caption?.slice(0, 60) ?? "Untitled post"}"`,
-      `A scheduled post is due but some channels can't auto-publish:\n\n${errors.join("\n")}\n\nOpen the Content planner to copy the caption and post manually.`
+      `A scheduled post is due but some channels can't auto-publish:\n\n${errors.join("\n")}\n\nCopy the caption from the post in the client's portal and post it manually.`
     );
   }
   return { published, manual, failed, errors };

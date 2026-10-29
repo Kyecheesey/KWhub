@@ -143,7 +143,7 @@ export async function GET() {
       type: "signup",
       title: s.business_name,
       detail: `New business signed up${s.contact_name ? ` — ${s.contact_name}` : ""}`,
-      href: `/clients/${s.id}`,
+      href: `/clients/${s.id}/portal`,
       urgency: "medium",
     });
   }
