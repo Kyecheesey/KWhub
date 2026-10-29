@@ -19,7 +19,11 @@ export async function notifyAssignment(input: {
   description?: string | null;
 }) {
   try {
-    const rows = await sql`SELECT username, email FROM users WHERE LOWER(name) = LOWER(${input.assignee})`;
+    const rows = await sql`
+      SELECT username, email FROM users
+      WHERE LOWER(name) = LOWER(${input.assignee}) AND COALESCE(role, 'staff') = 'staff'
+      ORDER BY id LIMIT 1
+    `;
     const user = rows[0] as { username: string; email: string | null } | undefined;
     if (!user) return;
 

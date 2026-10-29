@@ -5,7 +5,8 @@ import { auth } from "../../../../../auth";
 async function requireStaff() {
   const session = await auth();
   if (!session?.user) return { error: Response.json({ error: "Not signed in" }, { status: 401 }) };
-  if (session.user.role === "client") return { error: Response.json({ error: "Staff only" }, { status: 403 }) };
+  // KWI staff only: partners manage their own clients' logins via /api/partner/accounts
+  if (session.user.role !== "staff") return { error: Response.json({ error: "Staff only" }, { status: 403 }) };
   return { session };
 }
 
@@ -16,9 +17,12 @@ export async function GET(request: Request) {
   if ("error" in r) return r.error;
   const clientId = new URL(request.url).searchParams.get("client_id");
   if (!clientId) return Response.json({ error: "client_id is required" }, { status: 400 });
+  const id = parseInt(clientId, 10);
+  if (Number.isNaN(id)) return Response.json({ error: "client_id is required" }, { status: 400 });
   const rows = await sql`
     SELECT id, name, username, created_at FROM users
-    WHERE role = 'client' AND client_id = ${parseInt(clientId, 10)}
+    WHERE role = 'client' AND client_id = ${id}
+      AND client_id IN (SELECT id FROM clients WHERE partner_id IS NULL)
     ORDER BY created_at ASC
   `;
   return Response.json(rows);
@@ -39,7 +43,7 @@ export async function POST(request: Request) {
   }
   const uname = username.trim().toLowerCase();
 
-  const clientRows = await sql`SELECT business_name FROM clients WHERE id = ${client_id}`;
+  const clientRows = await sql`SELECT business_name FROM clients WHERE id = ${client_id} AND partner_id IS NULL`;
   const client = clientRows[0] as { business_name: string } | undefined;
   if (!client) return Response.json({ error: "Client not found" }, { status: 404 });
 
@@ -68,6 +72,7 @@ export async function PATCH(request: Request) {
   const rows = await sql`
     UPDATE users SET password_hash = ${hash}
     WHERE username = ${username.toLowerCase()} AND role = 'client'
+      AND client_id IN (SELECT id FROM clients WHERE partner_id IS NULL)
     RETURNING username
   `;
   if (rows.length === 0) return Response.json({ error: "Portal login not found" }, { status: 404 });
@@ -83,6 +88,7 @@ export async function DELETE(request: Request) {
   if (!username) return Response.json({ error: "username is required" }, { status: 400 });
   const rows = await sql`
     DELETE FROM users WHERE username = ${username.toLowerCase()} AND role = 'client'
+      AND client_id IN (SELECT id FROM clients WHERE partner_id IS NULL)
     RETURNING username
   `;
   if (rows.length === 0) return Response.json({ error: "Portal login not found" }, { status: 404 });

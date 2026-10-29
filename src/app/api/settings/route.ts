@@ -9,7 +9,9 @@ export async function GET() {
   if (!session?.user || session.user.role === "client") {
     return Response.json({ error: "Staff only" }, { status: 403 });
   }
-  const rows = await sql`SELECT key, value FROM settings`;
+  // Only the editable settings: the table also holds Xero tokens and
+  // Kye-only financial caches that other staff must never see.
+  const rows = await sql`SELECT key, value FROM settings WHERE key = ANY(${EDITABLE_KEYS})`;
   const out: Record<string, string | null> = {};
   for (const r of rows as { key: string; value: string | null }[]) out[r.key] = r.value;
   return Response.json(out);
