@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { PORTAL_MODULES } from "@/lib/modules";
 import {
   ArrowLeft, Send, KeyRound, UserPlus, Trash2,
   MessageSquare, Eye, Rocket, Plus, X, Wallet, CreditCard,
   ThumbsUp, FolderOpen, Upload, Receipt, ListChecks,
-  Check, Image as ImageIcon, ChevronRight, Briefcase, Boxes, Compass, RotateCcw,
+  Check, Image as ImageIcon, ChevronRight, Briefcase, Boxes, Compass, RotateCcw, LayoutGrid,
 } from "lucide-react";
 
 interface ClientInfo { id: number; business_name: string; contact_name: string | null; assigned_to: string | null; logo_url: string | null; }
@@ -97,6 +98,7 @@ export default function ClientPortalAdminPage() {
   const [orientation, setOrientation] = useState<Orientation | null>(null);
   const [planForm, setPlanForm] = useState({ plan_name: "", amount: "", interval: "month" });
   const [stripeLink, setStripeLink] = useState<StripeLink | null>(null);
+  const [modules, setModules] = useState<string[]>([]);
   const [stripeCustomerInput, setStripeCustomerInput] = useState("");
   const [serviceMetrics, setServiceMetrics] = useState<ServiceMetric[]>([]);
   const [serviceUpdates, setServiceUpdates] = useState<ServiceUpdate[]>([]);
@@ -150,6 +152,7 @@ export default function ClientPortalAdminPage() {
       amount: d.plan_amount_cents ? String(d.plan_amount_cents / 100) : "",
       interval: d.plan_interval ?? "month",
     })));
+    if (all || keys.includes("modules")) jobs.push(j(`/api/portal/modules${q}`, (d: { enabled: string[] }) => setModules(Array.isArray(d?.enabled) ? d.enabled : [])));
     if (all || keys.includes("stripe")) jobs.push(j(`/api/stripe/client${q}`, (d: StripeLink) => setStripeLink(d)));
     if (all || keys.includes("clientJobs")) jobs.push(j(`/api/client-jobs${q}`, (d: ClientJob[]) => setClientJobs(Array.isArray(d) ? d : [])));
     if (all || keys.includes("services")) jobs.push(j(`/api/portal/services${q}`, (d: { metrics: ServiceMetric[]; updates: ServiceUpdate[]; config: ServiceConfig | null }) => {
@@ -232,6 +235,14 @@ export default function ClientPortalAdminPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+
+  async function toggleModule(key: string) {
+    const next = modules.includes(key) ? modules.filter((k) => k !== key) : [...modules, key];
+    setModules(next);
+    const data = await post("/api/portal/modules", { modules: next }, "PATCH");
+    if (data?.enabled) setModules(data.enabled);
+    else reload(["modules"]);
+  }
 
   const pill = (text: string, color: string) => (
     <span style={{
@@ -1008,6 +1019,25 @@ export default function ClientPortalAdminPage() {
                 )}
               </div>
             </div>
+                </Panel>
+                <Panel icon={LayoutGrid} title="Portal sections" hint="Switch on the services this client pays for">
+                  {PORTAL_MODULES.filter((m) => !m.always).map((m) => {
+                    const on = modules.includes(m.key);
+                    return (
+                      <div key={m.key} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.65rem 1.25rem", borderBottom: "1px solid var(--border)" }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: "0.84rem", fontWeight: 650 }}>{m.label}</div>
+                          <div style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>{m.description}</div>
+                        </div>
+                        <button role="switch" aria-checked={on} aria-label={`${m.label} section`} onClick={() => toggleModule(m.key)} style={{
+                          width: 38, height: 22, borderRadius: 99, border: "none", cursor: "pointer", flexShrink: 0, position: "relative",
+                          background: on ? "var(--accent)" : "var(--surface-4)", transition: "background 0.2s",
+                        }}>
+                          <span style={{ position: "absolute", top: 3, left: on ? 19 : 3, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </Panel>
                 <Panel icon={ImageIcon} title="Portal branding" hint="Client logo shown in their portal">
             <form

@@ -4,13 +4,12 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
-  Users, Target, TrendingUp, ArrowRight, Megaphone, LifeBuoy,
+  Users, Target, TrendingUp, ArrowRight, LifeBuoy,
   Bell, ClipboardList, PhoneCall, Kanban, FileSignature, Briefcase,
-  ThumbsUp, PencilLine, AlertTriangle, CircleDot, Activity, Plus,
+  ThumbsUp, PencilLine, AlertTriangle, CircleDot, Activity,
   DollarSign, Receipt, ChevronRight,
 } from "lucide-react";
 import { getCached, setCached } from "@/lib/cache";
-import { platformInfo } from "@/lib/social/platforms";
 
 interface Stats {
   clients: number; potentials: number; active_pipeline: number; won: number;
@@ -30,14 +29,6 @@ interface DashboardData {
   followups: Followup[]; weekPosts: WeekPost[]; myTasks: MyTask[]; events: EventRow[];
 }
 
-const POST_STATUS: Record<string, { label: string; color: string }> = {
-  pending_approval: { label: "Awaiting client", color: "#d97706" },
-  changes_requested: { label: "Changes requested", color: "#dc2626" },
-  approved: { label: "Approved", color: "#059669" },
-  published: { label: "Published", color: "#4f46e5" },
-  draft: { label: "Draft", color: "#8b95c0" },
-};
-
 function money(cents: number) {
   return new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(cents / 100);
 }
@@ -51,13 +42,6 @@ function timeAgo(iso: string) {
   if (days < 7) return `${days}d ago`;
   return new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short" });
 }
-function ymd(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-function shortTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" });
-}
-
 export default function Home() {
   const { data: session } = useSession();
   const isKye = (session?.user?.name ?? "").toLowerCase() === "kye";
@@ -92,7 +76,7 @@ export default function Home() {
         color: changes ? "#dc2626" : "#d97706",
         title: `${changes ? "Changes requested" : "Awaiting approval"}: ${p.title || p.caption?.slice(0, 50) || "Untitled post"}`,
         sub: `${p.business_name ?? "Client"}${changes && p.approval_note ? ` — “${p.approval_note}”` : ""}`,
-        href: `/content?client=${p.client_id}`,
+        href: `/portal?client=${p.client_id}&section=marketing`,
       });
     }
     for (const t of data.tickets) {
@@ -119,34 +103,15 @@ export default function Home() {
     return items.slice(0, 9);
   }, [data]);
 
-  // 7-day content strip
-  const week = useMemo(() => {
-    const days: { date: Date; posts: WeekPost[] }[] = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() + i);
-      days.push({ date: d, posts: [] });
-    }
-    for (const p of data?.weekPosts ?? []) {
-      const key = ymd(new Date(p.scheduled_at));
-      const slot = days.find((d) => ymd(d.date) === key);
-      if (slot) slot.posts.push(p);
-    }
-    return days;
-  }, [data]);
-
   const kpis = [
     { label: "Clients", value: s?.clients, icon: Users, color: "#0891b2", href: "/clients", sub: "active accounts" },
     { label: "Pipeline", value: s?.active_pipeline, icon: TrendingUp, color: "#7c85f3", href: "/potentials", sub: s ? `${money(Number(s.pipeline_value_cents))} in play` : "" },
-    { label: "Awaiting approval", value: s?.posts_pending, icon: Megaphone, color: "#d97706", href: "/content", sub: s?.posts_changes ? `${s.posts_changes} need changes` : "content" },
     { label: "Support open", value: s?.tickets_open, icon: LifeBuoy, color: "#0284c7", href: "/client-jobs", sub: "client requests" },
     { label: "Follow-ups due", value: s?.followups_due, icon: Bell, color: "#dc2626", href: "/follow-ups", sub: "today or overdue" },
-    { label: "Posted this week", value: s?.posts_published_week, icon: Activity, color: "#059669", href: "/content", sub: "auto + manual" },
   ];
 
   const shortcuts = [
     { label: "Clients", icon: Users, href: "/clients" },
-    { label: "Content", icon: Megaphone, href: "/content" },
     { label: "Jobs", icon: Briefcase, href: "/client-jobs" },
     { label: "Potentials", icon: Target, href: "/potentials" },
     { label: "My Tasks", icon: Kanban, href: "/activities" },
@@ -163,8 +128,6 @@ export default function Home() {
         @media (max-width: 560px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
         .home-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 1.1rem; align-items: start; }
         @media (max-width: 980px) { .home-grid { grid-template-columns: 1fr; } }
-        .week-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.45rem; }
-        @media (max-width: 700px) { .week-strip { grid-template-columns: repeat(4, 1fr); } }
         .shortcut-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
       `}</style>
 
@@ -180,8 +143,7 @@ export default function Home() {
           </h1>
         </div>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          <Link href="/content" className="btn-primary" style={{ fontSize: "0.8rem" }}><Plus size={14} /> New post</Link>
-          <Link href="/potentials" className="btn-ghost" style={{ fontSize: "0.8rem" }}><Target size={13} /> New potential</Link>
+          <Link href="/potentials" className="btn-primary" style={{ fontSize: "0.8rem" }}><Target size={13} /> New potential</Link>
           <Link href="/tasks" className="btn-ghost" style={{ fontSize: "0.8rem" }}><ClipboardList size={13} /> New task</Link>
         </div>
       </div>
@@ -241,58 +203,6 @@ export default function Home() {
                 })}
               </div>
             )}
-          </div>
-
-          {/* This week's content */}
-          <div className="card" style={{ overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.9rem 1.1rem", borderBottom: "1px solid var(--border)" }}>
-              <Megaphone size={15} color="var(--accent)" />
-              <span style={{ fontWeight: 800, fontSize: "0.9rem" }}>This week&apos;s content</span>
-              <Link href="/content" className="btn-ghost" style={{ marginLeft: "auto", minHeight: 0, padding: "0.3rem 0.65rem", fontSize: "0.72rem" }}>
-                Open planner <ArrowRight size={11} />
-              </Link>
-            </div>
-            <div style={{ padding: "0.9rem 1.1rem" }}>
-              <div className="week-strip">
-                {week.map(({ date, posts }, i) => {
-                  const isToday = i === 0;
-                  return (
-                    <div key={ymd(date)} style={{
-                      borderRadius: 10, padding: "0.5rem 0.5rem 0.6rem", minHeight: 76,
-                      background: isToday ? "rgba(79,70,229,0.06)" : "var(--surface-2)",
-                      border: `1px solid ${isToday ? "rgba(79,70,229,0.25)" : "var(--border)"}`,
-                    }}>
-                      <div style={{ fontSize: "0.62rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: isToday ? "var(--accent)" : "var(--text-3)", marginBottom: "0.35rem" }}>
-                        {isToday ? "Today" : date.toLocaleDateString("en-AU", { weekday: "short", day: "numeric" })}
-                      </div>
-                      <div style={{ display: "grid", gap: 3 }}>
-                        {posts.length === 0 && <div style={{ fontSize: "0.64rem", color: "var(--text-4)" }}>—</div>}
-                        {posts.slice(0, 3).map((p) => {
-                          const st = POST_STATUS[p.status] ?? POST_STATUS.draft;
-                          return (
-                            <Link key={p.id} href={`/content?client=${p.client_id}`} title={`${p.business_name ?? ""}: ${p.title || p.caption || ""} · ${shortTime(p.scheduled_at)}`} style={{
-                              display: "flex", alignItems: "center", gap: 4, textDecoration: "none",
-                              fontSize: "0.62rem", fontWeight: 600, color: "var(--text-2)",
-                              background: `${st.color}10`, border: `1px solid ${st.color}26`,
-                              borderRadius: 6, padding: "0.14rem 0.3rem", overflow: "hidden",
-                            }}>
-                              <span style={{ width: 5, height: 5, borderRadius: "50%", background: st.color, flexShrink: 0 }} />
-                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.business_name ?? p.title ?? "Post"}</span>
-                              <span style={{ display: "inline-flex", gap: 2, flexShrink: 0 }}>
-                                {(p.platforms ?? []).slice(0, 3).map((pl, j) => (
-                                  <span key={j} style={{ width: 4, height: 4, borderRadius: "50%", background: platformInfo(pl).color }} />
-                                ))}
-                              </span>
-                            </Link>
-                          );
-                        })}
-                        {posts.length > 3 && <div style={{ fontSize: "0.6rem", color: "var(--text-3)" }}>+{posts.length - 3} more</div>}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
 
           {/* Business snapshot — director only */}

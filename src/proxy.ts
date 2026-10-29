@@ -99,7 +99,7 @@ export default auth((req) => {
   if (isLoggedIn && role === "staff" && (req.auth?.user?.name ?? "").toLowerCase() !== "kye") {
     const sections = (req.auth?.user as { sections?: string[] | null } | undefined)?.sections;
     if (Array.isArray(sections)) {
-      const gated = ["/clients", "/client-jobs", "/content", "/contracts", "/potentials", "/proposals",
+      const gated = ["/clients", "/client-jobs", "/contracts", "/potentials", "/proposals",
         "/follow-ups", "/call-list", "/insights", "/my-work", "/activities", "/tasks"];
       const hit = gated.find((p) => path === p || path.startsWith(p + "/"));
       if (hit && !sections.includes(hit)) {
